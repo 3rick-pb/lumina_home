@@ -29,6 +29,11 @@ import {
   FileCode,
   ChevronDown,
   Layers,
+  ShieldCheck,
+  Zap,
+  AtSign,
+  Hash,
+  User,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -461,7 +466,7 @@ export function IntegrationsTab() {
       setDispatchMsg({
         success: true,
         text: isAuto
-          ? "✓ Guardado automáticamente en la base de datos."
+          ? "✓ Guardado en la base de datos."
           : data.message || "Receptores de despacho guardados exitosamente.",
       });
     } catch (err: unknown) {
@@ -757,17 +762,22 @@ export function IntegrationsTab() {
         {/* ==================================================================== */}
         <div className="pt-1 pb-1">
           <div ref={comboboxRef} className="relative z-30 w-full sm:max-w-md">
-            <label className="text-[11px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase block mb-2 px-1">
-              Módulo o Sección para Configurar:
-            </label>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <label className="text-[11px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                Módulo o Sección para Configurar:
+              </label>
+              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                Navegación Rápida
+              </span>
+            </div>
 
             {/* Botón Trigger Cápsula de Cristal Líquido (Apple Liquid Glass) */}
             <motion.button
               type="button"
               onClick={() => setIsComboboxOpen((prev) => !prev)}
-              whileTap={{ scale: 0.96 }}
+              whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 500, damping: 25 }}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-white/70 dark:bg-[#202024]/70 hover:bg-white/85 dark:hover:bg-[#28282c]/85 backdrop-blur-3xl backdrop-saturate-[200%] border border-white/60 dark:border-white/15 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.06),inset_0_1.5px_1px_rgba(255,255,255,0.85),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_32px_-5px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.22),inset_0_-1px_1px_rgba(0,0,0,0.4)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-white/75 dark:bg-[#202024]/75 hover:bg-white/90 dark:hover:bg-[#28282c]/90 backdrop-blur-3xl backdrop-saturate-[200%] border border-white/60 dark:border-white/15 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.06),inset_0_1.5px_1px_rgba(255,255,255,0.85),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_32px_-5px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.22),inset_0_-1px_1px_rgba(0,0,0,0.4)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
               aria-expanded={isComboboxOpen}
               aria-haspopup="listbox"
             >
@@ -803,24 +813,24 @@ export function IntegrationsTab() {
               </div>
             </motion.button>
 
-            {/* Menú Desplegable Liquid Glass Apple con Efecto Rebote Físico (Spring Bounce) */}
+            {/* Menú Desplegable Liquid Glass Apple con Scroll Vertical Estilizado (Sin Scroll Horizontal) */}
             <AnimatePresence>
               {isComboboxOpen && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.82, y: -16 }}
+                  initial={{ opacity: 0, scale: 0.9, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.88, y: -10, transition: { duration: 0.14, ease: "easeOut" } }}
+                  exit={{ opacity: 0, scale: 0.92, y: -8, transition: { duration: 0.14, ease: "easeOut" } }}
                   transition={{
                     type: "spring",
                     stiffness: 440,
-                    damping: 18,
+                    damping: 20,
                     mass: 0.7,
                   }}
                   style={{ transformOrigin: "top left" }}
-                  className="absolute left-0 right-0 top-full mt-2.5 rounded-[1.75rem] bg-white/75 dark:bg-[#161618]/80 backdrop-blur-3xl backdrop-saturate-[210%] border border-white/60 dark:border-white/15 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.25),inset_0_1.5px_1px_0_rgba(255,255,255,0.85),inset_0_-1px_1px_0_rgba(0,0,0,0.06)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7),inset_0_1.5px_1px_0_rgba(255,255,255,0.22),inset_0_-1px_1px_0_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
+                  className="absolute left-0 right-0 top-full mt-2.5 rounded-[1.75rem] bg-white/85 dark:bg-[#161618]/90 backdrop-blur-3xl backdrop-saturate-[210%] border border-white/60 dark:border-white/15 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.25),inset_0_1.5px_1px_0_rgba(255,255,255,0.85),inset_0_-1px_1px_0_rgba(0,0,0,0.06)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7),inset_0_1.5px_1px_0_rgba(255,255,255,0.22),inset_0_-1px_1px_0_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
                   role="listbox"
                 >
-                  <div className="space-y-1 max-h-[340px] overflow-y-auto scrollbar-thin">
+                  <div className="space-y-1 max-h-[320px] overflow-y-auto overflow-x-hidden pr-1.5 [scrollbar-width:thin] [scrollbar-color:rgba(156,163,175,0.4)_transparent] dark:[scrollbar-color:rgba(113,113,122,0.4)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-300 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
                     {navCategories.map((cat) => {
                       const Icon = cat.icon;
                       const isSelected = activeSection === cat.id;
@@ -829,14 +839,12 @@ export function IntegrationsTab() {
                         <motion.button
                           key={cat.id}
                           type="button"
-                          whileHover={{ scale: 1.015, x: 3 }}
                           whileTap={{ scale: 0.98 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 28 }}
                           onClick={() => {
                             setActiveSection(cat.id);
                             setIsComboboxOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-left text-xs transition-colors cursor-pointer ${
                             isSelected
                               ? "bg-amber-500/20 text-zinc-950 dark:text-amber-100 font-semibold border border-amber-500/35 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
                               : "text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10"
@@ -844,7 +852,7 @@ export function IntegrationsTab() {
                           role="option"
                           aria-selected={isSelected}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
                               isSelected 
                                 ? "bg-amber-500 text-stone-950 border-amber-400 font-bold shadow-xs" 
@@ -852,7 +860,7 @@ export function IntegrationsTab() {
                             }`}>
                               <Icon className="w-3.5 h-3.5" />
                             </div>
-                            <div className="flex flex-col min-w-0">
+                            <div className="flex flex-col min-w-0 flex-1">
                               <span className="truncate leading-tight font-medium">{cat.label}</span>
                               <span className="text-[10.5px] text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5 truncate">
                                 {cat.desc}
@@ -865,13 +873,7 @@ export function IntegrationsTab() {
                               <span className={`w-1.5 h-1.5 rounded-full ${cat.ready ? "bg-emerald-500" : "bg-amber-400"}`} />
                             )}
                             {isSelected && (
-                              <motion.span
-                                initial={{ scale: 0.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                              >
-                                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
-                              </motion.span>
+                              <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
                             )}
                           </div>
                         </motion.button>
@@ -885,25 +887,46 @@ export function IntegrationsTab() {
         </div>
 
         {/* ==================================================================== */}
-        {/* PANEL MAESTRO: CODE BLOCK RARE-UI CON FONDO SÓLIDO OSCURO           */}
+        {/* PANEL MAESTRO: CODE BLOCK RARE-UI CON GENERADOR UNIVERSAL EN VIVO    */}
         {/* ==================================================================== */}
-        <div className="space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-            <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-amber-500" />
-              <span className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                Variables de Entorno Generadas en Vivo (.env)
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                100% de la web
-              </span>
+        <div className="rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-gradient-to-b from-white/95 to-zinc-50/80 dark:from-[#18181c]/95 dark:to-[#121215]/90 backdrop-blur-2xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-orange-500/20 to-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0 shadow-xs">
+                <Terminal className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                    Variables de Entorno Generadas en Vivo (.env)
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                    100% de la web
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 hidden sm:inline-block">
+                    {computedMasterEnv.split("\n").filter(Boolean).length} líneas de variables
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+                  Configuración maestra sincronizada con Supabase, Servidor SMTP, PayPhone y Google Cloud en un solo bloque.
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <button
+                type="button"
+                onClick={() => markCopied("master_all", computedMasterEnv)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-semibold rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedKey === "master_all" ? "¡Copiado Todo!" : "Copiar .env Maestro"}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowLiveCode((prev) => !prev)}
-                className="px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-zinc-700 dark:text-zinc-300 font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
+                className="px-3.5 py-2 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-zinc-700 dark:text-zinc-300 font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
               >
                 <FileCode className="w-3.5 h-3.5 text-zinc-500" />
                 <span>{showLiveCode ? "Ocultar Código" : "Ver Código .env"}</span>
@@ -919,7 +942,7 @@ export function IntegrationsTab() {
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="overflow-hidden"
+                className="overflow-hidden pt-1"
               >
                 <CodeBlock
                   code={computedMasterEnv}
@@ -928,6 +951,8 @@ export function IntegrationsTab() {
                   showLineNumbers={true}
                   showCopyButton={true}
                   showHeader={false}
+                  defaultExpanded={true}
+                  showFooter={true}
                   className="w-full rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10"
                 />
               </motion.div>
@@ -941,179 +966,328 @@ export function IntegrationsTab() {
         <div className="space-y-6 sm:space-y-8 pt-2">
 
           {/* ------------------------------------------------------------------ */}
-          {/* 1. SERVIDOR SMTP & NOTIFICACIONES (MAIL)                           */}
+          {/* 1. SERVIDOR SMTP & NOTIFICACIONES (MAIL) - BENTO 2.0 COMMAND HUB    */}
           {/* ------------------------------------------------------------------ */}
           {(activeSection === "all" || activeSection === "smtp") && (
-            <div className="p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-5">
-              {/* Header de la Sección */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/5 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="rounded-3xl border border-black/5 dark:border-white/10 bg-gradient-to-b from-white/95 via-zinc-50/70 to-white/90 dark:from-[#1b1b1f]/95 dark:via-[#161619]/80 dark:to-[#121215]/90 p-5 sm:p-7 md:p-8 space-y-6 sm:space-y-7 shadow-[0_12px_40px_rgba(0,0,0,0.02)]">
+              
+              {/* Header Principal con Mesh Visual & Telemetría Rápida */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-black/5 dark:border-white/10">
+                <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600/20 via-indigo-500/20 to-sky-400/20 border border-blue-500/30 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(59,130,246,0.15)]">
+                    <Mail className="w-6 h-6" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h3 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
                         Servidor SMTP & Notificaciones Transaccionales
                       </h3>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${
                         servicesStatus?.smtp?.configured
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
                       }`}>
-                        {servicesStatus?.smtp?.configured ? "Conectado" : "Pendiente"}
+                        <span className={`w-2 h-2 rounded-full ${servicesStatus?.smtp?.configured ? "bg-emerald-500 animate-pulse" : "bg-amber-400"}`} />
+                        <span>{servicesStatus?.smtp?.configured ? "Servidor Operativo" : "Requiere Configuración"}</span>
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      Envío de facturas por compra, confirmaciones de pedido a clientes y alertas de preparación para bodegas.
+                    <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                      Motor de mensajería para facturas por compra, comprobantes de pago y avisos inmediatos de preparación a bodegas.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowGoogleGuide(!showGoogleGuide)}
-                    className="px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-zinc-700 dark:text-zinc-300 font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-xl border border-blue-500/20 bg-blue-50/70 hover:bg-blue-100 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-xs text-blue-600 dark:text-blue-400 font-semibold transition-all cursor-pointer flex items-center gap-2 active:scale-95 shadow-xs"
                   >
-                    <Info className="w-3.5 h-3.5 text-blue-500" />
-                    <span>{showGoogleGuide ? "Ocultar Guía" : "Guía Gmail 16 Dígitos"}</span>
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                    <span>{showGoogleGuide ? "Ocultar Guía Gmail" : "Guía Gmail 16 Dígitos"}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Guía Acordeón Gmail */}
+              {/* Bento Ribbon de Métricas en Vivo */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-800/50 backdrop-blur-md flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Seguridad & Protocolo</span>
+                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate block">
+                      {smtpProvider === "gmail" ? "STARTTLS (Puerto 587)" : `Puerto ${smtpPort} ${smtpSecure ? "(SSL Directo)" : "(STARTTLS)"}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-800/50 backdrop-blur-md flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Canal de Envío</span>
+                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate block">
+                      {smtpProvider === "gmail" ? "Google Cloud Relay" : (smtpHost || "Custom SMTP Host")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-800/50 backdrop-blur-md flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Bodegas en Alerta</span>
+                      <span className="text-[11px] font-mono font-bold text-zinc-700 dark:text-zinc-300">{dispatchRecipients.length}/7</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full mt-1.5 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, (dispatchRecipients.length / 7) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Guía Visual Desplegable Gmail (4 Pasos Ilustrados) */}
               <AnimatePresence>
                 {showGoogleGuide && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden p-4 sm:p-5 rounded-2xl bg-amber-500/[0.06] border border-amber-500/20 text-xs text-zinc-700 dark:text-zinc-300 space-y-3"
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/[0.04] to-blue-500/10 border border-amber-500/25 space-y-4"
                   >
-                    <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span>Cómo generar tu Contraseña de Aplicación de 16 caracteres en Gmail</span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
-                      <div className="p-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 border border-black/5 dark:border-white/5">
-                        <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">1. Seguridad Google</span>
-                        Ve a tu cuenta de Google y activa la &quot;Verificación en 2 pasos&quot;.
-                      </div>
-                      <div className="p-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 border border-black/5 dark:border-white/5">
-                        <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">2. Contraseñas de app</span>
-                        Busca &quot;Contraseñas de aplicaciones&quot; en la configuración de Google.
-                      </div>
-                      <div className="p-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 border border-black/5 dark:border-white/5">
-                        <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">3. Nombre de app</span>
-                        Escribe &quot;{brand.name}&quot; y haz clic en Crear.
-                      </div>
-                      <div className="p-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 border border-black/5 dark:border-white/5">
-                        <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">4. Pegar en SMTP_PASS</span>
-                        Copia el código amarillo de 16 letras y pégalo en el campo Contraseña abajo.
-                      </div>
-                    </div>
-                    <div className="pt-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span>Cómo generar tu Contraseña de Aplicación de 16 caracteres en Gmail</span>
+                      </h4>
                       <a
                         href="https://myaccount.google.com/apppasswords"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95"
                       >
-                        <span>Abrir myaccount.google.com/apppasswords</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <span>Abrir Seguridad Google</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
+                        <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-bold flex items-center justify-center text-[11px]">
+                          01
+                        </span>
+                        <span className="font-bold text-zinc-900 dark:text-white block">2 Pasos Activo</span>
+                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                          Ingresa a tu cuenta de Google y verifica tener encendida la &quot;Verificación en 2 pasos&quot;.
+                        </p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
+                        <span className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 font-mono font-bold flex items-center justify-center text-[11px]">
+                          02
+                        </span>
+                        <span className="font-bold text-zinc-900 dark:text-white block">Contraseñas de App</span>
+                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                          Busca &quot;Contraseñas de aplicaciones&quot; en la barra de búsqueda de tu cuenta de Google.
+                        </p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
+                        <span className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-mono font-bold flex items-center justify-center text-[11px]">
+                          03
+                        </span>
+                        <span className="font-bold text-zinc-900 dark:text-white block">Nombre de App</span>
+                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                          Nombra la app como &quot;{brand.name}&quot; y presiona el botón Crear contraseña.
+                        </p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold flex items-center justify-center text-[11px]">
+                          04
+                        </span>
+                        <span className="font-bold text-zinc-900 dark:text-white block">Pegar 16 Letras</span>
+                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                          Copia el código generado de 16 caracteres y pégalo en el campo Contraseña abajo.
+                        </p>
+                      </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Grid Responsivo de Configuración SMTP */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                
-                {/* Tarjeta A: Credenciales SMTP */}
-                <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-black/5 dark:border-white/10">
-                    <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <KeyRound className="w-4 h-4 text-blue-500" />
-                      <span>Credenciales de Envío</span>
-                    </h4>
-
-                    {/* Selector Proveedor */}
-                    <div className="flex items-center gap-1 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setSmtpProvider("gmail")}
-                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                          smtpProvider === "gmail" ? "bg-white dark:bg-zinc-700 font-semibold shadow-xs" : "opacity-60"
-                        }`}
-                      >
-                        Gmail
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSmtpProvider("custom")}
-                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                          smtpProvider === "custom" ? "bg-white dark:bg-zinc-700 font-semibold shadow-xs" : "opacity-60"
-                        }`}
-                      >
-                        Personalizado
-                      </button>
+              {/* Selector Visual de Proveedor (Cards Interactivas) */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase block px-1">
+                  Selecciona la Plataforma de Correo:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  
+                  {/* Tarjeta Proveedor 1: Gmail Cloud */}
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setSmtpProvider("gmail");
+                      setSmtpHost("smtp.gmail.com");
+                      setSmtpPort(587);
+                      setSmtpSecure(false);
+                    }}
+                    className={`p-4 rounded-2xl text-left border transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
+                      smtpProvider === "gmail"
+                        ? "bg-white dark:bg-zinc-800/90 border-blue-500/50 shadow-[0_8px_24px_rgba(59,130,246,0.12),inset_0_1px_1px_rgba(255,255,255,0.4)] ring-2 ring-blue-500/20"
+                        : "bg-white/60 dark:bg-zinc-900/40 border-black/5 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-800/60 opacity-80"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
+                      <Mail className="w-5 h-5 text-red-500" />
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">Gmail / Google Workspace</span>
+                        <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                          Recomendado
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                        Puerto 587 STARTTLS automático. Máxima reputación contra filtros de spam sin configurar DNS complejos.
+                      </p>
+                    </div>
+                    {smtpProvider === "gmail" && (
+                      <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    )}
+                  </motion.button>
+
+                  {/* Tarjeta Proveedor 2: SMTP Propio */}
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSmtpProvider("custom")}
+                    className={`p-4 rounded-2xl text-left border transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
+                      smtpProvider === "custom"
+                        ? "bg-white dark:bg-zinc-800/90 border-amber-500/50 shadow-[0_8px_24px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.4)] ring-2 ring-amber-500/20"
+                        : "bg-white/60 dark:bg-zinc-900/40 border-black/5 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-800/60 opacity-80"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                      <Server className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">Hosting Propio / Relay</span>
+                        <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
+                          Personalizado
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                        Servidor cPanel, AWS SES, Resend o SendGrid con puertos configurables (587, 465, 25).
+                      </p>
+                    </div>
+                    {smtpProvider === "custom" && (
+                      <div className="w-5 h-5 rounded-full bg-amber-500 text-stone-950 flex items-center justify-center shrink-0 shadow-xs">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    )}
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Grid Bento de 2 Columnas: Credenciales vs Prueba & Bodegas */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                
+                {/* Bento Card A: Credenciales del Servidor */}
+                <div className="p-5 sm:p-6 rounded-3xl border border-black/5 dark:border-white/10 bg-white/90 dark:bg-[#1c1c20]/90 backdrop-blur-xl shadow-xs space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/10">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                        <KeyRound className="w-4 h-4" />
+                      </div>
+                      <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                        Credenciales de Autenticación
+                      </h4>
+                    </div>
+
+                    <span className="text-[10px] font-mono font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                      {smtpProvider === "gmail" ? "gmail-auth-v2" : "smtp-custom-auth"}
+                    </span>
                   </div>
 
                   {smtpProvider === "custom" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Host SMTP</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                          <Server className="w-3 h-3 text-zinc-400" />
+                          <span>Host SMTP</span>
+                        </label>
                         <input
                           type="text"
                           value={smtpHost}
                           onChange={(e) => setSmtpHost(e.target.value)}
                           placeholder="mail.tudominio.com"
-                          className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Puerto</label>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                          <Hash className="w-3 h-3 text-zinc-400" />
+                          <span>Puerto</span>
+                        </label>
                         <input
                           type="number"
                           value={smtpPort}
                           onChange={(e) => setSmtpPort(Number(e.target.value))}
                           placeholder="587 o 465"
-                          className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                         />
                       </div>
                     </div>
                   )}
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Correo Remitente (SMTP_USER)</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                      <AtSign className="w-3 h-3 text-zinc-400" />
+                      <span>Correo Remitente (SMTP_USER)</span>
+                    </label>
                     <input
                       type="email"
                       value={smtpUser}
                       onChange={(e) => setSmtpUser(e.target.value)}
                       placeholder="contacto@luminahome.com"
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      {smtpProvider === "gmail" ? "Contraseña de Aplicación de 16 caracteres (SMTP_PASS)" : "Contraseña de Servidor (SMTP_PASS)"}
-                    </label>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                        <KeyRound className="w-3 h-3 text-zinc-400" />
+                        <span>{smtpProvider === "gmail" ? "Contraseña de App (16 caracteres)" : "Contraseña del Servidor"}</span>
+                      </label>
+                      <span className="text-[10px] text-zinc-400 font-mono">SMTP_PASS</span>
+                    </div>
                     <div className="relative">
                       <input
                         type={showSmtpPass ? "text" : "password"}
                         value={smtpPass}
                         onChange={(e) => setSmtpPass(e.target.value)}
                         placeholder="••••••••••••••••"
-                        className="w-full pl-3 pr-10 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowSmtpPass(!showSmtpPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer p-1"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer p-1"
                         aria-label="Ver u ocultar contraseña"
                       >
                         {showSmtpPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -1121,25 +1295,29 @@ export function IntegrationsTab() {
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Nombre Visible de Marca (SMTP_FROM)</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                      <User className="w-3 h-3 text-zinc-400" />
+                      <span>Nombre Visible de la Marca (SMTP_FROM)</span>
+                    </label>
                     <input
                       type="text"
                       value={senderName}
                       onChange={(e) => setSenderName(e.target.value)}
                       placeholder={brand.name}
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between">
+                  <div className="pt-2 flex items-center justify-between border-t border-black/5 dark:border-white/5">
+                    <span className="text-[10.5px] text-zinc-400">¿Deseas probar esta configuración?</span>
                     <button
                       type="button"
                       onClick={() => {
                         const snippet = `SMTP_HOST="${smtpProvider === "gmail" ? "smtp.gmail.com" : smtpHost}"\nSMTP_PORT="${smtpProvider === "gmail" ? "587" : smtpPort}"\nSMTP_SECURE="${smtpSecure ? "true" : "false"}"\nSMTP_USER="${smtpUser}"\nSMTP_PASS="${smtpPass}"\nSMTP_FROM="${senderName} <${smtpUser}>"`;
                         markCopied("smtp_snip", snippet);
                       }}
-                      className="px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      className="px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
                     >
                       {copiedKey === "smtp_snip" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>Copiar Bloque SMTP</span>
@@ -1147,16 +1325,27 @@ export function IntegrationsTab() {
                   </div>
                 </div>
 
-                {/* Tarjeta B: Prueba en Vivo & Bodegas */}
-                <div className="space-y-4">
-                  {/* Despacho de Prueba en Vivo */}
-                  <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-3">
-                    <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <Send className="w-4 h-4 text-emerald-500" />
-                      <span>Prueba en Vivo de Conexión</span>
-                    </h4>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Envía un correo de prueba al instante para verificar autenticación y puertos sin bloqueos.
+                {/* Bento Card B: Consola de Diagnóstico & Receptores de Bodega */}
+                <div className="space-y-5">
+                  
+                  {/* Sub-tarjeta 1: Consola de Diagnóstico y Prueba en Vivo */}
+                  <div className="p-5 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.04] to-white/90 dark:to-[#1c1c20]/90 backdrop-blur-xl shadow-xs space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                          <Send className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                          Prueba de Conexión en Vivo
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        Diagnóstico Real
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                      Envía un correo de prueba al instante para comprobar que los puertos y la contraseña funcionen sin restricciones de firewall.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -1165,63 +1354,80 @@ export function IntegrationsTab() {
                         value={testEmail}
                         onChange={(e) => setTestEmail(e.target.value)}
                         placeholder="tu_correo_personal@gmail.com"
-                        className="flex-1 px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs outline-none focus:border-emerald-500 min-h-[42px] sm:min-h-0"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/90 dark:bg-zinc-800/80 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[42px] sm:min-h-0"
                       />
                       <button
                         type="button"
                         onClick={handleTestSmtpConnection}
                         disabled={isTestingSmtp}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 min-h-[42px] sm:min-h-0"
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 shadow-sm shadow-emerald-600/20 min-h-[42px] sm:min-h-0"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>{isTestingSmtp ? "Enviando..." : "Enviar Prueba"}</span>
+                        <span>{isTestingSmtp ? "Comprobando..." : "Lanzar Prueba"}</span>
                       </button>
                     </div>
 
                     {smtpTestResult && (
-                      <div className={`p-3 rounded-xl border text-xs font-medium leading-relaxed flex items-start gap-2 ${
-                        smtpTestResult.success
-                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400"
-                          : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
-                      }`}>
-                        {smtpTestResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />}
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-3.5 rounded-2xl border text-xs font-medium leading-relaxed flex items-start gap-2.5 ${
+                          smtpTestResult.success
+                            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-300"
+                            : "bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-300"
+                        }`}
+                      >
+                        {smtpTestResult.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                        )}
                         <span>{smtpTestResult.message}</span>
-                      </div>
+                      </motion.div>
                     )}
                   </div>
 
-                  {/* Receptores de Despacho (Bodegas) */}
-                  <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-3">
+                  {/* Sub-tarjeta 2: Receptores de Órdenes (Bodegas) */}
+                  <div className="p-5 rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/[0.04] to-white/90 dark:to-[#1c1c20]/90 backdrop-blur-xl shadow-xs space-y-3.5">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-indigo-500" />
-                          <span>Receptores de Órdenes (Bodegas)</span>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                          <Truck className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                          Receptores de Órdenes (Bodegas)
                         </h4>
-                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                          Hasta 7 correos recibirán la alerta inmediata de preparación de cada compra confirmada.
-                        </p>
                       </div>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                        {dispatchRecipients.length}/7
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        {dispatchRecipients.length}/7 cupos
                       </span>
                     </div>
 
-                    {/* Chips de correos */}
-                    <div className="flex flex-wrap gap-1.5 min-h-[38px] p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-black/5 dark:border-white/5">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                      Hasta 7 correos recibirán una alerta automática detallada con los productos cada vez que un cliente pague exitosamente.
+                    </p>
+
+                    {/* Chips de correos registrados */}
+                    <div className="flex flex-wrap gap-2 min-h-[42px] p-2 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
                       {dispatchRecipients.length === 0 ? (
-                        <span className="text-xs text-zinc-400 italic">No hay correos de bodega registrados.</span>
+                        <div className="flex items-center gap-2 px-2 py-1 text-xs text-zinc-400 italic">
+                          <Info className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>No hay correos de bodega registrados todavía.</span>
+                        </div>
                       ) : (
-                        dispatchRecipients.map((em) => (
+                        dispatchRecipients.map((em, idx) => (
                           <span
                             key={em}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-black/5 dark:border-white/10 text-xs text-zinc-800 dark:text-zinc-200 shadow-xs"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-black/5 dark:border-white/10 text-xs text-zinc-800 dark:text-zinc-200 shadow-xs"
                           >
-                            <span className="font-mono text-[11px] break-all">{em}</span>
+                            <span className="w-4 h-4 rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] flex items-center justify-center">
+                              B{idx + 1}
+                            </span>
+                            <span className="font-mono text-[11px]">{em}</span>
                             <button
                               type="button"
                               onClick={() => handleRemoveRecipient(em)}
-                              className="text-zinc-400 hover:text-red-500 cursor-pointer p-0.5"
+                              className="text-zinc-400 hover:text-red-500 cursor-pointer p-0.5 transition-colors"
                               aria-label={`Eliminar correo ${em}`}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -1231,7 +1437,7 @@ export function IntegrationsTab() {
                       )}
                     </div>
 
-                    {/* Input para añadir */}
+                    {/* Input para agregar bodega */}
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="email"
@@ -1243,44 +1449,50 @@ export function IntegrationsTab() {
                             handleAddRecipient();
                           }
                         }}
-                        placeholder="bodega@luminahome.com"
-                        className="flex-1 px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
+                        placeholder="bodega_norte@luminahome.com"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/90 dark:bg-zinc-800/80 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[42px] sm:min-h-0"
                       />
                       <button
                         type="button"
                         onClick={handleAddRecipient}
                         disabled={dispatchRecipients.length >= 7 || !recipientInput.trim()}
-                        className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-semibold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1 active:scale-95 min-h-[42px] sm:min-h-0"
+                        className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 active:scale-95 min-h-[42px] sm:min-h-0"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Agregar</span>
                       </button>
                     </div>
 
-                    {/* Acciones de prueba bodega */}
+                    {/* Acción de prueba de alerta a bodegas */}
                     <div className="pt-1 flex items-center justify-between gap-2">
                       <button
                         type="button"
                         onClick={handleTestDispatchEmail}
                         disabled={isTestingDispatch || dispatchRecipients.length === 0}
-                        className="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5 active:scale-95"
+                        className="px-3.5 py-2 rounded-xl border border-indigo-500/30 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 active:scale-95 shadow-xs"
                       >
-                        <Send className="w-3 h-3" />
+                        <Send className="w-3.5 h-3.5" />
                         <span>{isTestingDispatch ? "Enviando alerta..." : "Probar Alerta a Bodegas"}</span>
                       </button>
+                      <span className="text-[10px] text-zinc-400">Notifica a todos los destinatarios</span>
                     </div>
 
                     {dispatchMsg && (
-                      <div className={`p-2.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
-                        dispatchMsg.success
-                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
-                          : "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
-                      }`}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 3 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-3 rounded-2xl text-xs font-medium flex items-center gap-2 ${
+                          dispatchMsg.success
+                            ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/25"
+                            : "bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/25"
+                        }`}
+                      >
                         <Info className="w-3.5 h-3.5 shrink-0" />
                         <span>{dispatchMsg.text}</span>
-                      </div>
+                      </motion.div>
                     )}
                   </div>
+
                 </div>
 
               </div>
