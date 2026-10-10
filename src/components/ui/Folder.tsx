@@ -132,31 +132,30 @@ const FolderComponent = ({
             perspective: 800 * scale,
           }}
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div
-              style={{
-                width: BASE_WIDTH,
-                height: BASE_HEIGHT,
-                borderRadius: 25,
-                backgroundColor: theme.backFill,
-                boxShadow: theme.backInsetShadow,
-              }}
-            />
-          </div>
+          <div
+            className="absolute inset-0"
+            style={{
+              width: BASE_WIDTH,
+              height: BASE_HEIGHT,
+              borderRadius: 25,
+              backgroundColor: theme.backFill,
+              boxShadow: theme.backInsetShadow,
+            }}
+          />
 
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <motion.div
               className="absolute"
               animate={{
-                y: isOpen ? -160 : isHovered ? -30 : -10,
-                x: isOpen ? 70 : 40,
-                rotate: isOpen ? 18 : isHovered ? 14 : 10,
+                y: isOpen ? -130 : isHovered ? -30 : -8,
+                x: isOpen ? 60 : 36,
+                rotate: isOpen ? 16 : isHovered ? 12 : 8,
               }}
               transition={{
                 type: "spring",
-                stiffness: 120,
-                damping: 13,
-                delay: isOpen ? 0.1 : isHovered ? 0.12 : 0,
+                stiffness: 140,
+                damping: 14,
+                delay: isOpen ? 0.08 : isHovered ? 0.1 : 0,
               }}
             >
               <Card id={1} theme={theme} uid={uid} />
@@ -164,15 +163,15 @@ const FolderComponent = ({
             <motion.div
               className="absolute"
               animate={{
-                y: isOpen ? -180 : isHovered ? -35 : -20,
-                x: isOpen ? 0 : 3,
-                rotate: isOpen ? -3 : isHovered ? -1 : 2,
+                y: isOpen ? -150 : isHovered ? -38 : -18,
+                x: isOpen ? 0 : 2,
+                rotate: isOpen ? -2 : isHovered ? 0 : 2,
               }}
               transition={{
                 type: "spring",
-                stiffness: 120,
-                damping: 13,
-                delay: isOpen ? 0.05 : isHovered ? 0.06 : 0,
+                stiffness: 140,
+                damping: 14,
+                delay: isOpen ? 0.04 : isHovered ? 0.05 : 0,
               }}
             >
               <Card id={2} theme={theme} uid={uid} />
@@ -180,15 +179,15 @@ const FolderComponent = ({
             <motion.div
               className="absolute"
               animate={{
-                y: isOpen ? -170 : isHovered ? -44 : -22,
-                x: isOpen ? -65 : -40,
-                rotate: isOpen ? -14 : isHovered ? -9 : -5,
+                y: isOpen ? -140 : isHovered ? -46 : -20,
+                x: isOpen ? -60 : -36,
+                rotate: isOpen ? -12 : isHovered ? -8 : -5,
               }}
               transition={{
                 type: "spring",
-                stiffness: 120,
-                damping: 13,
-                delay: isOpen ? 0 : 0,
+                stiffness: 140,
+                damping: 14,
+                delay: 0,
               }}
             >
               <Card id={3} theme={theme} uid={uid} />
@@ -196,15 +195,15 @@ const FolderComponent = ({
           </div>
 
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[14.5px]"
+            className="absolute inset-x-0 bottom-0 pointer-events-none"
             style={{
               transformOrigin: "bottom center",
               transformStyle: "preserve-3d",
-              width: 321,
+              width: BASE_WIDTH,
               height: 241,
             }}
-            animate={{ rotateX: isOpen ? -55 : isHovered ? -45 : -15 }}
-            transition={{ type: "spring", stiffness: 120, damping: 14 }}
+            animate={{ rotateX: isOpen ? -50 : isHovered ? -25 : 0 }}
+            transition={{ type: "spring", stiffness: 140, damping: 14 }}
           >
             <div
               className="absolute inset-0"
