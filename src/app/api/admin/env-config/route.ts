@@ -53,13 +53,10 @@ export async function GET(request: Request) {
     const hasMapbox = Boolean(mapboxToken);
     const masterAdminEmail = process.env.MASTER_ADMIN_EMAIL || '';
 
-    // Mobile Wallets status
+    // Mobile Wallets status (Google Wallet)
     const googleWalletIssuerId = process.env.GOOGLE_WALLET_ISSUER_ID || '';
     const googleWalletClientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL || '';
     const hasGoogleWallet = Boolean(googleWalletIssuerId && googleWalletClientEmail);
-    const appleTeamId = process.env.APPLE_TEAM_IDENTIFIER || '';
-    const applePassTypeId = process.env.APPLE_PASS_TYPE_IDENTIFIER || '';
-    const hasAppleWallet = Boolean(appleTeamId && applePassTypeId);
     const hasWalletSecret = Boolean(process.env.WALLET_SECRET_KEY);
 
     return NextResponse.json({
@@ -102,13 +99,10 @@ export async function GET(request: Request) {
           masterAdminEmail,
         },
         wallets: {
-          configured: hasGoogleWallet || hasAppleWallet,
+          configured: hasGoogleWallet,
           hasGoogleWallet,
           googleWalletIssuerId,
           googleWalletClientEmail,
-          hasAppleWallet,
-          appleTeamId,
-          applePassTypeId,
           hasWalletSecret,
         },
       },

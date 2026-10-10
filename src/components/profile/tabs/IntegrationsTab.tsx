@@ -81,9 +81,6 @@ interface ServiceConfigStatus {
     hasGoogleWallet: boolean;
     googleWalletIssuerId: string;
     googleWalletClientEmail: string;
-    hasAppleWallet: boolean;
-    appleTeamId: string;
-    applePassTypeId: string;
     hasWalletSecret: boolean;
   };
 }
@@ -194,13 +191,11 @@ export function IntegrationsTab() {
   const [masterAdminEmail, setMasterAdminEmail] = useState(user?.email || "admin@luminahome.com");
 
   // ==========================================
-  // 6. WALLETS STATE
+  // 6. WALLETS STATE (GOOGLE WALLET)
   // ==========================================
   const [walletSecretKey, setWalletSecretKey] = useState("");
   const [googleWalletIssuerId, setGoogleWalletIssuerId] = useState("");
   const [googleWalletClientEmail, setGoogleWalletClientEmail] = useState("");
-  const [appleTeamId, setAppleTeamId] = useState("");
-  const [applePassTypeId, setApplePassTypeId] = useState("pass.com.luminahome.order");
 
   // Generate random 32-byte secret key helper
   const generateRandomHexKey = () => {
@@ -627,14 +622,11 @@ export function IntegrationsTab() {
       `PAYPHONE_PAYMENT_MODE="${payphoneMode}"`,
       ``,
       `# ------------------------------------------------------------------------------`,
-      `# 6. MOBILE WALLETS (GOOGLE WALLET & APPLE WALLET PASSKIT)`,
+      `# 6. BILLETERA DIGITAL (GOOGLE WALLET PASSES)`,
       `# ------------------------------------------------------------------------------`,
       `WALLET_SECRET_KEY="${walletSecretKey || "clave_secreta_para_firmas_hmac_32_bytes"}"`,
       `GOOGLE_WALLET_ISSUER_ID="${googleWalletIssuerId || "3388000000022XXXXXX"}"`,
       `GOOGLE_WALLET_CLIENT_EMAIL="${googleWalletClientEmail || "lumina-wallet@tu-proyecto-gcp.iam.gserviceaccount.com"}"`,
-      `APPLE_TEAM_IDENTIFIER="${appleTeamId || "TU_TEAM_ID_APPLE"}"`,
-      `APPLE_PASS_TYPE_IDENTIFIER="${applePassTypeId || "pass.com.luminahome.loyalty"}"`,
-      `APPLE_ORDER_PASS_TYPE_IDENTIFIER="pass.com.luminahome.order"`,
     ];
     return lines.join("\n");
   }, [
@@ -664,8 +656,6 @@ export function IntegrationsTab() {
     walletSecretKey,
     googleWalletIssuerId,
     googleWalletClientEmail,
-    appleTeamId,
-    applePassTypeId,
   ]);
 
   const handleDownloadEnv = (filename: ".env.local" | ".env.production") => {
@@ -685,7 +675,7 @@ export function IntegrationsTab() {
     { id: "google" as const, label: "Google Cloud", icon: Cloud, desc: "OAuth 2.0 y Drive API", ready: servicesStatus?.googleDrive?.configured },
     { id: "payphone" as const, label: "PayPhone Pagos", icon: CreditCard, desc: "Tarjetas y modo de cobro", ready: servicesStatus?.payphone?.configured },
     { id: "hosting" as const, label: "Hosting & Mapas", icon: Globe, desc: "Dominio web y token Mapbox", ready: Boolean(servicesStatus?.hosting?.siteUrl) },
-    { id: "wallets" as const, label: "Wallets Apple/Google", icon: Smartphone, desc: "PassKit y firmas HMAC", ready: servicesStatus?.wallets?.configured },
+    { id: "wallets" as const, label: "Google Wallet", icon: Smartphone, desc: "Pases digitales de cliente y fidelidad", ready: servicesStatus?.wallets?.configured },
   ];
 
   const selectedCategory = navCategories.find((c) => c.id === activeSection) || navCategories[0];
@@ -802,13 +792,12 @@ export function IntegrationsTab() {
                 <CodeBlock
                   code={computedMasterEnv}
                   language="bash"
-                  filename=".env.production"
-                  accent="#10b981"
-                  mode="auto"
+                  accent="#ff6a00"
+                  mode="dark"
                   showLineNumbers={true}
                   showCopyButton={true}
-                  showHeader={true}
-                  className="w-full rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden border border-black/10 dark:border-white/10"
+                  showHeader={false}
+                  className="w-full rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10"
                 />
               </motion.div>
             )}
@@ -816,7 +805,7 @@ export function IntegrationsTab() {
         </div>
 
         {/* ==================================================================== */}
-        {/* SELECTOR COMBOBOX APPLE LIQUID GLASS (REEMPLAZA EL SLIDER)           */}
+        {/* SELECTOR COMBOBOX APPLE LIQUID GLASS CON EFECTO REBOTE               */}
         {/* ==================================================================== */}
         <div className="pt-2">
           <div ref={comboboxRef} className="relative z-30 w-full sm:max-w-md">
@@ -824,17 +813,18 @@ export function IntegrationsTab() {
               Módulo o Sección para Configurar:
             </label>
 
-            {/* Botón Trigger con Efecto Liquid Glass Apple */}
+            {/* Botón Trigger Cápsula con Liquid Glass de Apple */}
             <motion.button
               type="button"
               onClick={() => setIsComboboxOpen((prev) => !prev)}
-              whileTap={{ scale: 0.985 }}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-white/70 dark:bg-zinc-800/60 hover:bg-white/90 dark:hover:bg-zinc-800/90 backdrop-blur-2xl border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.04)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
+              whileTap={{ scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-white/70 dark:bg-[#1f1f23]/70 hover:bg-white/85 dark:hover:bg-[#27272b]/80 backdrop-blur-3xl backdrop-saturate-[180%] border border-white/40 dark:border-white/15 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.06),inset_0_1px_1.5px_rgba(255,255,255,0.7),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_32px_-5px_rgba(0,0,0,0.5),inset_0_1px_1.5px_rgba(255,255,255,0.18),inset_0_-1px_1px_rgba(0,0,0,0.3)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
               aria-expanded={isComboboxOpen}
               aria-haspopup="listbox"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]">
                   <SelectedIcon className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col text-left min-w-0">
@@ -855,40 +845,52 @@ export function IntegrationsTab() {
                     <span className="w-2 h-2 rounded-full bg-amber-400 ring-4 ring-amber-400/20" title="Pendiente" />
                   )
                 )}
-                <div className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
-                  <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${isComboboxOpen ? "rotate-180 text-zinc-900 dark:text-white" : ""}`} />
-                </div>
+                <motion.div
+                  animate={{ rotate: isComboboxOpen ? 180 : 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-300" />
+                </motion.div>
               </div>
             </motion.button>
 
-            {/* Menú Desplegable Liquid Glass Apple Popover */}
+            {/* Menú Desplegable Liquid Glass Apple con Efecto Rebote (Spring Bounce) */}
             <AnimatePresence>
               {isComboboxOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute left-0 right-0 top-full mt-2 rounded-2xl bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-3xl border border-black/10 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-1.5 z-50 overflow-hidden"
+                  initial={{ opacity: 0, scale: 0.88, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: -6, transition: { duration: 0.16, ease: "easeOut" } }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 380,
+                    damping: 20,
+                    mass: 0.8,
+                  }}
+                  className="absolute left-0 right-0 top-full mt-2.5 rounded-[1.6rem] bg-white/75 dark:bg-[#161618]/80 backdrop-blur-3xl backdrop-saturate-[190%] border border-white/40 dark:border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25),inset_0_1px_1.5px_0_rgba(255,255,255,0.7),inset_0_-1px_1px_0_rgba(0,0,0,0.08)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7),inset_0_1px_1.5px_0_rgba(255,255,255,0.2),inset_0_-1px_1px_0_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
                   role="listbox"
                 >
-                  <div className="space-y-0.5 max-h-[340px] overflow-y-auto scrollbar-thin">
+                  <div className="space-y-1 max-h-[340px] overflow-y-auto scrollbar-thin">
                     {navCategories.map((cat) => {
                       const Icon = cat.icon;
                       const isSelected = activeSection === cat.id;
 
                       return (
-                        <button
+                        <motion.button
                           key={cat.id}
                           type="button"
+                          whileHover={{ scale: 1.015, x: 2 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ type: "spring", stiffness: 450, damping: 26 }}
                           onClick={() => {
                             setActiveSection(cat.id);
                             setIsComboboxOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer active:scale-[0.99] ${
+                          className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${
                             isSelected
-                              ? "bg-amber-500/15 dark:bg-amber-500/20 text-zinc-950 dark:text-white font-semibold shadow-2xs"
-                              : "text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5"
+                              ? "bg-amber-500/20 text-zinc-950 dark:text-amber-100 font-semibold border border-amber-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)]"
+                              : "text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10"
                           }`}
                           role="option"
                           aria-selected={isSelected}
@@ -896,8 +898,8 @@ export function IntegrationsTab() {
                           <div className="flex items-center gap-3 min-w-0">
                             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
                               isSelected 
-                                ? "bg-amber-500 text-stone-950 border-amber-400 font-bold" 
-                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-black/5 dark:border-white/5"
+                                ? "bg-amber-500 text-stone-950 border-amber-400 font-bold shadow-xs" 
+                                : "bg-white/60 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 border-white/20 dark:border-white/10"
                             }`}>
                               <Icon className="w-3.5 h-3.5" />
                             </div>
@@ -913,9 +915,17 @@ export function IntegrationsTab() {
                             {cat.id !== "all" && (
                               <span className={`w-1.5 h-1.5 rounded-full ${cat.ready ? "bg-emerald-500" : "bg-amber-400"}`} />
                             )}
-                            {isSelected && <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />}
+                            {isSelected && (
+                              <motion.span
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                              >
+                                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
+                              </motion.span>
+                            )}
                           </div>
-                        </button>
+                        </motion.button>
                       );
                     })}
                   </div>
@@ -1749,7 +1759,7 @@ export function IntegrationsTab() {
           )}
 
           {/* ------------------------------------------------------------------ */}
-          {/* 6. MOBILE WALLETS (GOOGLE & APPLE PASSKIT)                         */}
+          {/* 6. BILLETERA DIGITAL (GOOGLE WALLET PASSES)                        */}
           {/* ------------------------------------------------------------------ */}
           {(activeSection === "all" || activeSection === "wallets") && (
             <div className="p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-4">
@@ -1759,13 +1769,13 @@ export function IntegrationsTab() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                    <span>Google Wallet & Apple Wallet PassKit (.pkpass)</span>
+                    <span>Google Wallet Passes (Billetera Digital)</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">
                       Opcional
                     </span>
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    Permite a los clientes guardar tarjetas de fidelidad y tickets de pedido en la app Wallet de su celular.
+                    Permite a los clientes guardar tarjetas de fidelidad y tickets de seguimiento de pedido en Google Wallet en sus teléfonos móviles.
                   </p>
                 </div>
               </div>
@@ -1816,40 +1826,17 @@ export function IntegrationsTab() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Apple Team Identifier</label>
-                    <input
-                      type="text"
-                      value={appleTeamId}
-                      onChange={(e) => setAppleTeamId(e.target.value)}
-                      placeholder="TU_TEAM_ID_APPLE"
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-rose-500 min-h-[42px] sm:min-h-0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Apple Pass Type ID</label>
-                    <input
-                      type="text"
-                      value={applePassTypeId}
-                      onChange={(e) => setApplePassTypeId(e.target.value)}
-                      placeholder="pass.com.luminahome.loyalty"
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-rose-500 min-h-[42px] sm:min-h-0"
-                    />
-                  </div>
-                </div>
-
                 <div className="pt-2">
                   <button
                     type="button"
                     onClick={() => {
-                      const snip = `WALLET_SECRET_KEY="${walletSecretKey}"\nGOOGLE_WALLET_ISSUER_ID="${googleWalletIssuerId}"\nGOOGLE_WALLET_CLIENT_EMAIL="${googleWalletClientEmail}"\nAPPLE_TEAM_IDENTIFIER="${appleTeamId}"\nAPPLE_PASS_TYPE_IDENTIFIER="${applePassTypeId}"`;
+                      const snip = `WALLET_SECRET_KEY="${walletSecretKey}"\nGOOGLE_WALLET_ISSUER_ID="${googleWalletIssuerId}"\nGOOGLE_WALLET_CLIENT_EMAIL="${googleWalletClientEmail}"`;
                       markCopied("wallet_snip", snip);
                     }}
                     className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                   >
                     {copiedKey === "wallet_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>Copiar Bloque Wallets</span>
+                    <span>Copiar Bloque Google Wallet</span>
                   </button>
                 </div>
               </div>

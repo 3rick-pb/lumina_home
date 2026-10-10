@@ -67,103 +67,55 @@ function subscribeToPageMode(onChange: () => void) {
 // the server can't know the theme, so assume dark
 const serverMode = () => 'dark' as const
 
-const FALLBACK_HSL: [number, number, number] = [211, 100, 52]
-
-function hexToHsl(hex: string): [number, number, number] {
-    if (typeof hex !== 'string') return FALLBACK_HSL
-    let value = hex.replace('#', '')
-    if (value.length === 4 || value.length === 8) {
-        value = value.slice(0, value.length === 4 ? 3 : 6)
-    }
-    if (value.length === 3) {
-        value = value.split('').map((c) => c + c).join('')
-    }
-    const r = parseInt(value.slice(0, 2), 16) / 255
-    const g = parseInt(value.slice(2, 4), 16) / 255
-    const b = parseInt(value.slice(4, 6), 16) / 255
-    if (value.length !== 6 || [r, g, b].some(Number.isNaN)) return FALLBACK_HSL
-
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    const l = (max + min) / 2
-    if (max === min) return [0, 0, l * 100]
-
-    const d = max - min
-    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    let h: number
-    switch (max) {
-        case r:
-            h = ((g - b) / d + (g < b ? 6 : 0)) / 6
-            break
-        case g:
-            h = ((b - r) / d + 2) / 6
-            break
-        default:
-            h = ((r - g) / d + 4) / 6
-    }
-    return [h * 360, s * 100, l * 100]
-}
-
-const hsl = (h: number, s: number, l: number, a = 1) => {
-    const hue = ((h % 360) + 360) % 360
-    return a === 1
-        ? `hsl(${hue.toFixed(1)} ${s.toFixed(1)}% ${l.toFixed(1)}%)`
-        : `hsl(${hue.toFixed(1)} ${s.toFixed(1)}% ${l.toFixed(1)}% / ${a})`
-}
 
 function buildTheme(accent: string, mode: 'dark' | 'light' = 'dark') {
-    const [h, s, l] = hexToHsl(accent)
-    const tint = (lightness: number, sat = s) => hsl(h, sat, lightness)
     const dark = mode !== 'light'
-    const accentTone = dark
-        ? tint(Math.min(Math.max(l, 56), 70))
-        : tint(Math.min(Math.max(l, 38), 50))
-    // light mode just flips the lightness ramp
-    const ramp = (lightness: number) => (dark ? lightness : 100 - lightness)
+    // Use the provided accent directly (e.g. vibrant orange #ff6a00 / #ff7011) to match Rare UI capture
+    const accentTone = accent || (dark ? '#ff6a00' : '#ea580c')
 
     const colors = dark
         ? {
               accent: accentTone,
-              // Neutral chrome — matches the Rare UI preview surface (dark --card).
-              bg: 'oklch(0.1822 0 0)',
-              border: 'rgb(255 255 255 / 0.08)',
-              headerBg: 'rgb(255 255 255 / 0.03)',
+              // Deep dark matte chrome matching Rare UI preview surface (#0e0e11)
+              bg: '#0e0e11',
+              border: 'rgba(255, 255, 255, 0.08)',
+              headerBg: 'rgba(255, 255, 255, 0.03)',
               plain: '#ffffff',
-              muted: 'rgb(255 255 255 / 0.6)',
-              gutter: 'rgb(255 255 255 / 0.28)',
-              hoverWash: 'rgb(255 255 255 / 0.08)',
-              floatBg: 'rgb(255 255 255 / 0.05)',
-              selection: hsl(h, s, 58, 0.3),
-              lineWash: hsl(h, s, 58, 0.1),
+              muted: 'rgba(255, 255, 255, 0.6)',
+              gutter: '#52525b',
+              hoverWash: 'rgba(255, 255, 255, 0.08)',
+              floatBg: 'rgba(255, 255, 255, 0.04)',
+              selection: 'rgba(255, 112, 17, 0.28)',
+              lineWash: 'rgba(255, 112, 17, 0.1)',
           }
         : {
               accent: accentTone,
-              bg: 'oklch(0.985 0 0)',
-              border: 'rgb(0 0 0 / 0.08)',
-              headerBg: 'rgb(0 0 0 / 0.03)',
+              bg: '#ffffff',
+              border: 'rgba(0, 0, 0, 0.08)',
+              headerBg: 'rgba(0, 0, 0, 0.03)',
               plain: '#171717',
-              muted: 'rgb(0 0 0 / 0.6)',
-              gutter: 'rgb(0 0 0 / 0.32)',
-              hoverWash: 'rgb(0 0 0 / 0.06)',
-              floatBg: 'rgb(0 0 0 / 0.04)',
-              selection: hsl(h, s, 45, 0.25),
-              lineWash: hsl(h, s, 45, 0.08),
+              muted: 'rgba(0, 0, 0, 0.6)',
+              gutter: '#a1a1aa',
+              hoverWash: 'rgba(0, 0, 0, 0.06)',
+              floatBg: 'rgba(0, 0, 0, 0.04)',
+              selection: 'rgba(255, 112, 17, 0.2)',
+              lineWash: 'rgba(255, 112, 17, 0.06)',
           }
 
     const theme: PrismTheme = {
         plain: { color: colors.plain, backgroundColor: 'transparent' },
         styles: [
-            { types: ['comment', 'prolog', 'doctype', 'cdata'], style: { color: tint(ramp(42), s * 0.35), fontStyle: 'italic' } },
-            { types: ['punctuation'], style: { color: tint(ramp(62), s * 0.3) } },
-            { types: ['operator', 'combinator'], style: { color: tint(ramp(70), s * 0.4) } },
+            { types: ['comment', 'prolog', 'doctype', 'cdata'], style: { color: dark ? '#71717a' : '#a1a1aa', fontStyle: 'italic' } },
+            { types: ['punctuation'], style: { color: colors.plain } },
+            { types: ['operator', 'combinator'], style: { color: colors.plain } },
             { types: ['keyword', 'selector', 'atrule', 'important', 'tag'], style: { color: accentTone } },
-            { types: ['string', 'char', 'inserted', 'url'], style: { color: tint(ramp(76)) } },
-            { types: ['function'], style: { color: tint(ramp(88), s * 0.5) } },
-            { types: ['attr-name'], style: { color: tint(ramp(78), s * 0.7), fontStyle: 'italic' } },
-            { types: ['number', 'boolean', 'constant', 'symbol', 'deleted'], style: { color: tint(ramp(70)) } },
-            { types: ['class-name', 'maybe-class-name', 'builtin'], style: { color: tint(ramp(93), s * 0.35) } },
-            { types: ['property', 'variable', 'parameter'], style: { color: tint(ramp(97), s * 0.15) } },
-            { types: ['regex'], style: { color: tint(ramp(72), s * 0.6) } },
+            { types: ['string', 'char', 'inserted', 'url', 'attr-value'], style: { color: accentTone } },
+            { types: ['function'], style: { color: colors.plain } },
+            { types: ['attr-name'], style: { color: accentTone } },
+            { types: ['number', 'boolean', 'constant', 'symbol', 'deleted'], style: { color: accentTone } },
+            { types: ['class-name', 'maybe-class-name', 'builtin'], style: { color: colors.plain } },
+            { types: ['property', 'variable', 'parameter', 'assign-left', 'environment'], style: { color: colors.plain } },
+            { types: ['regex'], style: { color: accentTone } },
         ],
     }
 
@@ -225,11 +177,11 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
             whileTap={reduceMotion ? undefined : { scale: 0.9 }}
             transition={TAP_SPRING}
             className={cn(
-                'relative grid size-7 place-items-center rounded-lg text-(--cb-gutter) outline-none transition-[background-color,color] duration-150 ease-out hover:bg-(--cb-hover-wash) hover:text-(--cb-plain) focus-visible:ring-2 focus-visible:ring-(--cb-accent)/60',
+                'relative grid size-8 place-items-center rounded-xl text-zinc-400 outline-none transition-[background-color,color] duration-150 ease-out hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-(--cb-accent)/60 cursor-pointer',
                 copied &&
-                    'bg-(--cb-accent)/12 text-(--cb-accent) hover:bg-(--cb-accent)/12 hover:text-(--cb-accent)',
+                    'bg-(--cb-accent)/15 text-(--cb-accent) hover:bg-(--cb-accent)/20 hover:text-(--cb-accent)',
                 floating &&
-                    'absolute top-2.5 right-2.5 z-10 border border-(--cb-border) bg-(--cb-float-bg) backdrop-blur-md',
+                    'absolute top-4 right-4 z-10 size-8.5 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] backdrop-blur-md shadow-sm',
             )}
         >
             <AnimatePresence initial={false}>
@@ -276,11 +228,11 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
 export function CodeBlock({
     code,
     language = 'tsx',
-    accent = '#F75001',
+    accent = '#ff6a00',
     mode = 'auto',
     filename,
     showFrame = true,
-    showHeader = true,
+    showHeader = false,
     showLineNumbers = true,
     showCopyButton = true,
     highlightLines,
@@ -330,7 +282,7 @@ export function CodeBlock({
             {showFrame && showHeader && (
                 <div
                     data-slot='code-block-header'
-                    className='flex h-10 shrink-0 items-center gap-3 border-b border-(--cb-border) bg-(--cb-header-bg) px-3.5 backdrop-blur-md'
+                    className='flex h-10 shrink-0 items-center gap-3 border-b border-(--cb-border) bg-(--cb-header-bg) px-4 backdrop-blur-md'
                 >
                     <span className='min-w-0 flex-1 truncate font-mono text-xs text-(--cb-muted)'>
                         {filename ?? safeLanguage}
@@ -348,7 +300,7 @@ export function CodeBlock({
                 tabIndex={0}
                 className={cn(
                     'min-h-0 flex-1 overflow-auto outline-none selection:bg-(--cb-selection) focus-visible:ring-2 focus-visible:ring-(--cb-accent)/40 [scrollbar-width:thin] [scrollbar-color:var(--cb-border)_transparent]',
-                    showFrame && 'py-3',
+                    showFrame && 'py-5 px-4 sm:px-6',
                 )}
             >
                 <Highlight code={trimmed} language={safeLanguage} theme={theme}>
