@@ -1702,8 +1702,18 @@ const handleConfirmDeleteNiche = async () => {
   </div>
 
   {/* Right Search Input & Profile Badge (Spotlight Alive Command Bar en Desktop) */}
-  <div className="hidden md:flex items-center gap-2 sm:gap-2.5 shrink-0 min-w-0">
-    <div className="relative z-50 group/search" ref={searchDropdownRef}>
+  <div className="hidden md:flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0 min-w-0">
+    {/* Botón Ver Tienda completamente restaurado a la izquierda de la barra de búsqueda */}
+    <Link 
+      href="/" 
+      className="hidden md:flex items-center gap-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-white/10 transition-colors shrink-0"
+      title="Ir a la tienda Lumina"
+    >
+      <span>Ver Tienda</span>
+      <span aria-hidden="true">&rarr;</span>
+    </Link>
+
+    <div className="relative z-50 group/search mr-1 sm:mr-2" ref={searchDropdownRef}>
       <div 
         className={`relative flex items-center gap-2 pl-3 pr-2 h-9 sm:h-9.5 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
           isSearchFocused
@@ -1774,11 +1784,7 @@ const handleConfirmDeleteNiche = async () => {
       {isSearchFocused && renderSpotlightDropdown(false)}
     </div>
 
-    <Link href="/" className="hidden 2xl:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors shrink-0">
-      Ver Tienda &rarr;
-    </Link>
-
-    <div className="flex items-center gap-2 pl-2 border-l border-gray-200 dark:border-white/10 shrink-0 min-w-0">
+    <div className="flex items-center gap-2 pl-2.5 sm:pl-3 border-l border-gray-200 dark:border-white/10 shrink-0 min-w-0">
       <BlobatarAvatar
         name={customSeed || user.id || user.email || user.name}
         size={34}
