@@ -1,9 +1,9 @@
 'use client'
 
 import { Copy } from 'lucide-react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Highlight, type PrismTheme } from 'prism-react-renderer'
-import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -17,95 +17,45 @@ export type CodeBlockProps = Omit<React.ComponentProps<'div'>, 'children'> & {
     code: string
     /** Prism language id, e.g. "tsx", "css", "json", "bash". */
     language?: string
-    /** Any hex color. The whole theme is built from shades of it. */
+    /** Any hex color. Defaults to rareUI vibrant orange #ff6a00. */
     accent?: string
-    /** "auto" follows the page theme; pass "dark" or "light" to pin it. */
+    /** "auto" follows the page theme; pass "dark" or "light" to pin it. Defaults to dark for developer terminal aesthetic. */
     mode?: 'auto' | 'dark' | 'light'
     /** Filename or path shown in the header. Falls back to the language id when omitted. */
     filename?: string
-    /** Show the outer frame — background, border, rounded corners, and header. Turn off to render just the code. */
+    /** Show the outer frame — background, border, rounded corners, and header. */
     showFrame?: boolean
-    /** Show the header bar. Ignored when the frame is off. */
+    /** Show the header bar. */
     showHeader?: boolean
     /** Show the line-number gutter. */
     showLineNumbers?: boolean
     /** Show the copy-to-clipboard button. */
     showCopyButton?: boolean
-    /** Optional 1-based line numbers to highlight with an accent wash. Off when omitted. */
+    /** Optional 1-based line numbers to highlight with an accent wash. */
     highlightLines?: number[]
 }
-function resolvePageMode(): 'dark' | 'light' {
-    const root = document.documentElement
-    if (root.classList.contains('dark')) return 'dark'
-    if (root.classList.contains('light')) return 'light'
-    const attr = root.getAttribute('data-theme')
-    if (attr === 'dark') return 'dark'
-    if (attr === 'light') return 'light'
-    // jsdom has no matchMedia
-    if (typeof window.matchMedia !== 'function') return 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
 
-function subscribeToPageMode(onChange: () => void) {
-    const observer = new MutationObserver(onChange)
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class', 'data-theme'],
-    })
-    const media =
-        typeof window.matchMedia === 'function'
-            ? window.matchMedia('(prefers-color-scheme: dark)')
-            : null
-    // old Safari doesn't have addEventListener here
-    media?.addEventListener?.('change', onChange)
-    return () => {
-        observer.disconnect()
-        media?.removeEventListener?.('change', onChange)
+function buildTheme(accent: string) {
+    const accentTone = accent || '#ff6a00'
+
+    const colors = {
+        accent: accentTone,
+        bg: '#0e0e11',
+        border: 'rgba(255, 255, 255, 0.1)',
+        headerBg: 'rgba(255, 255, 255, 0.04)',
+        plain: '#ffffff',
+        muted: 'rgba(255, 255, 255, 0.6)',
+        gutter: '#52525b',
+        hoverWash: 'rgba(255, 255, 255, 0.1)',
+        floatBg: 'rgba(255, 255, 255, 0.06)',
+        selection: 'rgba(255, 106, 0, 0.3)',
+        lineWash: 'rgba(255, 106, 0, 0.12)',
     }
-}
-
-// the server can't know the theme, so assume dark
-const serverMode = () => 'dark' as const
-
-
-function buildTheme(accent: string, mode: 'dark' | 'light' = 'dark') {
-    const dark = mode !== 'light'
-    // Use the provided accent directly (e.g. vibrant orange #ff6a00 / #ff7011) to match Rare UI capture
-    const accentTone = accent || (dark ? '#ff6a00' : '#ea580c')
-
-    const colors = dark
-        ? {
-              accent: accentTone,
-              // Deep dark matte chrome matching Rare UI preview surface (#0e0e11)
-              bg: '#0e0e11',
-              border: 'rgba(255, 255, 255, 0.08)',
-              headerBg: 'rgba(255, 255, 255, 0.03)',
-              plain: '#ffffff',
-              muted: 'rgba(255, 255, 255, 0.6)',
-              gutter: '#52525b',
-              hoverWash: 'rgba(255, 255, 255, 0.08)',
-              floatBg: 'rgba(255, 255, 255, 0.04)',
-              selection: 'rgba(255, 112, 17, 0.28)',
-              lineWash: 'rgba(255, 112, 17, 0.1)',
-          }
-        : {
-              accent: accentTone,
-              bg: '#ffffff',
-              border: 'rgba(0, 0, 0, 0.08)',
-              headerBg: 'rgba(0, 0, 0, 0.03)',
-              plain: '#171717',
-              muted: 'rgba(0, 0, 0, 0.6)',
-              gutter: '#a1a1aa',
-              hoverWash: 'rgba(0, 0, 0, 0.06)',
-              floatBg: 'rgba(0, 0, 0, 0.04)',
-              selection: 'rgba(255, 112, 17, 0.2)',
-              lineWash: 'rgba(255, 112, 17, 0.06)',
-          }
 
     const theme: PrismTheme = {
         plain: { color: colors.plain, backgroundColor: 'transparent' },
         styles: [
-            { types: ['comment', 'prolog', 'doctype', 'cdata'], style: { color: dark ? '#71717a' : '#a1a1aa', fontStyle: 'italic' } },
+            { types: ['comment', 'prolog', 'doctype', 'cdata'], style: { color: '#71717a', fontStyle: 'italic' } },
             { types: ['punctuation'], style: { color: colors.plain } },
             { types: ['operator', 'combinator'], style: { color: colors.plain } },
             { types: ['keyword', 'selector', 'atrule', 'important', 'tag'], style: { color: accentTone } },
@@ -137,7 +87,6 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(code)
             } else {
-                // Fallback for non-secure contexts where the Clipboard API is unavailable.
                 const area = document.createElement('textarea')
                 area.value = code
                 area.style.position = 'fixed'
@@ -172,16 +121,14 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
         <motion.button
             type='button'
             data-slot='code-block-copy'
-            aria-label={copied ? 'Copied' : 'Copy code'}
+            aria-label={copied ? 'Copiado' : 'Copiar código'}
             onClick={copy}
             whileTap={reduceMotion ? undefined : { scale: 0.9 }}
             transition={TAP_SPRING}
             className={cn(
-                'relative grid size-8 place-items-center rounded-xl text-zinc-400 outline-none transition-[background-color,color] duration-150 ease-out hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-(--cb-accent)/60 cursor-pointer',
-                copied &&
-                    'bg-(--cb-accent)/15 text-(--cb-accent) hover:bg-(--cb-accent)/20 hover:text-(--cb-accent)',
-                floating &&
-                    'absolute top-4 right-4 z-10 size-8.5 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] backdrop-blur-md shadow-sm',
+                'relative grid size-8 place-items-center rounded-xl text-zinc-400 outline-none transition-all duration-150 ease-out hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-amber-500/60 cursor-pointer',
+                copied && 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/25 hover:text-amber-300',
+                floating && 'absolute top-3.5 right-3.5 z-20 border border-white/10 bg-[#18181c]/80 backdrop-blur-md shadow-md hover:border-white/20',
             )}
         >
             <AnimatePresence initial={false}>
@@ -199,7 +146,7 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
                             strokeWidth={2.5}
                             strokeLinecap='round'
                             strokeLinejoin='round'
-                            className='size-3.5'
+                            className='size-3.5 text-amber-400'
                             aria-hidden
                         >
                             <motion.path
@@ -227,9 +174,8 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
 
 export function CodeBlock({
     code,
-    language = 'tsx',
+    language = 'bash',
     accent = '#ff6a00',
-    mode = 'auto',
     filename,
     showFrame = true,
     showHeader = false,
@@ -240,11 +186,8 @@ export function CodeBlock({
     style,
     ...props
 }: CodeBlockProps) {
-    // don't crash on bad props
-    const safeLanguage = typeof language === 'string' ? language : 'tsx'
-    const pageMode = useSyncExternalStore(subscribeToPageMode, resolvePageMode, serverMode)
-    const safeMode = mode === 'light' || mode === 'dark' ? mode : pageMode
-    const { colors, theme } = useMemo(() => buildTheme(accent, safeMode), [accent, safeMode])
+    const safeLanguage = typeof language === 'string' ? language : 'bash'
+    const { colors, theme } = useMemo(() => buildTheme(accent), [accent])
     const trimmed = useMemo(() => {
         const source = typeof code === 'string' ? code : String(code ?? '')
         return source.replace(/^\n+/, '').trimEnd()
@@ -254,37 +197,22 @@ export function CodeBlock({
         [highlightLines],
     )
 
-    const cssVars = {
-        '--cb-accent': colors.accent,
-        '--cb-bg': colors.bg,
-        '--cb-border': colors.border,
-        '--cb-header-bg': colors.headerBg,
-        '--cb-plain': colors.plain,
-        '--cb-muted': colors.muted,
-        '--cb-gutter': colors.gutter,
-        '--cb-hover-wash': colors.hoverWash,
-        '--cb-float-bg': colors.floatBg,
-        '--cb-selection': colors.selection,
-        '--cb-line-wash': colors.lineWash,
-    } as React.CSSProperties
-
     return (
         <div
             data-slot='code-block'
             className={cn(
-                'group relative flex flex-col overflow-hidden text-left',
-                showFrame && 'rounded-2xl border border-(--cb-border) bg-(--cb-bg)',
+                'group relative flex flex-col overflow-hidden text-left rounded-2xl sm:rounded-3xl border border-white/10 bg-[#0e0e11] text-white shadow-2xl',
                 className,
             )}
-            style={{ ...cssVars, ...style }}
+            style={{ backgroundColor: colors.bg, ...style }}
             {...props}
         >
             {showFrame && showHeader && (
                 <div
                     data-slot='code-block-header'
-                    className='flex h-10 shrink-0 items-center gap-3 border-b border-(--cb-border) bg-(--cb-header-bg) px-4 backdrop-blur-md'
+                    className='flex h-10 shrink-0 items-center gap-3 border-b border-white/10 bg-white/[0.03] px-4 backdrop-blur-md'
                 >
-                    <span className='min-w-0 flex-1 truncate font-mono text-xs text-(--cb-muted)'>
+                    <span className='min-w-0 flex-1 truncate font-mono text-xs text-zinc-400'>
                         {filename ?? safeLanguage}
                     </span>
                     {showCopyButton && <CopyButton code={trimmed} />}
@@ -298,10 +226,7 @@ export function CodeBlock({
                 role='region'
                 aria-label={filename ?? `${safeLanguage} code`}
                 tabIndex={0}
-                className={cn(
-                    'min-h-0 flex-1 overflow-auto outline-none selection:bg-(--cb-selection) focus-visible:ring-2 focus-visible:ring-(--cb-accent)/40 [scrollbar-width:thin] [scrollbar-color:var(--cb-border)_transparent]',
-                    showFrame && 'py-5 px-4 sm:px-6',
-                )}
+                className='min-h-0 max-h-[380px] sm:max-h-[460px] flex-1 overflow-auto outline-none py-5 px-4 sm:px-6 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent'
             >
                 <Highlight code={trimmed} language={safeLanguage} theme={theme}>
                     {({ tokens, getLineProps, getTokenProps }) => {
@@ -309,7 +234,8 @@ export function CodeBlock({
                         return (
                             <pre
                                 data-slot='code-block-pre'
-                                className='w-max min-w-full font-mono text-[13px] leading-6 [tab-size:4]'
+                                className='w-max min-w-full font-mono text-[13px] leading-6'
+                                style={{ tabSize: 4 }}
                             >
                                 {tokens.map((line, i) => {
                                     const lineProps = getLineProps({ line })
@@ -319,21 +245,20 @@ export function CodeBlock({
                                             {...lineProps}
                                             className={cn(
                                                 'relative flex min-w-full',
-                                                showFrame && 'px-3.5',
-                                                highlighted.has(i + 1) && 'bg-(--cb-line-wash)',
+                                                highlighted.has(i + 1) && 'bg-amber-500/10',
                                                 lineProps.className,
                                             )}
                                         >
                                             {showLineNumbers && (
                                                 <span
                                                     aria-hidden
-                                                    className='mr-4 shrink-0 text-right text-(--cb-gutter) select-none'
+                                                    className='mr-5 shrink-0 text-right text-zinc-500 select-none font-mono text-[13px]'
                                                     style={{ width: gutterWidth }}
                                                 >
                                                     {i + 1}
                                                 </span>
                                             )}
-                                            <span className='pr-3.5'>
+                                            <span className='pr-4'>
                                                 {line.map((token, key) => (
                                                     <span key={key} {...getTokenProps({ token })} />
                                                 ))}

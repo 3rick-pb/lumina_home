@@ -753,12 +753,144 @@ export function IntegrationsTab() {
         </div>
 
         {/* ==================================================================== */}
-        {/* PANEL MAESTRO: CODE BLOCK RARE-UI CON HIGHLIGHTING Y LINE NUMBERS    */}
+        {/* SELECTOR COMBOBOX APPLE LIQUID GLASS CON EFECTO REBOTE (WWDC25)      */}
+        {/* ==================================================================== */}
+        <div className="pt-1 pb-1">
+          <div ref={comboboxRef} className="relative z-30 w-full sm:max-w-md">
+            <label className="text-[11px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase block mb-2 px-1">
+              Módulo o Sección para Configurar:
+            </label>
+
+            {/* Botón Trigger Cápsula de Cristal Líquido (Apple Liquid Glass) */}
+            <motion.button
+              type="button"
+              onClick={() => setIsComboboxOpen((prev) => !prev)}
+              whileTap={{ scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 500, damping: 25 }}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-white/70 dark:bg-[#202024]/70 hover:bg-white/85 dark:hover:bg-[#28282c]/85 backdrop-blur-3xl backdrop-saturate-[200%] border border-white/60 dark:border-white/15 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.06),inset_0_1.5px_1px_rgba(255,255,255,0.85),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_32px_-5px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.22),inset_0_-1px_1px_rgba(0,0,0,0.4)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
+              aria-expanded={isComboboxOpen}
+              aria-haspopup="listbox"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 border border-amber-500/35 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]">
+                  <SelectedIcon className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="truncate leading-tight font-bold text-zinc-900 dark:text-white text-xs sm:text-sm">
+                    {selectedCategory.label}
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-normal leading-tight mt-0.5 truncate">
+                    {selectedCategory.desc}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedCategory.id !== "all" && (
+                  selectedCategory.ready ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" title="Configurado" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-amber-400 ring-4 ring-amber-400/20" title="Pendiente" />
+                  )
+                )}
+                <motion.div
+                  animate={{ rotate: isComboboxOpen ? 180 : 0 }}
+                  transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                  className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-300" />
+                </motion.div>
+              </div>
+            </motion.button>
+
+            {/* Menú Desplegable Liquid Glass Apple con Efecto Rebote Físico (Spring Bounce) */}
+            <AnimatePresence>
+              {isComboboxOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.82, y: -16 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.88, y: -10, transition: { duration: 0.14, ease: "easeOut" } }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 440,
+                    damping: 18,
+                    mass: 0.7,
+                  }}
+                  style={{ transformOrigin: "top left" }}
+                  className="absolute left-0 right-0 top-full mt-2.5 rounded-[1.75rem] bg-white/75 dark:bg-[#161618]/80 backdrop-blur-3xl backdrop-saturate-[210%] border border-white/60 dark:border-white/15 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.25),inset_0_1.5px_1px_0_rgba(255,255,255,0.85),inset_0_-1px_1px_0_rgba(0,0,0,0.06)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7),inset_0_1.5px_1px_0_rgba(255,255,255,0.22),inset_0_-1px_1px_0_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
+                  role="listbox"
+                >
+                  <div className="space-y-1 max-h-[340px] overflow-y-auto scrollbar-thin">
+                    {navCategories.map((cat) => {
+                      const Icon = cat.icon;
+                      const isSelected = activeSection === cat.id;
+
+                      return (
+                        <motion.button
+                          key={cat.id}
+                          type="button"
+                          whileHover={{ scale: 1.015, x: 3 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                          onClick={() => {
+                            setActiveSection(cat.id);
+                            setIsComboboxOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-amber-500/20 text-zinc-950 dark:text-amber-100 font-semibold border border-amber-500/35 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
+                              : "text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10"
+                          }`}
+                          role="option"
+                          aria-selected={isSelected}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                              isSelected 
+                                ? "bg-amber-500 text-stone-950 border-amber-400 font-bold shadow-xs" 
+                                : "bg-white/70 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-400 border-white/30 dark:border-white/10"
+                            }`}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="truncate leading-tight font-medium">{cat.label}</span>
+                              <span className="text-[10.5px] text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5 truncate">
+                                {cat.desc}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {cat.id !== "all" && (
+                              <span className={`w-1.5 h-1.5 rounded-full ${cat.ready ? "bg-emerald-500" : "bg-amber-400"}`} />
+                            )}
+                            {isSelected && (
+                              <motion.span
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                              >
+                                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
+                              </motion.span>
+                            )}
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* PANEL MAESTRO: CODE BLOCK RARE-UI CON FONDO SÓLIDO OSCURO           */}
         {/* ==================================================================== */}
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-emerald-500" />
+              <Terminal className="w-4 h-4 text-amber-500" />
               <span className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
                 Variables de Entorno Generadas en Vivo (.env)
               </span>
@@ -793,7 +925,6 @@ export function IntegrationsTab() {
                   code={computedMasterEnv}
                   language="bash"
                   accent="#ff6a00"
-                  mode="dark"
                   showLineNumbers={true}
                   showCopyButton={true}
                   showHeader={false}
@@ -802,137 +933,6 @@ export function IntegrationsTab() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        {/* ==================================================================== */}
-        {/* SELECTOR COMBOBOX APPLE LIQUID GLASS CON EFECTO REBOTE               */}
-        {/* ==================================================================== */}
-        <div className="pt-2">
-          <div ref={comboboxRef} className="relative z-30 w-full sm:max-w-md">
-            <label className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase block mb-1.5 px-0.5">
-              Módulo o Sección para Configurar:
-            </label>
-
-            {/* Botón Trigger Cápsula con Liquid Glass de Apple */}
-            <motion.button
-              type="button"
-              onClick={() => setIsComboboxOpen((prev) => !prev)}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 450, damping: 25 }}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-white/70 dark:bg-[#1f1f23]/70 hover:bg-white/85 dark:hover:bg-[#27272b]/80 backdrop-blur-3xl backdrop-saturate-[180%] border border-white/40 dark:border-white/15 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.06),inset_0_1px_1.5px_rgba(255,255,255,0.7),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_32px_-5px_rgba(0,0,0,0.5),inset_0_1px_1.5px_rgba(255,255,255,0.18),inset_0_-1px_1px_rgba(0,0,0,0.3)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
-              aria-expanded={isComboboxOpen}
-              aria-haspopup="listbox"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]">
-                  <SelectedIcon className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col text-left min-w-0">
-                  <span className="truncate leading-tight font-bold text-zinc-900 dark:text-white text-xs sm:text-sm">
-                    {selectedCategory.label}
-                  </span>
-                  <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-normal leading-tight mt-0.5 truncate">
-                    {selectedCategory.desc}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {selectedCategory.id !== "all" && (
-                  selectedCategory.ready ? (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" title="Configurado" />
-                  ) : (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 ring-4 ring-amber-400/20" title="Pendiente" />
-                  )
-                )}
-                <motion.div
-                  animate={{ rotate: isComboboxOpen ? 180 : 0 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors"
-                >
-                  <ChevronDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-300" />
-                </motion.div>
-              </div>
-            </motion.button>
-
-            {/* Menú Desplegable Liquid Glass Apple con Efecto Rebote (Spring Bounce) */}
-            <AnimatePresence>
-              {isComboboxOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.88, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: -6, transition: { duration: 0.16, ease: "easeOut" } }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 380,
-                    damping: 20,
-                    mass: 0.8,
-                  }}
-                  className="absolute left-0 right-0 top-full mt-2.5 rounded-[1.6rem] bg-white/75 dark:bg-[#161618]/80 backdrop-blur-3xl backdrop-saturate-[190%] border border-white/40 dark:border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25),inset_0_1px_1.5px_0_rgba(255,255,255,0.7),inset_0_-1px_1px_0_rgba(0,0,0,0.08)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7),inset_0_1px_1.5px_0_rgba(255,255,255,0.2),inset_0_-1px_1px_0_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
-                  role="listbox"
-                >
-                  <div className="space-y-1 max-h-[340px] overflow-y-auto scrollbar-thin">
-                    {navCategories.map((cat) => {
-                      const Icon = cat.icon;
-                      const isSelected = activeSection === cat.id;
-
-                      return (
-                        <motion.button
-                          key={cat.id}
-                          type="button"
-                          whileHover={{ scale: 1.015, x: 2 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{ type: "spring", stiffness: 450, damping: 26 }}
-                          onClick={() => {
-                            setActiveSection(cat.id);
-                            setIsComboboxOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${
-                            isSelected
-                              ? "bg-amber-500/20 text-zinc-950 dark:text-amber-100 font-semibold border border-amber-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)]"
-                              : "text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10"
-                          }`}
-                          role="option"
-                          aria-selected={isSelected}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
-                              isSelected 
-                                ? "bg-amber-500 text-stone-950 border-amber-400 font-bold shadow-xs" 
-                                : "bg-white/60 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 border-white/20 dark:border-white/10"
-                            }`}>
-                              <Icon className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="truncate leading-tight font-medium">{cat.label}</span>
-                              <span className="text-[10.5px] text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5 truncate">
-                                {cat.desc}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            {cat.id !== "all" && (
-                              <span className={`w-1.5 h-1.5 rounded-full ${cat.ready ? "bg-emerald-500" : "bg-amber-400"}`} />
-                            )}
-                            {isSelected && (
-                              <motion.span
-                                initial={{ scale: 0.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                              >
-                                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
-                              </motion.span>
-                            )}
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
 
         {/* ==================================================================== */}
