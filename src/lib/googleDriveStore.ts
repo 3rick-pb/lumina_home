@@ -53,6 +53,7 @@ interface GoogleDriveState {
   isSyncing: boolean;
   error: string | null;
   clearError: () => void;
+  clearData: () => void;
   activeView: GoogleDriveActiveTab;
   setActiveView: (view: GoogleDriveActiveTab) => void;
   loadSettings: () => Promise<void>;
@@ -121,6 +122,16 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
+  clearData: () => {
+    set({
+      settings: DEFAULT_DRIVE_SETTINGS,
+      isLoading: false,
+      isSyncing: false,
+      error: null,
+      activeView: 'files',
+    });
+  },
+
   loadSettings: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -182,8 +193,12 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
             accountEmail: isDemo ? "" : (rawSettings.accountEmail || get().settings.accountEmail || ""),
             accountName: isDemo ? "" : (rawSettings.accountName || get().settings.accountName || ""),
             connectedAt: isDemo ? undefined : (rawSettings.connectedAt || get().settings.connectedAt),
-            availableFolders: cleanFolders.length > 0 ? cleanFolders : get().settings.availableFolders,
-            files: cleanFiles.length > 0 ? cleanFiles : get().settings.files,
+            availableFolders: finalIsConnected
+              ? (cleanFolders.length > 0 ? cleanFolders : get().settings.availableFolders)
+              : INITIAL_DRIVE_FOLDERS,
+            files: finalIsConnected
+              ? (cleanFiles.length > 0 ? cleanFiles : get().settings.files)
+              : [],
           };
           set({ settings: loadedSettings, isLoading: false });
           return;
@@ -545,12 +560,16 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       } catch {}
 
       const updated: GoogleDriveSettings = {
-        ...get().settings,
+        ...DEFAULT_DRIVE_SETTINGS,
         isConnected: false,
         accountEmail: "",
         accountName: "",
         providerToken: undefined,
         connectedAt: undefined,
+        availableFolders: INITIAL_DRIVE_FOLDERS,
+        files: [],
+        selectedFolderId: "root",
+        selectedFolderName: "Mi Unidad",
       };
 
       try {

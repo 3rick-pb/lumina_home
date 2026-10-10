@@ -178,32 +178,39 @@ export function OverviewTab({
       }
     };
 
+    const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+
     const handleWheel = (e: WheelEvent) => {
-      // ALWAYS block general page vertical scroll while cursor is inside Inventario por Nicho
-      e.preventDefault();
-      e.stopPropagation();
+      // Only handle wheel if fine pointer (mouse/trackpad); never hijack or block on touch screens
+      if (!isFinePointer) return;
 
-      const lenis = getLenis();
-      if (lenis) {
-        lenis.stop();
-      }
-
-      const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
-      targetScrollLeft = Math.max(0, Math.min(maxScroll, (smoothRafId ? targetScrollLeft : el.scrollLeft) + delta * 0.85));
+      if (maxScroll <= 0) return;
 
-      if (!smoothRafId) {
-        smoothRafId = requestAnimationFrame(smoothScrollTick);
+      const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+      const delta = isHorizontalScroll ? e.deltaX : e.deltaY;
+
+      // Only prevent vertical scroll if user has horizontal trackpad intent or if we can scroll
+      const canScrollLeft = el.scrollLeft > 0 && delta < 0;
+      const canScrollRight = el.scrollLeft < maxScroll && delta > 0;
+
+      if (canScrollLeft || canScrollRight) {
+        e.preventDefault();
+        targetScrollLeft = Math.max(0, Math.min(maxScroll, (smoothRafId ? targetScrollLeft : el.scrollLeft) + delta * 0.85));
+
+        if (!smoothRafId) {
+          smoothRafId = requestAnimationFrame(smoothScrollTick);
+        }
       }
     };
 
-    // Horizontal mouse drag-to-scroll
+    // Horizontal mouse drag-to-scroll (only for desktop mouse)
     let isMouseDown = false;
     let startX = 0;
     let startScrollLeft = 0;
 
     const handleMouseDown = (e: MouseEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || !isFinePointer) return;
       isMouseDown = true;
       startX = e.clientX;
       startScrollLeft = el.scrollLeft;
@@ -229,26 +236,18 @@ export function OverviewTab({
     };
 
     const targetWheelEl = cardEl || el;
-    const onEnter = () => { getLenis()?.stop(); };
-    const onLeave = () => { getLenis()?.start(); };
 
     targetWheelEl.addEventListener("wheel", handleWheel, { passive: false });
-    targetWheelEl.addEventListener("mouseenter", onEnter);
-    targetWheelEl.addEventListener("mouseleave", onLeave);
     el.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
       targetWheelEl.removeEventListener("wheel", handleWheel);
-      targetWheelEl.removeEventListener("mouseenter", onEnter);
-      targetWheelEl.removeEventListener("mouseleave", onLeave);
       el.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
       if (smoothRafId) cancelAnimationFrame(smoothRafId);
-      // Ensure Lenis resumes when unmounted
-      getLenis()?.start();
     };
   }, []);
 
@@ -290,7 +289,7 @@ export function OverviewTab({
   };
 
   const handleNicheContainerMouseEnter = () => {
-    getLenis()?.stop();
+    // Intentionally no-op: page vertical scrolling remains fluid on both touch and pointer devices
   };
 
   const handleNicheContainerLeave = () => {
@@ -298,7 +297,6 @@ export function OverviewTab({
     if (monthHoverTimeoutRef.current) clearTimeout(monthHoverTimeoutRef.current);
     setHoveredNicheIdx(null);
     setHoveredMonthIdx(null);
-    getLenis()?.start();
   };
 
   const handleMonthMouseEnter = (idx: number, e: React.MouseEvent<HTMLDivElement>) => {
@@ -484,7 +482,7 @@ export function OverviewTab({
         </div>
 
         {/* Visual Dynamic Bar Chart */}
-        <div ref={chartStageRef} data-lenis-prevent="true" className="relative w-full my-auto">
+        <div ref={chartStageRef} className="relative w-full my-auto">
           {/* Horizontal MacOS jelly scrollbar for niche inventory bars */}
           <MacOSScrollbar
             containerRef={nicheChartRef}
@@ -497,8 +495,7 @@ export function OverviewTab({
 
           <div 
             ref={nicheChartRef}
-            data-lenis-prevent="true"
-            className={`flex items-end h-44 pt-8 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`flex items-end h-44 pt-8 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-y [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -507,8 +504,8 @@ export function OverviewTab({
             }`}
             style={{
               overscrollBehaviorX: "contain",
-              overscrollBehaviorY: "contain",
-              touchAction: "pan-x",
+              overscrollBehaviorY: "auto",
+              touchAction: "pan-y",
             }}
           >
             {isAdmin ? (

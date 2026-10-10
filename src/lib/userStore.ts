@@ -1395,6 +1395,12 @@ export const useUserStore = create<UserState>((set, get) => ({
       useCartStore.getState().initCartForUser(null).catch(() => {});
     } catch {}
 
+    // Clear Google Drive store folders and files to avoid persistence across accounts
+    try {
+      const { useGoogleDriveStore } = await import('./googleDriveStore');
+      useGoogleDriveStore.getState().clearData();
+    } catch {}
+
     // Formal Supabase sign out with a 1200ms race guard to guarantee network latency never hangs logout
     try {
       await Promise.race([

@@ -65,6 +65,13 @@ export default function RootLayout({
         <link rel="icon" type="image/png" href="/icon.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icon.svg" />
+        {/* Detector síncrono de temporalidad del dispositivo del cliente (0ms, previene flash de noche) */}
+        <script
+          id="lumina-hero-phase-detector"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=new Date();var h=d.getHours()+d.getMinutes()/60;var p="noche";if(h>=6&&h<9.5)p="amanecer";else if(h>=9.5&&h<16.5)p="mediodia";else if(h>=16.5&&h<19.5)p="atardecer";else if(h>=19.5&&h<21)p="crepusculo";document.cookie="lumina_client_phase="+p+";path=/;max-age=31536000;SameSite=Lax";window.__LUMINA_INITIAL_PHASE__=p;document.documentElement.setAttribute('data-hero-phase',p);}catch(e){}})();`
+          }}
+        />
       </head>
       <body
         style={{

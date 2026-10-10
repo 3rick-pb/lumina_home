@@ -95,8 +95,14 @@ const STORAGE_KEY = "lumina_hero_phase_override";
 
 export function useHeroTimePhase() {
   const [autoPhaseId, setAutoPhaseId] = useState<HeroPhaseId>(() => {
+    if (typeof window !== "undefined") {
+      const globalPhase = (window as unknown as { __LUMINA_INITIAL_PHASE__?: HeroPhaseId }).__LUMINA_INITIAL_PHASE__;
+      if (globalPhase && HERO_PHASES[globalPhase]) return globalPhase;
+      return getPhaseForTime(new Date());
+    }
     return getPhaseForTime(new Date());
   });
+
   const [formattedTime, setFormattedTime] = useState<string>(() => {
     return formatClockTime(new Date());
   });
@@ -105,26 +111,45 @@ export function useHeroTimePhase() {
   // Sync with client clock automatically
   useEffect(() => {
     setIsMounted(true);
-    const now = new Date();
-    setAutoPhaseId(getPhaseForTime(now));
-    setFormattedTime(formatClockTime(now));
+
+    const syncTime = () => {
+      const now = new Date();
+      const currentCalculatedPhase = getPhaseForTime(now);
+      setAutoPhaseId(currentCalculatedPhase);
+      setFormattedTime(formatClockTime(now));
+
+      if (typeof window !== "undefined") {
+        (window as unknown as { __LUMINA_INITIAL_PHASE__?: HeroPhaseId }).__LUMINA_INITIAL_PHASE__ = currentCalculatedPhase;
+        try {
+          document.cookie = `lumina_client_phase=${currentCalculatedPhase}; path=/; max-age=31536000; SameSite=Lax`;
+          document.documentElement.setAttribute("data-hero-phase", currentCalculatedPhase);
+        } catch {}
+      }
+    };
+
+    // Run sync immediately on mount
+    syncTime();
 
     // Clear any legacy manual test override from session storage
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {}
 
-    // Zero background polling loop: evaluate local device time once on mount
-    // and re-sync automatically when user returns to the tab (visibilitychange)
+    // Polling interval every 30 seconds: enables automatic smooth transition when crossing time boundaries (e.g. 9:30 AM)
+    const interval = setInterval(syncTime, 30000);
+
+    // Also re-sync immediately when user returns to tab
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        const cur = new Date();
-        setAutoPhaseId(getPhaseForTime(cur));
-        setFormattedTime(formatClockTime(cur));
+        syncTime();
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   const activePhaseId: HeroPhaseId = autoPhaseId;

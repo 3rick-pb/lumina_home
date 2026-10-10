@@ -24,19 +24,13 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
     });
   }, [activePhaseId]);
 
-  // Non-blocking idle preloader: defer loading other phases until after initial interaction & idle state
+  // Non-blocking background preloader: cache all other phases after initial paint
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const timer = setTimeout(() => {
-      if ("requestIdleCallback" in window) {
-        (window as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(() => {
-          setLoadedPhases(new Set(HERO_PHASE_ORDER));
-        });
-      } else {
-        setLoadedPhases(new Set(HERO_PHASE_ORDER));
-      }
-    }, 2500);
+      setLoadedPhases(new Set(HERO_PHASE_ORDER));
+    }, 800);
 
     return () => clearTimeout(timer);
   }, []);

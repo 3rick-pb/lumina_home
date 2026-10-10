@@ -239,6 +239,30 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [activeArcFolderId, setActiveArcFolderId] = useState<string>(settings.selectedFolderId || "root");
   const debouncedSelectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Estado interactivo de desenfoque / enfoque para el gestor de carpetas (hover en cursor y rueda en táctil)
+  const [isFolderManagerHovered, setIsFolderManagerHovered] = useState(false);
+  const [isTouchWheelActive, setIsTouchWheelActive] = useState(false);
+  const touchWheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activateTouchWheelFocus = useCallback(() => {
+    setIsTouchWheelActive(true);
+    if (touchWheelTimerRef.current) {
+      clearTimeout(touchWheelTimerRef.current);
+    }
+    touchWheelTimerRef.current = setTimeout(() => {
+      setIsTouchWheelActive(false);
+    }, 1200);
+  }, []);
+
+  const handleTouchWheelSettle = useCallback(() => {
+    if (touchWheelTimerRef.current) {
+      clearTimeout(touchWheelTimerRef.current);
+    }
+    touchWheelTimerRef.current = setTimeout(() => {
+      setIsTouchWheelActive(false);
+    }, 900);
+  }, []);
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -250,11 +274,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     }
   }, [settings.selectedFolderId]);
 
-  // Limpiar timer al desmontar
+  // Limpiar timers al desmontar
   useEffect(() => {
     return () => {
       if (debouncedSelectRef.current) {
         clearTimeout(debouncedSelectRef.current);
+      }
+      if (touchWheelTimerRef.current) {
+        clearTimeout(touchWheelTimerRef.current);
       }
     };
   }, []);
@@ -301,6 +328,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   // Manejo de cambio en ArcPicker: durante el desplazamiento rápido no recarga archivos hasta frenar
   const handleArcValueChange = useCallback((val: string) => {
+    activateTouchWheelFocus();
     setActiveArcFolderId(val);
     if (debouncedSelectRef.current) {
       clearTimeout(debouncedSelectRef.current);
@@ -309,10 +337,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     debouncedSelectRef.current = setTimeout(() => {
       commitFolderSelection(val);
     }, 500);
-  }, [commitFolderSelection]);
+  }, [commitFolderSelection, activateTouchWheelFocus]);
 
   // Cuando el movimiento de la media rueda o drag se detiene completamente en una carpeta
   const handleArcSettle = useCallback((val: string) => {
+    handleTouchWheelSettle();
     setActiveArcFolderId(val);
     if (debouncedSelectRef.current) {
       clearTimeout(debouncedSelectRef.current);
@@ -321,7 +350,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     debouncedSelectRef.current = setTimeout(() => {
       commitFolderSelection(val);
     }, 180);
-  }, [commitFolderSelection]);
+  }, [commitFolderSelection, handleTouchWheelSettle]);
 
   // Botón HOME del rail izquierdo -> Volver a Mi Unidad
   const handleHomeClick = async () => {
@@ -385,6 +414,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   // Opciones para beUI Arc Picker
   const arcOptions = useMemo<ArcPickerOption[]>(() => {
+    if (!settings.isConnected) {
+      return [];
+    }
     const baseList = availableFolders.filter((f) => {
       if (f.id === "root") return false;
       if (!searchFilter.trim()) return true;
@@ -399,7 +431,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       })),
     ];
     return items;
-  }, [availableFolders, searchFilter]);
+  }, [availableFolders, searchFilter, settings.isConnected]);
 
   // Carpeta activa seleccionada (null si estamos en la raíz 'Mi Unidad')
   const mainFolder = useMemo(() => {
@@ -529,13 +561,21 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         )}
       </div>
 
-      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker Responsivo) */}
+      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker Responsivo con Desenfoque/Enfoque) */}
       <div 
         data-lenis-prevent="true"
+        onMouseEnter={() => setIsFolderManagerHovered(true)}
+        onMouseLeave={() => setIsFolderManagerHovered(false)}
+        onTouchStart={activateTouchWheelFocus}
+        onTouchMove={activateTouchWheelFocus}
+        onTouchEnd={handleTouchWheelSettle}
         className={cn(
-          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r transition-colors duration-200 relative z-10",
+          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r relative z-10 transition-all duration-400 ease-out",
           !showMobileWheel ? "hidden md:flex" : "flex",
-          isDark ? "bg-[#0e0e14]/90 border-zinc-800/80" : "bg-zinc-50/90 border-zinc-200/80"
+          isDark ? "bg-[#0e0e14]/90 border-zinc-800/80" : "bg-zinc-50/90 border-zinc-200/80",
+          (isFolderManagerHovered || isTouchWheelActive)
+            ? "opacity-100 blur-0"
+            : "opacity-70 blur-[1.5px]"
         )}
       >
         {/* Cabecera del Sidebar con título y Scroll Progress */}
@@ -547,7 +587,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 "font-bold text-xs uppercase tracking-widest font-mono",
                 isDark ? "text-zinc-300" : "text-zinc-700"
               )}>
-                Carpetas (Media Rueda)
+                CARPETAS GOOGLE DRIVE
               </h3>
             </div>
             <ArcScrollProgress percent={arcProgressPercent} isDark={isDark} />
@@ -593,12 +633,20 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </p>
             </div>
           ) : (
-            <div className="w-full flex-1 flex flex-col items-center justify-center">
+            <div 
+              className="w-full flex-1 flex flex-col items-center justify-center"
+              onTouchStart={activateTouchWheelFocus}
+              onTouchMove={activateTouchWheelFocus}
+              onTouchEnd={handleTouchWheelSettle}
+            >
               <ArcPicker
                 options={arcOptions}
                 value={activeArcFolderId}
                 onValueChange={handleArcValueChange}
-                onProgressChange={(p) => setArcProgressPercent(p)}
+                onProgressChange={(p) => {
+                  activateTouchWheelFocus();
+                  setArcProgressPercent(p);
+                }}
                 onSettle={handleArcSettle}
                 side="right"
                 radius={isMobileScreen ? 165 : 240}
