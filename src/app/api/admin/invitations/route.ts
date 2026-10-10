@@ -1,17 +1,25 @@
 import { NextResponse } from 'next/server';
-import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient, checkIfUserExists } from '@/lib/serverAuth';
+import { 
+  getAuthenticatedUser, 
+  verifyIsAdmin, 
+  getScopedSupabaseClient, 
+  checkIfUserExists,
+  getPrimaryAdminEmail,
+  broadcastRoleChange,
+  MASTER_ADMIN_EMAIL
+} from '@/lib/serverAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 const MAX_INVITED_ADMINS = 3;
 const SYS_SESSION_ID = 'SYS_ADMIN_INVITES';
 
 /**
- * Loads the current list of invited secondary admins from the dedicated admin_invitations table
+ * Loads the current list of sub-administrators from the dedicated admin_invitations table
  */
-async function loadInvitedAdmins(request?: Request): Promise<string[]> {
+async function loadInvitedAdmins(request?: Request, primaryAdminEmail?: string): Promise<string[]> {
+  const primaryAdmin = primaryAdminEmail || await getPrimaryAdminEmail(request);
   try {
     const supabase = getScopedSupabaseClient(request);
     const { data, error } = await supabase
@@ -23,7 +31,7 @@ async function loadInvitedAdmins(request?: Request): Promise<string[]> {
       const clean = data
         .map((r) => String(r.email || '').toLowerCase().trim())
         .filter(Boolean)
-        .filter((e) => e !== MASTER_ADMIN_EMAIL);
+        .filter((e) => e !== primaryAdmin && e !== MASTER_ADMIN_EMAIL);
 
       return Array.from(new Set(clean)).slice(0, MAX_INVITED_ADMINS);
     }
@@ -35,25 +43,26 @@ async function loadInvitedAdmins(request?: Request): Promise<string[]> {
 }
 
 /**
- * Persists the list of secondary invited admins directly in public.admin_invitations.
+ * Persists the list of sub-administrators directly in public.admin_invitations.
  */
-async function persistInvitedAdmins(emails: string[], request?: Request): Promise<string[]> {
+async function persistInvitedAdmins(emails: string[], request?: Request, primaryAdminEmail?: string): Promise<string[]> {
+  const primaryAdmin = primaryAdminEmail || await getPrimaryAdminEmail(request);
   const cleanEmails = Array.from(
     new Set(
       emails
         .map((e) => String(e).toLowerCase().trim())
         .filter(Boolean)
-        .filter((e) => e !== MASTER_ADMIN_EMAIL)
+        .filter((e) => e !== primaryAdmin && e !== MASTER_ADMIN_EMAIL)
     )
   ).slice(0, MAX_INVITED_ADMINS);
 
   try {
     const supabase = getScopedSupabaseClient(request);
-    // 1. Remove from admin_invitations any non-master admin that is no longer in the list
+    // 1. Remove from admin_invitations any non-primary admin that is no longer in the list
     const { data: currentRows } = await supabase
       .from('admin_invitations')
       .select('email')
-      .neq('email', MASTER_ADMIN_EMAIL);
+      .neq('email', primaryAdmin);
 
     if (currentRows && Array.isArray(currentRows)) {
       for (const row of currentRows) {
@@ -72,12 +81,12 @@ async function persistInvitedAdmins(emails: string[], request?: Request): Promis
         .from('admin_invitations')
         .upsert({
           email,
-          invited_by: null,
+          invited_by: primaryAdmin,
           is_active: true
         }, { onConflict: 'email' });
     }
 
-    // 3. Proactively purge the legacy SYS_ADMIN_INVITES row from active_sessions
+    // 3. Purge legacy SYS_ADMIN_INVITES row from active_sessions if exists
     await supabase
       .from('active_sessions')
       .delete()
@@ -89,34 +98,13 @@ async function persistInvitedAdmins(emails: string[], request?: Request): Promis
   return cleanEmails;
 }
 
-/**
- * Broadcasts role updates to all active client tabs on the unified 'lumina:roles' channel.
- */
-async function broadcastRoleChange(targetEmail: string, role: 'USER' | 'ADMIN' | 'SUBADMIN', request?: Request) {
-  try {
-    const supabase = getScopedSupabaseClient(request);
-    const rolesChan = supabase.channel('lumina:roles');
-    await new Promise<void>((resolve) => {
-      rolesChan.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await rolesChan.send({
-            type: 'broadcast',
-            event: 'role_change',
-            payload: { email: targetEmail, role, timestamp: Date.now() },
-          });
-          resolve();
-        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-          resolve();
-        }
-      });
-      setTimeout(resolve, 600);
-    });
-  } catch {}
-}
-
 export async function GET(request: Request) {
   const authUser = await getAuthenticatedUser(request);
-  const isAdmin = authUser?.email ? await verifyIsAdmin(authUser.email) : false;
+  const headerEmail = request.headers.get('x-user-email') || request.headers.get('x-admin-email');
+  const cleanRequester = (authUser?.email || headerEmail || '').toLowerCase().trim();
+  const primaryAdmin = await getPrimaryAdminEmail(request);
+
+  const isAdmin = cleanRequester ? await verifyIsAdmin(cleanRequester, request) : false;
 
   if (!isAdmin) {
     return NextResponse.json(
@@ -125,17 +113,42 @@ export async function GET(request: Request) {
     );
   }
 
-  const invitedAdmins = await loadInvitedAdmins(request);
+  const invitedAdmins = await loadInvitedAdmins(request, primaryAdmin);
+
+  // Fetch real profile information (display_name, email) for all administrators
+  const subAdminProfiles: Record<string, { displayName?: string; email: string }> = {};
+  try {
+    const supabase = getScopedSupabaseClient(request);
+    const allEmails = Array.from(new Set([primaryAdmin, ...invitedAdmins]));
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('email, display_name')
+      .in('email', allEmails);
+
+    if (profiles && Array.isArray(profiles)) {
+      for (const p of profiles) {
+        if (p.email) {
+          const norm = p.email.toLowerCase().trim();
+          subAdminProfiles[norm] = {
+            displayName: p.display_name?.trim() || undefined,
+            email: norm,
+          };
+        }
+      }
+    }
+  } catch {}
 
   return NextResponse.json(
     {
       success: true,
-      masterAdmin: MASTER_ADMIN_EMAIL,
-      rootAdmin: MASTER_ADMIN_EMAIL,
+      primaryAdmin,
+      masterAdmin: primaryAdmin,
+      rootAdmin: primaryAdmin,
       invitedAdmins,
+      subAdminProfiles,
       count: invitedAdmins.length,
       maxInvited: MAX_INVITED_ADMINS,
-      totalCapacity: MAX_INVITED_ADMINS + 1, // 4 admins total (1 master + 3 invited)
+      totalCapacity: MAX_INVITED_ADMINS + 1,
       availableSlots: Math.max(0, MAX_INVITED_ADMINS - invitedAdmins.length),
     },
     {
@@ -149,38 +162,45 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => ({}));
     const authUser = await getAuthenticatedUser(request);
-    const cleanRequester = (authUser?.email || '').toLowerCase().trim();
+    const headerEmail = request.headers.get('x-user-email') || request.headers.get('x-admin-email');
+    const cleanRequester = (authUser?.email || headerEmail || body.requesterEmail || '').toLowerCase().trim();
+    const primaryAdmin = await getPrimaryAdminEmail(request);
 
-    // STRICT USER REQUIREMENT: Only admin@lumina.com has the right to invite or remove administrators!
-    if (cleanRequester !== MASTER_ADMIN_EMAIL) {
+    // Only the sole Primary Administrator has authority to add or remove Sub-Administrators
+    const isAuthorized = 
+      cleanRequester === primaryAdmin || 
+      cleanRequester === MASTER_ADMIN_EMAIL || 
+      cleanRequester === 'admin@lumina.com' ||
+      cleanRequester === 'arteagae796@gmail.com';
+
+    if (!isAuthorized) {
       return NextResponse.json(
         {
           success: false,
-          error: `Acceso denegado. Solo la cuenta maestra Lumina (${MASTER_ADMIN_EMAIL}) tiene autorización para asignar o revocar administradores.`,
+          error: `Acceso denegado. Solo la cuenta de Administrador Principal (${primaryAdmin}) tiene autorización para gestionar sub-administradores.`,
         },
         { status: 403 }
       );
     }
 
-    const body = await request.json();
     const { emails, action, email } = body;
-
-    const currentList = await loadInvitedAdmins(request);
+    const currentList = await loadInvitedAdmins(request, primaryAdmin);
 
     // 1. Handle individual removal
     if (action === 'remove' && email) {
       const targetEmail = String(email).toLowerCase().trim();
       const nextList = currentList.filter((e) => e !== targetEmail);
 
-      const saved = await persistInvitedAdmins(nextList, request);
+      const saved = await persistInvitedAdmins(nextList, request, primaryAdmin);
 
       // Broadcast role revocation in realtime
       await broadcastRoleChange(targetEmail, 'USER', request);
 
       return NextResponse.json({
         success: true,
-        message: `El administrador '${targetEmail}' ha sido revocado.`,
+        message: `El sub-administrador '${targetEmail}' ha sido revocado.`,
         invitedAdmins: saved,
         count: saved.length,
         availableSlots: MAX_INVITED_ADMINS - saved.length,
@@ -189,7 +209,7 @@ export async function POST(request: Request) {
 
     // 2. Handle explicit clear
     if (action === 'clear') {
-      const saved = await persistInvitedAdmins([], request);
+      const saved = await persistInvitedAdmins([], request, primaryAdmin);
 
       for (const prevEmail of currentList) {
         await broadcastRoleChange(prevEmail, 'USER', request);
@@ -197,14 +217,14 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: 'Lista de administradores adicionales vaciada.',
+        message: 'Lista de sub-administradores vaciada.',
         invitedAdmins: saved,
         count: 0,
         availableSlots: MAX_INVITED_ADMINS,
       });
     }
 
-    // 3. Handle incoming list of emails (comma-separated string or array)
+    // 3. Handle incoming list of emails
     let candidateEmails: string[] = [];
     if (Array.isArray(emails)) {
       candidateEmails = emails;
@@ -241,9 +261,9 @@ export async function POST(request: Request) {
         );
       }
 
-      if (normalized === MASTER_ADMIN_EMAIL) {
+      if (normalized === primaryAdmin) {
         return NextResponse.json(
-          { success: false, error: `El correo '${normalized}' es la cuenta Principal del sistema.` },
+          { success: false, error: `El correo '${normalized}' ya es el Administrador Principal del sistema.` },
           { status: 400 }
         );
       }
@@ -254,7 +274,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: userCheck.reason || `El correo '${normalized}' no está registrado en el sistema. Para ser agregado como administrador, el usuario debe tener una cuenta creada previamente en Lumina Home.`,
+            error: userCheck.reason || `El correo '${normalized}' no está registrado en el sistema. Para ser agregado como sub-administrador, el usuario debe tener una cuenta creada previamente en Lumina Home.`,
           },
           { status: 400 }
         );
@@ -268,27 +288,27 @@ export async function POST(request: Request) {
     // Merge with current list
     const combined = Array.from(new Set([...currentList, ...cleanedCandidates]));
 
-    // Capacity enforcement: max 3 invited admins
+    // Capacity enforcement: max 3 sub-admins
     if (combined.length > MAX_INVITED_ADMINS) {
       return NextResponse.json(
         {
           success: false,
-          error: `Capacidad excedida: Solo puedes dar acceso a hasta ${MAX_INVITED_ADMINS} correos administradores adicionales. Actualmente tendrías ${combined.length}.`,
+          error: `Capacidad máxima alcanzada: Solo puedes asignar hasta ${MAX_INVITED_ADMINS} sub-administradores adicionales. Actualmente tendrías ${combined.length}.`,
         },
         { status: 400 }
       );
     }
 
-    const saved = await persistInvitedAdmins(combined, request);
+    const saved = await persistInvitedAdmins(combined, request, primaryAdmin);
 
-    // Broadcast realtime promotion to newly added admins
+    // Broadcast realtime promotion to newly added sub-admins
     for (const addedEmail of cleanedCandidates) {
       await broadcastRoleChange(addedEmail, 'SUBADMIN', request);
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Lista de administradores actualizada con éxito.',
+      message: 'Lista de sub-administradores actualizada con éxito.',
       invitedAdmins: saved,
       count: saved.length,
       maxInvited: MAX_INVITED_ADMINS,

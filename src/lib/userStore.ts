@@ -375,11 +375,6 @@ export const checkIsAdmin = async (
     return { role: 'USER', isRootAdmin: false };
   }
 
-  // 1. Master system account: ADMINISTRADOR principal
-  if (normalized === MASTER_ADMIN_EMAIL) {
-    return { role: 'ADMIN', isRootAdmin: true };
-  }
-
   // Fast in-memory cache
   if (!skipCache) {
     const cached = adminCache.get(normalized);
@@ -388,7 +383,30 @@ export const checkIsAdmin = async (
     }
   }
 
-  // 2. Dedicated admin_invitations table: SUB ADMINISTRADOR agregado por el admin principal
+  // 1. Check dynamic primary admin from active_sessions
+  try {
+    const { data: primaryRow } = await supabase
+      .from('active_sessions')
+      .select('data')
+      .eq('user_id', 'SYS_PRIMARY_ADMIN')
+      .maybeSingle();
+
+    if (primaryRow?.data && typeof primaryRow.data === 'object') {
+      const activePrimary = String(primaryRow.data.primary_admin_email || '').toLowerCase().trim();
+      if (activePrimary && normalized === activePrimary) {
+        const res = { role: 'ADMIN' as const, isRootAdmin: true };
+        adminCache.set(normalized, { ...res, timestamp: Date.now() });
+        return res;
+      }
+    }
+  } catch {}
+
+  // Master system account fallback
+  if (normalized === MASTER_ADMIN_EMAIL || normalized === 'arteagae796@gmail.com') {
+    return { role: 'ADMIN' as const, isRootAdmin: true };
+  }
+
+  // 2. Dedicated admin_invitations table: SUB ADMINISTRADOR
   try {
     const { data: invRow } = await supabase
       .from('admin_invitations')
@@ -404,7 +422,7 @@ export const checkIsAdmin = async (
     }
   } catch {}
 
-  // 4. Secondary fallback: query server API route
+  // 3. Fallback: query server API route
   try {
     const res = await fetch('/api/admin/invitations', { 
       cache: 'no-store',
@@ -412,6 +430,12 @@ export const checkIsAdmin = async (
     });
     if (res.ok) {
       const data = await res.json();
+      const primary = (data.primaryAdmin || '').toLowerCase().trim();
+      if (normalized === primary) {
+        const res = { role: 'ADMIN' as const, isRootAdmin: true };
+        adminCache.set(normalized, { ...res, timestamp: Date.now() });
+        return res;
+      }
       if (Array.isArray(data.invitedAdmins)) {
         const cleanList = data.invitedAdmins.map((e: string) => String(e).toLowerCase().trim());
         if (cleanList.includes(normalized)) {
@@ -849,7 +873,7 @@ function setupRolesRealtimeListener(
       if (currentNorm === targetNorm) {
         clearAdminCache();
         const newRole: UserRole = payload.role === 'ADMIN' ? 'ADMIN' : payload.role === 'SUBADMIN' ? 'SUBADMIN' : 'USER';
-        const isRoot = currentUser.isRootAdmin || false;
+        const isRoot = payload.isRoot !== undefined ? Boolean(payload.isRoot) : (newRole === 'ADMIN');
 
         const updatedUser: User = {
           ...currentUser,

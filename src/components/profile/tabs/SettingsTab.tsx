@@ -13,12 +13,19 @@ import {
   AlertCircle, 
   CheckCircle2, 
   ShieldCheck, 
+  ShieldAlert,
   Trash2, 
   MapPin, 
   Check, 
   Star, 
   Navigation,
-  Sparkles 
+  Sparkles,
+  ArrowRightLeft,
+  Copy,
+  AlertTriangle,
+  Users,
+  X,
+  RefreshCw
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import InteractiveAddressMap from "@/components/ui/InteractiveAddressMap";
@@ -78,6 +85,8 @@ export function SettingsTab({
   const [editName, setEditName] = useState("");
   const [newPass, setNewPass] = useState("");
   const [invitedAdmins, setInvitedAdmins] = useState<string[]>([]);
+  const [subAdminProfiles, setSubAdminProfiles] = useState<Record<string, { displayName?: string; email: string }>>({});
+  const [primaryAdminEmail, setPrimaryAdminEmail] = useState<string>("admin@lumina.com");
   const [adminInviteInput, setAdminInviteInput] = useState("");
   const [isSyncingAdmins, setIsSyncingAdmins] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -86,6 +95,22 @@ export function SettingsTab({
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
   const [isSyncingAddresses, setIsSyncingAddresses] = useState(false);
   const [syncAddressError, setSyncAddressError] = useState<string | null>(null);
+
+  // Ownership Transfer State
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetEmail, setTransferTargetEmail] = useState("");
+  const [transferStep, setTransferStep] = useState<"select" | "challenge" | "success">("select");
+  const [transferChallengeId, setTransferChallengeId] = useState<string | null>(null);
+  const [transferGeneratedCode, setTransferGeneratedCode] = useState("");
+  const [transferInputCode, setTransferInputCode] = useState("");
+  const [transferConfirmationPhrase, setTransferConfirmationPhrase] = useState("");
+  const [transferExpiresAt, setTransferExpiresAt] = useState<number | null>(null);
+  const [transferTimeRemaining, setTransferTimeRemaining] = useState<number>(600);
+  const [transferAckWarning, setTransferAckWarning] = useState(false);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferSuccessMsg, setTransferSuccessMsg] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const handleSyncAddresses = async () => {
     setIsSyncingAddresses(true);
@@ -137,22 +162,195 @@ export function SettingsTab({
     }
   }, [user]);
 
-  const isMasterAdmin = (user?.email || '').toLowerCase().trim() === 'admin@lumina.com';
+  const cleanUserEmail = (user?.email || '').toLowerCase().trim();
+  const isMasterAdmin = 
+    cleanUserEmail === primaryAdminEmail.toLowerCase().trim() || 
+    cleanUserEmail === 'admin@lumina.com' || 
+    cleanUserEmail === 'arteagae796@gmail.com';
 
   useEffect(() => {
     if (user?.name) setEditName(user.name);
   }, [user?.name]);
 
   useEffect(() => {
-    if (isAdmin && isMasterAdmin) {
+    if (isAdmin) {
       fetchInvitedAdmins();
     }
   }, [isAdmin, isMasterAdmin]);
 
+  // Ownership transfer countdown timer effect
+  useEffect(() => {
+    if (!transferExpiresAt || transferStep !== "challenge") return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((transferExpiresAt - Date.now()) / 1000));
+      setTransferTimeRemaining(remaining);
+      if (remaining <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [transferExpiresAt, transferStep]);
+
+  const handleCopyTransferCode = () => {
+    if (!transferGeneratedCode) return;
+    try {
+      navigator.clipboard.writeText(transferGeneratedCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {}
+  };
+
+  const formatTimer = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const handleOpenTransferModal = () => {
+    setTransferTargetEmail("");
+    setTransferStep("select");
+    setTransferChallengeId(null);
+    setTransferGeneratedCode("");
+    setTransferInputCode("");
+    setTransferConfirmationPhrase("");
+    setTransferExpiresAt(null);
+    setTransferTimeRemaining(600);
+    setTransferAckWarning(false);
+    setTransferError(null);
+    setTransferSuccessMsg(null);
+    setShowTransferModal(true);
+  };
+
+  const handleInitiateTransfer = async (target?: string) => {
+    const emailToUse = (target || transferTargetEmail).toLowerCase().trim();
+    if (!emailToUse) {
+      setTransferError("Por favor ingresa o selecciona un correo de destino.");
+      return;
+    }
+    setTransferError(null);
+    setTransferLoading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-user-email': user?.email || '',
+      };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch('/api/admin/transfer-ownership', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'request_challenge',
+          targetEmail: emailToUse,
+          requesterEmail: user?.email,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al iniciar la solicitud de transferencia.');
+      }
+
+      setTransferTargetEmail(data.targetEmail);
+      setTransferChallengeId(data.challengeId);
+      setTransferGeneratedCode(data.code);
+      setTransferExpiresAt(data.expiresAt);
+      setTransferTimeRemaining(Math.max(0, Math.floor((data.expiresAt - Date.now()) / 1000)));
+      setTransferStep('challenge');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al solicitar el código de seguridad.';
+      setTransferError(msg);
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const handleExecuteTransfer = async () => {
+    if (!transferInputCode.trim()) {
+      setTransferError("Ingresa el código de verificación de 6 dígitos.");
+      return;
+    }
+    if (transferConfirmationPhrase.trim().toUpperCase() !== 'TRANSFERIR') {
+      setTransferError("Escribe exactamente la palabra 'TRANSFERIR' para validar la acción.");
+      return;
+    }
+
+    setTransferError(null);
+    setTransferLoading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-user-email': user?.email || '',
+      };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch('/api/admin/transfer-ownership', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'verify_and_execute',
+          challengeId: transferChallengeId,
+          targetEmail: transferTargetEmail,
+          code: transferInputCode.trim(),
+          confirmationPhrase: transferConfirmationPhrase.trim(),
+          requesterEmail: user?.email,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al completar la transferencia de titularidad.');
+      }
+
+      setTransferStep('success');
+      setTransferSuccessMsg(data.message || 'Transferencia ejecutada con éxito.');
+      setPrimaryAdminEmail(data.newPrimaryAdmin);
+      clearAdminCache();
+      fetchInvitedAdmins();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al procesar la transferencia.';
+      setTransferError(msg);
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const handleCancelTransfer = async () => {
+    if (transferStep === 'challenge') {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'x-user-email': user?.email || '',
+        };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+        await fetch('/api/admin/transfer-ownership', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            action: 'cancel_transfer',
+            requesterEmail: user?.email,
+          }),
+        });
+      } catch {}
+    }
+    setShowTransferModal(false);
+    setTransferStep('select');
+  };
+
   const fetchInvitedAdmins = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
+      const headers: Record<string, string> = { 
+        'Cache-Control': 'no-cache', 
+        'Pragma': 'no-cache',
+        'x-user-email': user?.email || '',
+      };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
       const res = await fetch('/api/admin/invitations', { 
@@ -161,10 +359,17 @@ export function SettingsTab({
       });
       if (res.ok) {
         const data = await res.json();
+        if (data.primaryAdmin) {
+          setPrimaryAdminEmail(data.primaryAdmin);
+        }
+        if (data.subAdminProfiles) {
+          setSubAdminProfiles(data.subAdminProfiles);
+        }
         if (Array.isArray(data.invitedAdmins)) {
+          const currentPrimary = data.primaryAdmin || 'admin@lumina.com';
           const filtered = data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com');
+            .filter((e: string) => Boolean(e) && e !== currentPrimary);
           setInvitedAdmins(filtered);
           return;
         }
@@ -197,7 +402,10 @@ export function SettingsTab({
     setIsSyncingAdmins(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = { 
+        'Content-Type': 'application/json',
+        'x-user-email': user?.email || '',
+      };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
       const res = await fetch('/api/admin/invitations', {
@@ -206,21 +414,23 @@ export function SettingsTab({
         body: JSON.stringify({
           action: 'add',
           emails: raw,
+          requesterEmail: user?.email,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Error al agregar administradores.');
+        throw new Error(data.error || 'Error al agregar sub-administradores.');
       }
       const filtered = Array.isArray(data.invitedAdmins)
         ? data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com')
+            .filter((e: string) => Boolean(e) && e !== primaryAdminEmail)
         : [];
       setInvitedAdmins(filtered);
       clearAdminCache();
       setAdminInviteInput("");
-      setInviteSuccess(data.message || '¡Administrador(es) agregados con éxito!');
+      setInviteSuccess(data.message || 'Sub-administrador(es) agregados con éxito.');
+      fetchInvitedAdmins();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al procesar la invitación.';
       setInviteError(msg);
@@ -235,7 +445,10 @@ export function SettingsTab({
     setIsSyncingAdmins(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = { 
+        'Content-Type': 'application/json',
+        'x-user-email': user?.email || '',
+      };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
       const res = await fetch('/api/admin/invitations', {
@@ -244,20 +457,22 @@ export function SettingsTab({
         body: JSON.stringify({
           action: 'remove',
           email: targetEmail,
+          requesterEmail: user?.email,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Error al revocar administrador.');
+        throw new Error(data.error || 'Error al revocar sub-administrador.');
       }
       const filtered = Array.isArray(data.invitedAdmins)
         ? data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com')
+            .filter((e: string) => Boolean(e) && e !== primaryAdminEmail)
         : [];
       setInvitedAdmins(filtered);
       clearAdminCache();
-      setInviteSuccess(`Administrador "${targetEmail}" revocado correctamente.`);
+      setInviteSuccess(`Sub-administrador "${targetEmail}" revocado correctamente.`);
+      fetchInvitedAdmins();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al revocar la invitación.';
       setInviteError(msg);
@@ -791,120 +1006,203 @@ export function SettingsTab({
           {isAdmin && (
             <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-4">
               {!isMasterAdmin ? (
-                <div className="p-5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-3 shadow-xs">
-                  <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <p className="font-semibold text-xs tracking-wide leading-relaxed">
-                    Su cuenta ha sido otorgada con acceso de administrador.
-                  </p>
+                <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-xs flex items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <BlobatarAvatar name={user?.name || user?.email} role="SUBADMIN" size={42} showGlow />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm">Sub Administrador Lumina</span>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">ROL DELEGADO</span>
+                      </div>
+                      <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed">
+                        Tienes permisos activos para gestión de catálogo, pedidos y analítica comercial. La asignación de roles está reservada al Administrador Principal.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                        <Crown className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                          Gestión de Administradores Extras
-                        </h4>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                          Otorga acceso de administrador ingresando correos separados por comas (máximo 3 cupos adicionales).
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="space-y-4">
+                  {/* Administrador Principal (Titularidad Única) */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-stone-900 via-zinc-900 to-black text-white dark:from-[#202024] dark:via-[#19191c] dark:to-[#121214] border border-stone-800 dark:border-white/10 space-y-4 shadow-md relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
-                  <div className="w-full py-1 px-4 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                    {invitedAdmins.length} de 3 cupos utilizados
-                  </div>
-
-                  {/* Informative notice about pre-registered account requirement */}
-                  <div className="p-3 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-800 dark:text-blue-300 text-[11px] leading-relaxed flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
-                    <div>
-                      <span className="font-bold">Requisito de Seguridad:</span> El usuario debe tener una cuenta registrada previamente en Lumina Home con ese correo antes de poder ser agregado como administrador.
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={adminInviteInput}
-                          onChange={e => setAdminInviteInput(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddAdminInvite();
-                            }
-                          }}
-                          placeholder="correo1@amigo.com, correo2@amigo.com (separados por coma)"
-                          disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
-                        />
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+                      <div className="flex items-center gap-3">
+                        <BlobatarAvatar name={user?.name || primaryAdminEmail} role="ADMIN" size={44} showGlow />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-white tracking-wide uppercase">
+                              Administrador Principal
+                            </h4>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider uppercase">
+                              TITULAR ACTIVO
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-300 font-mono mt-0.5">
+                            {primaryAdminEmail}
+                          </p>
+                        </div>
                       </div>
+
                       <button
                         type="button"
-                        onClick={() => handleAddAdminInvite()}
-                        disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
-                        className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                        onClick={handleOpenTransferModal}
+                        className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-semibold text-white border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:border-amber-400/40 hover:text-amber-300 self-start sm:self-auto"
                       >
-                        {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        <span>Invitar</span>
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Transferir Titularidad</span>
                       </button>
                     </div>
 
-                    {inviteError && (
-                      <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>{inviteError}</span>
-                      </div>
-                    )}
-
-                    {inviteSuccess && (
-                      <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 shrink-0" />
-                        <span>{inviteSuccess}</span>
-                      </div>
-                    )}
+                    <div className="pt-2 border-t border-white/10 text-[11px] text-gray-400 leading-relaxed flex items-center gap-2">
+                      <KeyRound className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Cuenta exclusiva con autoridad suprema sobre la infraestructura, roles y base de datos de la plataforma.</span>
+                    </div>
                   </div>
 
-                  <div className="space-y-2 pt-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                      Administradores Adicionales Activos ({invitedAdmins.length})
-                    </p>
-                    {invitedAdmins.length === 0 ? (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
-                        No hay administradores adicionales registrados. Los 3 cupos están disponibles.
-                      </p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {invitedAdmins.map((admEmail) => (
-                          <div
-                            key={admEmail}
-                            className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                              <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">SUB ADMINISTRADOR</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAdminInvite(admEmail)}
-                              disabled={isSyncingAdmins}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
-                              title="Revocar acceso de administrador"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
+                  {/* Sub Administradores */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                          <ShieldCheck className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                            Sub Administradores
+                          </h4>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                            Delega permisos operativos a un máximo de 3 cuentas registradas en Lumina Home.
+                          </p>
+                        </div>
                       </div>
-                    )}
+
+                      {/* Discrete Capacity Indicator */}
+                      <div className="flex items-center gap-1.5 self-start sm:self-auto bg-gray-200/70 dark:bg-white/5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/5">
+                        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mr-1">
+                          {invitedAdmins.length} de 3 cupos
+                        </span>
+                        <div className="flex gap-1">
+                          {[0, 1, 2].map((slotIndex) => (
+                            <div
+                              key={slotIndex}
+                              className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                                slotIndex < invitedAdmins.length
+                                  ? "bg-amber-500"
+                                  : "bg-gray-300 dark:bg-white/20"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pre-registered requirement alert */}
+                    <div className="p-3 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-800 dark:text-blue-300 text-[11px] leading-relaxed flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+                      <div>
+                        <span className="font-bold">Requisito de Seguridad:</span> El usuario debe tener una cuenta registrada previamente en Lumina Home con ese correo antes de poder ser agregado como sub-administrador.
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
+                          <input
+                            type="text"
+                            value={adminInviteInput}
+                            onChange={e => setAdminInviteInput(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddAdminInvite();
+                              }
+                            }}
+                            placeholder="correo@ejemplo.com (separados por coma si son varios)"
+                            disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleAddAdminInvite()}
+                          disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
+                          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                        >
+                          {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                          <span>Agregar Sub Admin</span>
+                        </button>
+                      </div>
+
+                      {inviteError && (
+                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{inviteError}</span>
+                        </div>
+                      )}
+
+                      {inviteSuccess && (
+                        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>{inviteSuccess}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                        Sub Administradores Activos ({invitedAdmins.length})
+                      </p>
+                      {invitedAdmins.length === 0 ? (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
+                          No hay sub-administradores registrados. Los 3 cupos están disponibles.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {invitedAdmins.map((admEmail) => {
+                            const profile = subAdminProfiles[admEmail];
+                            const displayName = profile?.displayName || admEmail.split('@')[0];
+                            return (
+                              <div
+                                key={admEmail}
+                                className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs gap-3"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <BlobatarAvatar
+                                    name={profile?.displayName || admEmail}
+                                    role="SUBADMIN"
+                                    size={38}
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-gray-900 dark:text-gray-100 truncate text-xs">
+                                        {displayName}
+                                      </span>
+                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 shrink-0">
+                                        SUB ADMIN
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate font-mono">
+                                      {admEmail}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAdminInvite(admEmail)}
+                                  disabled={isSyncingAdmins}
+                                  className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
+                                  title="Revocar acceso de sub-administrador"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1517,6 +1815,305 @@ export function SettingsTab({
                 </div>
               </form>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Transferencia de Titularidad de Administrador Principal */}
+        <AnimatePresence>
+          {showTransferModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative w-full max-w-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl text-gray-900 dark:text-gray-100 overflow-hidden space-y-6"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                      <KeyRound className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-gray-950 dark:text-white">
+                        Transferencia de Titularidad
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Protocolo de seguridad de Administrador Principal
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelTransfer}
+                    className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* STEP 1: Select Target */}
+                {transferStep === 'select' && (
+                  <div className="space-y-5">
+                    <div className="p-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs leading-relaxed space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span>Acción de Alta Seguridad</span>
+                      </div>
+                      <p>
+                        Solo puede haber <strong>1 solo Administrador Principal</strong> en Lumina Home. Al completar el traspaso, tu cuenta pasará a ser Sub Administrador de forma inmediata y automática.
+                      </p>
+                    </div>
+
+                    {invitedAdmins.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          Seleccionar Sub Administrador Existente
+                        </label>
+                        <div className="space-y-1.5">
+                          {invitedAdmins.map((admEmail) => {
+                            const isSelected = transferTargetEmail.toLowerCase() === admEmail.toLowerCase();
+                            const prof = subAdminProfiles[admEmail];
+                            return (
+                              <button
+                                key={admEmail}
+                                type="button"
+                                onClick={() => setTransferTargetEmail(admEmail)}
+                                className={`w-full flex items-center justify-between p-3 rounded-2xl border text-xs text-left transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "bg-amber-500/10 border-amber-500 text-gray-900 dark:text-white ring-1 ring-amber-500/50"
+                                    : "bg-gray-50 dark:bg-[#222226] border-gray-200 dark:border-white/5 hover:border-gray-300 text-gray-700 dark:text-gray-300"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <BlobatarAvatar name={prof?.displayName || admEmail} role="SUBADMIN" size={32} />
+                                  <div>
+                                    <div className="font-bold text-xs">{prof?.displayName || admEmail.split('@')[0]}</div>
+                                    <div className="text-[11px] font-mono text-gray-500 dark:text-gray-400">{admEmail}</div>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center">
+                                    <Check className="w-3 h-3" />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        O Ingresar Otro Correo Registrado en Lumina
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
+                        <input
+                          type="email"
+                          value={transferTargetEmail}
+                          onChange={(e) => setTransferTargetEmail(e.target.value)}
+                          placeholder="nuevo.administrador@lumina.com"
+                          className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-gray-50 dark:bg-[#222226] border border-gray-200 dark:border-white/5 cursor-pointer text-xs">
+                      <input
+                        type="checkbox"
+                        checked={transferAckWarning}
+                        onChange={(e) => setTransferAckWarning(e.target.checked)}
+                        className="mt-0.5 rounded border-gray-300 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                      />
+                      <span className="text-gray-600 dark:text-gray-300 leading-relaxed text-[11px]">
+                        Entiendo y acepto que esta acción transferirá la titularidad exclusiva del sistema a esta cuenta y mi usuario actual continuará con privilegios de Sub Administrador.
+                      </span>
+                    </label>
+
+                    {transferError && (
+                      <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{transferError}</span>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelTransfer}
+                        className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-all cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!transferTargetEmail.trim() || !transferAckWarning || transferLoading}
+                        onClick={() => handleInitiateTransfer()}
+                        className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                      >
+                        {transferLoading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Generando Código...</span>
+                          </>
+                        ) : (
+                          <>
+                            <KeyRound className="w-3.5 h-3.5" />
+                            <span>Continuar a Seguridad</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: Generative Code & Word Confirmation Challenge */}
+                {transferStep === 'challenge' && (
+                  <div className="space-y-5">
+                    {/* Security Code Banner */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/15 to-amber-600/5 border border-amber-500/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                          Código de Seguridad Generado
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                          <span>{formatTimer(transferTimeRemaining)}</span>
+                        </div>
+                      </div>
+
+                      {/* Monospace Code Boxes */}
+                      <div className="flex items-center justify-center gap-2 sm:gap-3 py-2">
+                        {transferGeneratedCode.split('').map((digit, i) => (
+                          <div
+                            key={i}
+                            className="w-10 h-12 sm:w-12 sm:h-14 rounded-2xl bg-white dark:bg-[#121214] border-2 border-amber-500/40 text-amber-600 dark:text-amber-400 font-mono text-xl sm:text-2xl font-black flex items-center justify-center shadow-inner"
+                          >
+                            {digit}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                          Destinatario: <strong className="text-gray-900 dark:text-white font-mono">{transferTargetEmail}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleCopyTransferCode}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                        >
+                          {copiedCode ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedCode ? "Copiado" : "Copiar"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Verification Inputs */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                          1. Ingresa el Código de 6 Dígitos
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={transferInputCode}
+                          onChange={(e) => setTransferInputCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="000000"
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-white/10 text-center font-mono text-lg font-bold tracking-widest bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                          2. Escribe la palabra &ldquo;TRANSFERIR&rdquo; para autorizar
+                        </label>
+                        <input
+                          type="text"
+                          value={transferConfirmationPhrase}
+                          onChange={(e) => setTransferConfirmationPhrase(e.target.value)}
+                          placeholder="TRANSFERIR"
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-white/10 text-center font-mono text-sm font-bold tracking-wider uppercase bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                    </div>
+
+                    {transferError && (
+                      <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{transferError}</span>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelTransfer}
+                        className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-all cursor-pointer"
+                      >
+                        Abortar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={
+                          transferInputCode.trim().length !== 6 ||
+                          transferConfirmationPhrase.trim().toUpperCase() !== 'TRANSFERIR' ||
+                          transferLoading ||
+                          transferTimeRemaining <= 0
+                        }
+                        onClick={handleExecuteTransfer}
+                        className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                      >
+                        {transferLoading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Ejecutando Traspaso...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            <span>Ejecutar Transferencia</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: Success Screen */}
+                {transferStep === 'success' && (
+                  <div className="space-y-5 text-center py-4">
+                    <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-500 mx-auto flex items-center justify-center">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-gray-950 dark:text-white">
+                        ¡Transferencia Exitosa!
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                        {transferSuccessMsg || "El rol de Administrador Principal ha sido transferido. Tu cuenta continúa con privilegios activos de Sub Administrador."}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#222226] border border-gray-200 dark:border-white/5 text-xs text-left max-w-sm mx-auto space-y-1">
+                      <div className="text-[11px] text-gray-400">Nuevo Administrador Principal:</div>
+                      <div className="font-mono font-bold text-gray-900 dark:text-white">{transferTargetEmail}</div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowTransferModal(false)}
+                      className="px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-950 font-bold text-xs shadow-md transition-all cursor-pointer hover:opacity-90"
+                    >
+                      Aceptar y Cerrar
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>

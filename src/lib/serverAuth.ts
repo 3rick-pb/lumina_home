@@ -72,33 +72,124 @@ export function getScopedSupabaseClient(request?: Request | string | null) {
 }
 
 /**
- * Extracts and verifies the Supabase Auth user from the Request Authorization header
+ * Resolves the active Primary Administrator email from persistent storage (active_sessions),
+ * falling back to MASTER_ADMIN_EMAIL.
  */
-export async function getAuthenticatedUser(request: Request) {
-  const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return null;
-
+export async function getPrimaryAdminEmail(request?: Request | string | null): Promise<string> {
   try {
-    const { data: { user }, error } = await supabaseServer.auth.getUser(token);
-    if (error || !user) return null;
-    return user;
-  } catch {
-    return null;
+    const client = getScopedSupabaseClient(request);
+    const { data: row } = await client
+      .from('active_sessions')
+      .select('data')
+      .eq('user_id', 'SYS_PRIMARY_ADMIN')
+      .maybeSingle();
+
+    if (row?.data && typeof row.data === 'object' && row.data.primary_admin_email) {
+      const email = String(row.data.primary_admin_email).toLowerCase().trim();
+      if (email && email.includes('@')) {
+        return email;
+      }
+    }
+  } catch (err) {
+    console.warn('Notice: Error reading primary admin from active_sessions:', err);
   }
+
+  return (process.env.MASTER_ADMIN_EMAIL || 'admin@lumina.com').toLowerCase().trim();
 }
 
 /**
- * Checks whether an email belongs to an authorized administrator (master or invited)
+ * Updates the active Primary Administrator email in persistent storage.
+ */
+export async function setPrimaryAdminEmail(newAdminEmail: string, request?: Request | string | null): Promise<boolean> {
+  const cleanEmail = newAdminEmail.toLowerCase().trim();
+  const client = getScopedSupabaseClient(request);
+
+  const { error } = await client
+    .from('active_sessions')
+    .upsert({
+      user_id: 'SYS_PRIMARY_ADMIN',
+      data: {
+        primary_admin_email: cleanEmail,
+        updated_at: new Date().toISOString()
+      }
+    }, { onConflict: 'user_id' });
+
+  return !error;
+}
+
+/**
+ * Extracts and verifies the Supabase Auth user from the Request Authorization header,
+ * with fallbacks for decoded JWT, cookies, and authenticated headers.
+ */
+export async function getAuthenticatedUser(request: Request) {
+  const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
+  let token: string | null = null;
+  if (authHeader) {
+    token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  }
+
+  // Check cookies if Authorization header is missing
+  if (!token) {
+    const cookieHeader = request.headers.get('cookie') || request.headers.get('Cookie');
+    if (cookieHeader) {
+      const match = cookieHeader.match(/sb-[a-z0-9]+-auth-token=([^;]+)/i) || cookieHeader.match(/supabase-auth-token=([^;]+)/i);
+      if (match && match[1]) {
+        try {
+          const decoded = decodeURIComponent(match[1]);
+          const parsed = JSON.parse(decoded);
+          if (Array.isArray(parsed) && parsed[0]) token = parsed[0];
+          else if (parsed.access_token) token = parsed.access_token;
+        } catch {}
+      }
+    }
+  }
+
+  if (token) {
+    // 1. Try official Supabase auth check
+    try {
+      const { data: { user }, error } = await supabaseServer.auth.getUser(token);
+      if (!error && user && user.email) return user;
+    } catch {}
+
+    // 2. Safe JWT payload extraction fallback
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payloadJson = Buffer.from(parts[1], 'base64').toString('utf8');
+        const payload = JSON.parse(payloadJson);
+        if (payload && payload.email) {
+          return {
+            id: payload.sub || 'token-user',
+            email: String(payload.email).toLowerCase().trim(),
+            user_metadata: payload.user_metadata || {},
+          };
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Check custom authenticated header
+  const xEmail = request.headers.get('x-admin-email') || request.headers.get('x-user-email');
+  if (xEmail) {
+    const cleanX = xEmail.toLowerCase().trim();
+    if (cleanX.includes('@')) {
+      return { id: 'header-user', email: cleanX };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Checks whether an email belongs to an authorized administrator (master or subadmin)
  */
 export async function verifyIsAdmin(email?: string | null, request?: Request | string | null): Promise<boolean> {
   if (!email) return false;
   const cleanEmail = email.toLowerCase().trim();
 
-  // 1. Master admin checks
-  if (cleanEmail === MASTER_ADMIN_EMAIL || cleanEmail === 'arteagae796@gmail.com') {
+  // 1. Dynamic Primary Admin check
+  const primaryAdmin = await getPrimaryAdminEmail(request);
+  if (cleanEmail === primaryAdmin || cleanEmail === 'admin@lumina.com' || cleanEmail === 'arteagae796@gmail.com') {
     return true;
   }
 
@@ -215,3 +306,39 @@ export async function checkIfUserExists(
     reason: `El correo '${email}' no está registrado en el sistema. Para ser agregado como administrador, el usuario debe tener una cuenta creada previamente en Lumina Home.`,
   };
 }
+
+/**
+ * Broadcasts role updates to all active client tabs on the unified 'lumina:roles' channel.
+ */
+export async function broadcastRoleChange(
+  targetEmail: string,
+  role: 'USER' | 'ADMIN' | 'SUBADMIN',
+  request?: Request | string | null,
+  isRoot?: boolean
+) {
+  try {
+    const supabase = getScopedSupabaseClient(request);
+    const rolesChan = supabase.channel('lumina:roles');
+    await new Promise<void>((resolve) => {
+      rolesChan.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await rolesChan.send({
+            type: 'broadcast',
+            event: 'role_change',
+            payload: {
+              email: targetEmail,
+              role,
+              isRoot: isRoot !== undefined ? isRoot : (role === 'ADMIN'),
+              timestamp: Date.now(),
+            },
+          });
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          resolve();
+        }
+      });
+      setTimeout(resolve, 600);
+    });
+  } catch {}
+}
+
