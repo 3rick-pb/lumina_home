@@ -30,8 +30,15 @@ import {
   Layers,
   HardDrive,
   Info,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Lock,
+  Unlock,
+  Shield,
+  ShieldAlert,
+  AlertTriangle,
+  KeyRound
 } from "lucide-react";
+import { useUserStore } from "@/lib/userStore";
 import { 
   useGoogleDriveStore, 
   GoogleDriveFolder, 
@@ -169,7 +176,10 @@ const LayeredFolderCard = React.memo(function LayeredFolderCard({
         setIsHovered(false);
         setIsOpen(false);
       }}
-      className="group flex flex-col items-center justify-center cursor-pointer select-none py-1.5 px-1 w-full max-w-[200px] transition-transform active:scale-[0.98]"
+      className={cn(
+        "group flex flex-col items-center justify-center cursor-pointer select-none py-1.5 px-1 w-full max-w-[200px] transition-all",
+        isHovered || isOpen ? "relative z-40" : "relative z-10"
+      )}
     >
       {/* Solo la carpeta de rareUI libre: tamaño sm compacto para no colisionar con las demás */}
       <div className="relative flex items-center justify-center overflow-visible">
@@ -208,6 +218,15 @@ const LayeredFolderCard = React.memo(function LayeredFolderCard({
   );
 });
 
+// Función criptográfica SHA-256 para PIN de seguridad de 6 dígitos
+async function hashSecurityPin(pin: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`lumina_gallery_pin_salt_2026_${pin.trim()}`);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export interface GoogleDriveSettingsCardProps {
   onClose?: () => void;
   onSelectPhotoForProduct?: (url: string, file: GoogleDriveFile) => void;
@@ -233,6 +252,279 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [searchFilter, setSearchFilter] = useState("");
   const [arcProgressPercent, setArcProgressPercent] = useState(0);
   const [contentScrollPercent, setContentScrollPercent] = useState(0);
+
+  // --- SEGURIDAD: PIN DE 6 DÍGITOS EXCLUSIVO DE ADMINISTRADOR ---
+  const { user } = useUserStore();
+  const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.isRootAdmin === true));
+
+  const [savedPinHash, setSavedPinHash] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [lockoutRemainingSec, setLockoutRemainingSec] = useState(0);
+
+  // Estados UI Candado y Barras
+  const [showAdminPinMenu, setShowAdminPinMenu] = useState(false);
+  const [showUnlockBar, setShowUnlockBar] = useState(false);
+  const [isLockWiggling, setIsLockWiggling] = useState(false);
+  const [unlockPinDigits, setUnlockPinDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [unlockSuccess, setUnlockSuccess] = useState(false);
+  const unlockInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Estados Formulario Admin
+  const [adminPinMode, setAdminPinMode] = useState<'view' | 'create' | 'change' | 'remove'>('view');
+  const [adminNewPin, setAdminNewPin] = useState("");
+  const [adminConfirmPin, setAdminConfirmPin] = useState("");
+  const [adminCurrentPin, setAdminCurrentPin] = useState("");
+  const [adminFormError, setAdminFormError] = useState<string | null>(null);
+  const [adminFormSuccess, setAdminFormSuccess] = useState<string | null>(null);
+
+  // Inicialización de PIN y Bloqueo desde localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("lumina_gallery_pin_hash");
+      if (stored) {
+        setSavedPinHash(stored);
+        setIsLocked(true); // Bloqueado por defecto si existe PIN configurado
+      }
+      const storedLockout = localStorage.getItem("lumina_gallery_lockout_until");
+      if (storedLockout) {
+        const until = parseInt(storedLockout, 10);
+        if (!isNaN(until) && until > Date.now()) {
+          setLockoutUntil(until);
+        } else {
+          localStorage.removeItem("lumina_gallery_lockout_until");
+        }
+      }
+    } catch {
+      // Ignorar errores en navegadores restrictivos
+    }
+  }, []);
+
+  // Temporizador para el bloqueo de 10 minutos
+  useEffect(() => {
+    if (!lockoutUntil) {
+      setLockoutRemainingSec(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      setLockoutRemainingSec(remaining);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setFailedAttempts(0);
+        try {
+          localStorage.removeItem("lumina_gallery_lockout_until");
+        } catch {}
+      }
+    }, 1000);
+
+    const initial = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+    setLockoutRemainingSec(initial);
+
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
+
+  // Animación del candado y apertura de barra horizontal de PIN
+  const triggerLockAnimation = useCallback(() => {
+    setIsLockWiggling(true);
+    setShowUnlockBar(true);
+    setTimeout(() => {
+      setIsLockWiggling(false);
+    }, 800);
+    setTimeout(() => {
+      unlockInputRefs.current[0]?.focus();
+    }, 150);
+  }, []);
+
+  // Clic en el botón del Candado Rojo
+  const handlePadlockClick = () => {
+    if (!savedPinHash) {
+      if (isAdmin) {
+        setAdminPinMode('create');
+        setAdminNewPin("");
+        setAdminConfirmPin("");
+        setAdminFormError(null);
+        setAdminFormSuccess(null);
+        setShowAdminPinMenu((prev) => !prev);
+      } else {
+        setShowUnlockBar(false);
+        setUnlockError("Solo el Administrador puede configurar el PIN de seguridad.");
+        setTimeout(() => setUnlockError(null), 3000);
+      }
+      return;
+    }
+
+    if (isLocked) {
+      triggerLockAnimation();
+      setShowAdminPinMenu(false);
+    } else {
+      if (isAdmin) {
+        setAdminPinMode('view');
+        setAdminFormError(null);
+        setAdminFormSuccess(null);
+        setShowAdminPinMenu((prev) => !prev);
+      }
+    }
+  };
+
+  // Manejo de dígitos en la Barra Horizontal de Desbloqueo
+  const handleUnlockDigitChange = async (index: number, val: string) => {
+    if (lockoutRemainingSec > 0) return;
+    const clean = val.replace(/\D/g, "").slice(-1);
+    const nextDigits = [...unlockPinDigits];
+    nextDigits[index] = clean;
+    setUnlockPinDigits(nextDigits);
+    setUnlockError(null);
+
+    if (clean && index < 5) {
+      unlockInputRefs.current[index + 1]?.focus();
+    }
+
+    if (clean && index === 5 && nextDigits.every((d) => d !== "")) {
+      const fullPin = nextDigits.join("");
+      await handleVerifyUnlockPin(fullPin);
+    }
+  };
+
+  const handleUnlockKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !unlockPinDigits[index] && index > 0) {
+      unlockInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleUnlockPaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    if (lockoutRemainingSec > 0) return;
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      const digits = pasted.split("");
+      setUnlockPinDigits(digits);
+      await handleVerifyUnlockPin(pasted);
+    }
+  };
+
+  const handleVerifyUnlockPin = async (fullPin: string) => {
+    if (!savedPinHash) return;
+    if (lockoutUntil && Date.now() < lockoutUntil) return;
+
+    const hashed = await hashSecurityPin(fullPin);
+    if (hashed === savedPinHash) {
+      // APROBADO: Se desbloquea
+      setUnlockSuccess(true);
+      setUnlockError(null);
+      setFailedAttempts(0);
+      setTimeout(() => {
+        setIsLocked(false);
+        setShowUnlockBar(false);
+        setUnlockSuccess(false);
+        setUnlockPinDigits(["", "", "", "", "", ""]);
+      }, 400);
+    } else {
+      // INCORRECTO: Solo informar "PIN incorrecto", NUNCA informar cuántos intentos quedan
+      const nextCount = failedAttempts + 1;
+      setFailedAttempts(nextCount);
+      setUnlockError("PIN incorrecto");
+      setUnlockPinDigits(["", "", "", "", "", ""]);
+      unlockInputRefs.current[0]?.focus();
+
+      // Al 3er intento fallido: Bloqueo de 10 minutos
+      if (nextCount >= 3) {
+        const lockoutTime = Date.now() + 10 * 60 * 1000;
+        setLockoutUntil(lockoutTime);
+        try {
+          localStorage.setItem("lumina_gallery_lockout_until", String(lockoutTime));
+        } catch {}
+      }
+    }
+  };
+
+  // Guardar nuevo PIN (Admin)
+  const handleAdminSaveNewPin = async () => {
+    if (!isAdmin) return;
+    if (adminNewPin.length !== 6 || !/^\d{6}$/.test(adminNewPin)) {
+      setAdminFormError("El PIN debe tener exactamente 6 dígitos numéricos.");
+      return;
+    }
+    if (adminNewPin !== adminConfirmPin) {
+      setAdminFormError("Los PINs no coinciden.");
+      return;
+    }
+
+    const hashed = await hashSecurityPin(adminNewPin);
+    try {
+      localStorage.setItem("lumina_gallery_pin_hash", hashed);
+      setSavedPinHash(hashed);
+      setIsLocked(true);
+      setAdminFormSuccess("PIN guardado y activado.");
+      setAdminFormError(null);
+      setTimeout(() => {
+        setShowAdminPinMenu(false);
+        setAdminPinMode('view');
+        setAdminNewPin("");
+        setAdminConfirmPin("");
+      }, 1000);
+    } catch {
+      setAdminFormError("Error al guardar en el navegador.");
+    }
+  };
+
+  // Cambiar PIN existente (Admin)
+  const handleAdminChangePin = async () => {
+    if (!isAdmin || !savedPinHash) return;
+    const currentHashed = await hashSecurityPin(adminCurrentPin);
+    if (currentHashed !== savedPinHash) {
+      setAdminFormError("El PIN actual no es correcto.");
+      return;
+    }
+    if (adminNewPin.length !== 6 || !/^\d{6}$/.test(adminNewPin)) {
+      setAdminFormError("El nuevo PIN debe tener exactamente 6 dígitos numéricos.");
+      return;
+    }
+    if (adminNewPin !== adminConfirmPin) {
+      setAdminFormError("Los nuevos PINs no coinciden.");
+      return;
+    }
+
+    const newHashed = await hashSecurityPin(adminNewPin);
+    try {
+      localStorage.setItem("lumina_gallery_pin_hash", newHashed);
+      setSavedPinHash(newHashed);
+      setAdminFormSuccess("PIN actualizado con éxito.");
+      setAdminFormError(null);
+      setTimeout(() => {
+        setShowAdminPinMenu(false);
+        setAdminPinMode('view');
+        setAdminCurrentPin("");
+        setAdminNewPin("");
+        setAdminConfirmPin("");
+      }, 1000);
+    } catch {
+      setAdminFormError("Error al guardar el nuevo PIN.");
+    }
+  };
+
+  // Quitar / Eliminar PIN (Admin)
+  const handleAdminRemovePin = async () => {
+    if (!isAdmin) return;
+    try {
+      localStorage.removeItem("lumina_gallery_pin_hash");
+      localStorage.removeItem("lumina_gallery_lockout_until");
+      setSavedPinHash(null);
+      setIsLocked(false);
+      setLockoutUntil(null);
+      setFailedAttempts(0);
+      setAdminFormSuccess("PIN eliminado. Seguridad desactivada.");
+      setTimeout(() => {
+        setShowAdminPinMenu(false);
+        setAdminPinMode('view');
+      }, 1000);
+    } catch {
+      setAdminFormError("Error al eliminar el PIN.");
+    }
+  };
 
   // Lightbox / Visor HD
   const [previewPhoto, setPreviewPhoto] = useState<GoogleDriveFile | null>(null);
@@ -359,6 +651,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   // Manejo de cambio en ArcPicker: durante el desplazamiento rápido no recarga archivos hasta frenar
   const handleArcValueChange = useCallback((val: string) => {
+    if (savedPinHash && isLocked) {
+      triggerLockAnimation();
+      return;
+    }
     activateTouchWheelFocus();
     setActiveArcFolderId(val);
     if (debouncedSelectRef.current) {
@@ -368,10 +664,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     debouncedSelectRef.current = setTimeout(() => {
       commitFolderSelection(val);
     }, 500);
-  }, [commitFolderSelection, activateTouchWheelFocus]);
+  }, [commitFolderSelection, activateTouchWheelFocus, savedPinHash, isLocked, triggerLockAnimation]);
 
   // Cuando el movimiento de la media rueda o drag se detiene completamente en una carpeta
   const handleArcSettle = useCallback((val: string) => {
+    if (savedPinHash && isLocked) {
+      triggerLockAnimation();
+      return;
+    }
     handleTouchWheelSettle();
     setActiveArcFolderId(val);
     if (debouncedSelectRef.current) {
@@ -381,7 +681,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     debouncedSelectRef.current = setTimeout(() => {
       commitFolderSelection(val);
     }, 180);
-  }, [commitFolderSelection, handleTouchWheelSettle]);
+  }, [commitFolderSelection, handleTouchWheelSettle, savedPinHash, isLocked, triggerLockAnimation]);
 
   // Botón HOME del rail izquierdo -> Volver a Mi Unidad
   const handleHomeClick = async () => {
@@ -532,12 +832,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       
       {/* 1. RAIL DE ICONOS VERTICAL (IZQUIERDA EXTREMA) */}
       <div className={cn(
-        "hidden lg:flex w-14 shrink-0 flex-col items-center justify-between py-5 border-r transition-colors duration-200 relative z-20",
+        "hidden lg:flex w-14 shrink-0 flex-col items-center justify-between py-5 border-r transition-colors duration-200 relative z-50",
         isDark ? "bg-[#0e0e14] border-zinc-800/80" : "bg-zinc-100/80 border-zinc-200/80"
       )}>
         <div className="flex flex-col items-center gap-4 w-full">
           {/* Navegación del Rail */}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 relative">
             {/* Home / Inicio */}
             <button
               type="button"
@@ -575,6 +875,321 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             >
               <BarChart2 className="w-4 h-4" />
             </button>
+
+            {/* Candado Rojo de Seguridad (PIN de 6 dígitos) */}
+            <div className="relative">
+              <motion.button
+                type="button"
+                onClick={handlePadlockClick}
+                animate={isLockWiggling ? {
+                  x: [0, -6, 6, -5, 5, -2, 2, 0],
+                  rotate: [0, -9, 9, -7, 7, -3, 3, 0],
+                  scale: [1, 1.15, 1.05, 1.12, 1],
+                } : {}}
+                transition={{ duration: 0.65, ease: "easeInOut" }}
+                className={cn(
+                  "p-2.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 relative",
+                  savedPinHash
+                    ? isLocked
+                      ? "bg-rose-500/20 text-rose-500 border border-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.4)] hover:bg-rose-500/30"
+                      : "bg-rose-500/10 text-rose-400 border border-rose-500/25 hover:bg-rose-500/20 shadow-xs"
+                    : isDark
+                      ? "text-rose-400/80 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/25"
+                      : "text-rose-600/80 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200"
+                )}
+                title={
+                  savedPinHash
+                    ? isLocked
+                      ? "Galería Bloqueada con PIN (Click para ingresar PIN)"
+                      : "Galería Desbloqueada (Click para administrar PIN)"
+                    : isAdmin
+                      ? "Establecer PIN de Seguridad (Exclusivo Administrador)"
+                      : "PIN de Seguridad (Solo Administrador)"
+                }
+              >
+                {savedPinHash ? (
+                  isLocked ? (
+                    <Lock className="w-4 h-4 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.7)]" />
+                  ) : (
+                    <Unlock className="w-4 h-4 text-rose-400" />
+                  )
+                ) : (
+                  <Lock className="w-4 h-4 text-rose-500/80" />
+                )}
+
+                {/* Punto indicador de candado activo */}
+                {savedPinHash && isLocked && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-[#0e0e14] animate-pulse" />
+                )}
+              </motion.button>
+
+              {/* Menú hacia la derecha que sale desde el botón (Solo ADMINISTRADOR) */}
+              <AnimatePresence>
+                {showAdminPinMenu && isAdmin && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className={cn(
+                      "absolute left-full top-0 ml-3.5 w-72 sm:w-80 rounded-2xl border shadow-2xl p-4 sm:p-5 z-50 backdrop-blur-2xl font-mono select-text",
+                      isDark 
+                        ? "bg-[#111119]/95 border-zinc-700/80 text-zinc-100 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(244,63,94,0.15)]" 
+                        : "bg-white/95 border-zinc-200 text-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_20px_rgba(244,63,94,0.08)]"
+                    )}
+                  >
+                    {/* Header del menú */}
+                    <div className="flex items-center justify-between pb-3 border-b border-zinc-800/60 dark:border-zinc-800">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-500">
+                          <Shield className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-rose-500">
+                            Seguridad PIN
+                          </h4>
+                          <span className="text-[10px] text-zinc-400 block -mt-0.5">
+                            Exclusivo Administrador
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminPinMenu(false)}
+                        className="text-zinc-400 hover:text-zinc-200 p-1 rounded-md transition-colors cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Mensajes de error / éxito */}
+                    {adminFormError && (
+                      <div className="mt-3 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[11px] leading-tight flex items-start gap-2">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span>{adminFormError}</span>
+                      </div>
+                    )}
+                    {adminFormSuccess && (
+                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] leading-tight flex items-start gap-2">
+                        <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span>{adminFormSuccess}</span>
+                      </div>
+                    )}
+
+                    {/* Contenido según el modo */}
+                    {!savedPinHash || adminPinMode === 'create' ? (
+                      /* MODO: CREAR PIN NUEVO */
+                      <div className="mt-3.5 space-y-3">
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                          Establece un PIN de 6 dígitos numéricos para proteger el gestor de carpetas y navegación.
+                        </p>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
+                            Nuevo PIN (6 dígitos)
+                          </label>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={adminNewPin}
+                            onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            placeholder="••••••"
+                            className={cn(
+                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
+                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
+                            Confirmar PIN
+                          </label>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={adminConfirmPin}
+                            onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            placeholder="••••••"
+                            className={cn(
+                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
+                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                            )}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAdminSaveNewPin}
+                          disabled={adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
+                          className="w-full mt-2 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold tracking-wide transition-all cursor-pointer shadow-md active:scale-95"
+                        >
+                          Guardar y Activar PIN
+                        </button>
+                      </div>
+                    ) : adminPinMode === 'change' ? (
+                      /* MODO: CAMBIAR PIN */
+                      <div className="mt-3.5 space-y-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
+                            PIN Actual (6 dígitos)
+                          </label>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={adminCurrentPin}
+                            onChange={(e) => setAdminCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            placeholder="••••••"
+                            className={cn(
+                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
+                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
+                            Nuevo PIN (6 dígitos)
+                          </label>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={adminNewPin}
+                            onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            placeholder="••••••"
+                            className={cn(
+                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
+                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
+                            Confirmar Nuevo PIN
+                          </label>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={adminConfirmPin}
+                            onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            placeholder="••••••"
+                            className={cn(
+                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
+                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                            )}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminPinMode('view');
+                              setAdminFormError(null);
+                            }}
+                            className="flex-1 py-2 px-3 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAdminChangePin}
+                            disabled={adminCurrentPin.length !== 6 || adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
+                            className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95"
+                          >
+                            Actualizar
+                          </button>
+                        </div>
+                      </div>
+                    ) : adminPinMode === 'remove' ? (
+                      /* MODO: QUITAR PIN */
+                      <div className="mt-3.5 space-y-3">
+                        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs space-y-1.5">
+                          <div className="font-bold flex items-center gap-1.5">
+                            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                            <span>¿Eliminar protección con PIN?</span>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-zinc-400">
+                            Cualquier usuario podrá usar el gestor de carpetas y cambiar la carpeta activa libremente.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setAdminPinMode('view')}
+                            className="flex-1 py-2 px-3 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAdminRemovePin}
+                            className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95"
+                          >
+                            Confirmar Quitar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* MODO: VISTA GENERAL (VIEW) */
+                      <div className="mt-3.5 space-y-3">
+                        <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-2 h-2 rounded-full", isLocked ? "bg-rose-500 animate-pulse" : "bg-emerald-500")} />
+                            <span className="text-xs font-bold text-zinc-300">
+                              {isLocked ? "Estado: Bloqueado" : "Estado: Desbloqueado"}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsLocked(!isLocked);
+                              setShowAdminPinMenu(false);
+                            }}
+                            className={cn(
+                              "text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer",
+                              isLocked 
+                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20" 
+                                : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
+                            )}
+                          >
+                            {isLocked ? "Desbloquear" : "Bloquear Ahora"}
+                          </button>
+                        </div>
+
+                        <div className="space-y-1.5 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminPinMode('change');
+                              setAdminCurrentPin("");
+                              setAdminNewPin("");
+                              setAdminConfirmPin("");
+                              setAdminFormError(null);
+                            }}
+                            className="w-full py-2 px-3 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-200 text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer"
+                          >
+                            <span>Cambiar PIN</span>
+                            <KeyRound className="w-3.5 h-3.5 text-zinc-400" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminPinMode('remove');
+                              setAdminFormError(null);
+                            }}
+                            className="w-full py-2 px-3 rounded-xl border border-rose-950/40 hover:bg-rose-500/10 text-rose-400 text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer"
+                          >
+                            <span>Quitar PIN de Seguridad</span>
+                            <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
@@ -649,14 +1264,44 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         {/* beUI Arc Picker en modo Right con fondo ambiental y desenfoque/enfoque suave interactivo */}
         <div 
           className="flex-1 flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]"
-          onMouseEnter={() => setIsWheelHovered(true)}
+          onMouseEnter={() => {
+            if (!isLocked) setIsWheelHovered(true);
+          }}
           onMouseLeave={() => setIsWheelHovered(false)}
-          onTouchStart={activateTouchWheelFocus}
+          onTouchStart={() => {
+            if (savedPinHash && isLocked) {
+              triggerLockAnimation();
+            } else {
+              activateTouchWheelFocus();
+            }
+          }}
           onTouchMove={activateTouchWheelFocus}
           onTouchEnd={handleTouchWheelSettle}
-          onPointerDown={activateTouchWheelFocus}
+          onPointerDown={() => {
+            if (savedPinHash && isLocked) {
+              triggerLockAnimation();
+            } else {
+              activateTouchWheelFocus();
+            }
+          }}
           onPointerUp={handleTouchWheelSettle}
         >
+          {/* Overlay de Bloqueo PIN con Candado Rojo */}
+          {savedPinHash && isLocked && (
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerLockAnimation();
+              }}
+              className="absolute inset-0 z-30 cursor-pointer flex flex-col items-center justify-center bg-black/25 backdrop-blur-[2px] transition-all"
+              title="Gestor bloqueado con PIN. Haz clic para ingresar el PIN"
+            >
+              <div className="p-2 sm:p-2.5 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-400 shadow-xl flex items-center gap-2 font-mono text-[11px] font-bold animate-pulse backdrop-blur-md">
+                <Lock className="w-3.5 h-3.5 text-rose-500" />
+                <span>Gestor Bloqueado</span>
+              </div>
+            </div>
+          )}
           {arcOptions.length === 0 ? (
             <div className="text-center p-4 sm:p-6 space-y-2">
               <Folder className="w-8 h-8 mx-auto text-zinc-500 opacity-40" />
@@ -732,7 +1377,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
       {/* 3. ÁREA DE CONTENIDO PRINCIPAL (CANVAS DERECHO) */}
       <div className={cn(
-        "flex-1 flex flex-col min-w-0 overflow-hidden relative transition-colors duration-200",
+        "flex-1 flex flex-col min-w-0 overflow-hidden relative z-20 transition-colors duration-200",
         isDark ? "bg-[#0a0a0f]" : "bg-white"
       )}>
         
@@ -747,7 +1392,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               <div className="flex items-center gap-2 min-w-0">
                 <button
                   type="button"
-                  onClick={() => handleSelectFolder({ id: 'root', name: 'Mi Unidad', itemCount: rootFolders.length })}
+                  onClick={() => {
+                    if (savedPinHash && isLocked) {
+                      triggerLockAnimation();
+                      return;
+                    }
+                    handleSelectFolder({ id: 'root', name: 'Mi Unidad', itemCount: rootFolders.length });
+                  }}
                   className={cn(
                     "text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 active:scale-95 shrink-0",
                     isDark ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-950"
@@ -765,16 +1416,25 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </span>
                 <button
                   type="button"
-                  onClick={() => handleSelectFolder({ id: 'root', name: 'Mi Unidad', itemCount: rootFolders.length })}
+                  onClick={() => {
+                    if (savedPinHash && isLocked) {
+                      triggerLockAnimation();
+                      return;
+                    }
+                    handleSelectFolder({ id: 'root', name: 'Mi Unidad', itemCount: rootFolders.length });
+                  }}
                   className={cn(
-                    "ml-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border active:scale-95",
-                    isDark 
-                      ? "bg-zinc-800/80 hover:bg-zinc-700 text-blue-400 border-zinc-700/80" 
-                      : "bg-zinc-100 hover:bg-zinc-200 text-blue-600 border-zinc-200 shadow-xs"
+                    "ml-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border active:scale-95 flex items-center gap-1",
+                    savedPinHash && isLocked
+                      ? "bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20"
+                      : isDark 
+                        ? "bg-zinc-800/80 hover:bg-zinc-700 text-blue-400 border-zinc-700/80" 
+                        : "bg-zinc-100 hover:bg-zinc-200 text-blue-600 border-zinc-200 shadow-xs"
                   )}
-                  title="Cambiar carpeta"
+                  title={savedPinHash && isLocked ? "Bloqueado con PIN (Click para desbloquear)" : "Cambiar carpeta"}
                 >
-                  Cambiar
+                  {savedPinHash && isLocked && <Lock className="w-2.5 h-2.5 text-rose-500 shrink-0" />}
+                  <span>Cambiar</span>
                 </button>
               </div>
             ) : (
@@ -878,6 +1538,38 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               <span>{showMobileWheel ? "Ocultar Rueda" : "Rueda"}</span>
             </button>
 
+            {/* Candado Rojo en Móvil/Tablet */}
+            <motion.button
+              type="button"
+              onClick={handlePadlockClick}
+              animate={isLockWiggling ? {
+                x: [0, -5, 5, -4, 4, -2, 2, 0],
+                rotate: [0, -8, 8, -6, 6, -2, 2, 0],
+                scale: [1, 1.15, 1.05, 1.1, 1],
+              } : {}}
+              transition={{ duration: 0.65, ease: "easeInOut" }}
+              className={cn(
+                "lg:hidden p-2 rounded-xl border transition-all cursor-pointer active:scale-95 relative",
+                savedPinHash
+                  ? isLocked
+                    ? "bg-rose-500/20 text-rose-500 border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.35)]"
+                    : "bg-rose-500/10 text-rose-400 border-rose-500/25"
+                  : isDark
+                    ? "text-rose-400/80 border-zinc-800 hover:bg-rose-500/10"
+                    : "text-rose-600/80 border-zinc-200 hover:bg-rose-50"
+              )}
+              title="Seguridad PIN"
+            >
+              {savedPinHash ? (
+                isLocked ? <Lock className="w-3.5 h-3.5 text-rose-500" /> : <Unlock className="w-3.5 h-3.5 text-rose-400" />
+              ) : (
+                <Lock className="w-3.5 h-3.5 text-rose-500/80" />
+              )}
+              {savedPinHash && isLocked && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              )}
+            </motion.button>
+
             {onClose && (
               <button
                 type="button"
@@ -895,6 +1587,115 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             )}
           </div>
         </div>
+
+        {/* BARRA HORIZONTAL DE DESBLOQUEO DE PIN DE 6 DÍGITOS */}
+        <AnimatePresence>
+          {showUnlockBar && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.28, ease: "easeInOut" }}
+              className={cn(
+                "overflow-hidden border-b shrink-0 relative z-40 transition-colors shadow-md font-mono",
+                isDark 
+                  ? "bg-[#140a10] border-rose-950/70 text-zinc-100" 
+                  : "bg-rose-50/95 border-rose-200 text-zinc-900"
+              )}
+            >
+              <div className="px-4 sm:px-7 py-3 sm:py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+                {/* Lado izquierdo: Icono de Candado Rojo + Copy informativo */}
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(244,63,94,0.25)]">
+                    <Lock className="w-4 h-4 animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className={cn(
+                      "text-xs font-bold uppercase tracking-wider flex items-center gap-2",
+                      isDark ? "text-rose-400" : "text-rose-700"
+                    )}>
+                      {lockoutRemainingSec > 0 ? "Acceso Bloqueado por Seguridad" : "PIN de Seguridad Requerido"}
+                    </h4>
+                    <p className={cn("text-[11px] leading-tight", isDark ? "text-zinc-400" : "text-zinc-600")}>
+                      {lockoutRemainingSec > 0 
+                        ? "Has excedido los intentos permitidos. Espera a que termine la cuenta regresiva."
+                        : "Ingresa el PIN de 6 dígitos para desbloquear el gestor de carpetas y navegación."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Lado derecho: 6 casillas horizontales numéricas o temporizador si está bloqueado por 10 minutos */}
+                {lockoutRemainingSec <= 0 ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      {unlockPinDigits.map((digit, idx) => (
+                        <input
+                          key={idx}
+                          ref={(el) => { unlockInputRefs.current[idx] = el; }}
+                          type="password"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleUnlockDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handleUnlockKeyDown(idx, e)}
+                          onPaste={handleUnlockPaste}
+                          className={cn(
+                            "w-8 h-10 sm:w-10 sm:h-11 text-center text-lg font-bold font-mono rounded-xl border outline-none transition-all duration-150",
+                            unlockError
+                              ? "border-rose-500 bg-rose-500/10 text-rose-500 ring-2 ring-rose-500/20"
+                              : unlockSuccess
+                              ? "border-emerald-500 bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/20"
+                              : isDark
+                              ? "bg-zinc-900/90 border-zinc-700 text-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/25"
+                              : "bg-white border-zinc-300 text-zinc-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/25 shadow-xs"
+                          )}
+                        />
+                      ))}
+                    </div>
+
+                    {unlockError && (
+                      <span className="text-xs font-mono font-bold text-rose-500 ml-1.5 animate-pulse">
+                        {unlockError}
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUnlockBar(false);
+                        setUnlockError(null);
+                        setUnlockPinDigits(["", "", "", "", "", ""]);
+                      }}
+                      className="p-1.5 ml-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer active:scale-90"
+                      title="Cerrar barra"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  /* BLOQUEO DE 10 MINUTOS CON CUENTA REGRESIVA */
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-400 shadow-sm">
+                      <AlertTriangle className="w-4 h-4 animate-pulse shrink-0" />
+                      <span className="font-mono font-bold text-sm tracking-widest">
+                        {String(Math.floor(lockoutRemainingSec / 60)).padStart(2, '0')}:{String(lockoutRemainingSec % 60).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowUnlockBar(false)}
+                      className="p-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer active:scale-90"
+                      title="Cerrar barra"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* CONTENIDO DEL CANVAS */}
         {!settings.isConnected ? (
@@ -938,7 +1739,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             root={false}
             key="root"
             onScroll={handleContentScroll}
-            className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+            className="flex-1 overflow-y-auto pl-6 sm:pl-9 pr-5 sm:pr-7 pt-5 sm:pt-7 pb-8 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
             options={{
               lerp: 0.075,
               duration: 1.25,
@@ -1035,7 +1836,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             root={false}
             key={mainFolder.id}
             onScroll={handleContentScroll}
-            className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+            className="flex-1 overflow-y-auto pl-6 sm:pl-9 pr-5 sm:pr-7 pt-5 sm:pt-7 pb-8 space-y-7 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
             options={{
               lerp: 0.075,
               duration: 1.25,
