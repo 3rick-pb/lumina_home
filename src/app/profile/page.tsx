@@ -623,7 +623,7 @@ export default function ProfilePage() {
     return list;
   }, [isEffectiveAdmin, scopedOrders, cards, favorites, products, categories]);
 
-  const TABS_PER_PAGE = 3;
+  const TABS_PER_PAGE = 2;
   const tabPages = useMemo(() => {
     const pages: TopNavTabItem[][] = [];
     for (let i = 0; i < topNavTabs.length; i += TABS_PER_PAGE) {
@@ -1543,7 +1543,7 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 py-2.5 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between min-h-[56px]">
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 py-2.5 sm:px-5 md:px-6 py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4 md:gap-6 lg:gap-8 min-h-[56px]">
   
   {/* --- 1. VISTA MÓVIL (Celulares y pantallas pequeñas): Disperso 1:1 a la captura de pantalla --- */}
   <div className="flex md:hidden items-center justify-between w-full gap-2 min-w-0">
@@ -1592,11 +1592,11 @@ const handleConfirmDeleteNiche = async () => {
   </div>
 
   {/* --- 2. VISTA DESKTOP (md:flex): Brand & Top Navigation Pill Bar --- */}
-  <div className="hidden md:flex items-center justify-start gap-3 md:gap-4 min-w-0 flex-1">
+  <div className="hidden md:flex items-center justify-start gap-3 md:gap-4 lg:gap-5 min-w-0 shrink-0">
   {/* Desktop Brand Logo (Lateral Izquierdo en Desktop) */}
   <Link 
     href="/" 
-    className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5" 
+    className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5 mr-1" 
     title="Ir a la tienda"
   >
     <Image
@@ -1609,10 +1609,10 @@ const handleConfirmDeleteNiche = async () => {
     />
   </Link>
 
-  {/* Top Bar Paginated Tabs (3 por página con estética luxury liquid glass) */}
+  {/* Top Bar Paginated Tabs (2 por página con estética luxury liquid glass) */}
   <div
     onWheel={handleTabsWheel}
-    className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-stone-100/80 dark:bg-[#18181b]/80 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-all select-none min-w-0"
+    className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-stone-100/80 dark:bg-[#18181b]/80 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-all select-none shrink-0"
   >
     {/* Botón página previa */}
     <button
@@ -1629,8 +1629,8 @@ const handleConfirmDeleteNiche = async () => {
       <ChevronLeft className="w-3.5 h-3.5" />
     </button>
 
-    {/* Contenedor animado de las 3 pestañas */}
-    <div className="overflow-hidden w-[330px] lg:w-[360px] xl:w-[380px]">
+    {/* Contenedor animado de las 2 pestañas */}
+    <div className="overflow-hidden w-[240px] sm:w-[260px] lg:w-[280px]">
       <AnimatePresence mode="wait" custom={navDirection}>
         <motion.div
           key={topNavPage}
@@ -1656,7 +1656,7 @@ const handleConfirmDeleteNiche = async () => {
           animate="center"
           exit="exit"
           transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          className="flex items-center gap-1 w-full"
+          className="grid grid-cols-2 gap-1.5 w-full"
         >
           {tabPages[topNavPage]?.map((tab) => {
             const Icon = tab.icon;
@@ -1669,7 +1669,7 @@ const handleConfirmDeleteNiche = async () => {
                   setActiveTab(tab.id);
                 }}
                 title={tab.label}
-                className={`group relative flex-1 min-w-0 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 cursor-pointer select-none truncate ${
+                className={`group relative flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 cursor-pointer select-none truncate ${
                   isActive
                     ? "bg-white dark:bg-[#232328] text-stone-900 dark:text-white font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] ring-1 ring-black/5 dark:ring-white/10"
                     : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-white/60 dark:hover:bg-white/5 font-medium"
@@ -1728,7 +1728,7 @@ const handleConfirmDeleteNiche = async () => {
   </div>
 
   {/* Right Search Input & Profile Badge (Spotlight Alive Command Bar en Desktop) */}
-  <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0">
+  <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0 ml-auto pl-3 md:pl-5 lg:pl-6">
     <div className="relative z-50 group/search" ref={searchDropdownRef}>
       <div 
         className={`relative flex items-center gap-2.5 pl-3.5 pr-2.5 h-10 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
@@ -1773,7 +1773,7 @@ const handleConfirmDeleteNiche = async () => {
           }}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={isAdmin ? "Buscar pedidos, piezas, clientes o catálogo..." : "Buscar mis pedidos, artículos o marcas..."}
-          className="bg-transparent border-none outline-none text-xs w-36 sm:w-48 lg:w-56 focus:w-56 sm:focus:w-72 lg:focus:w-84 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 ease-out"
+          className="bg-transparent border-none outline-none text-xs w-28 sm:w-36 md:w-40 lg:w-56 focus:w-44 md:focus:w-60 lg:focus:w-84 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 ease-out"
         />
 
         {searchQuery && (
