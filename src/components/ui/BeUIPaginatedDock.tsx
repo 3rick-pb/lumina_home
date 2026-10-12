@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { LiquidGlass, LiquidGlassButton } from "@/components/ui/LiquidGlass";
+import { LiquidScrubberNav } from "@/components/ui/LiquidScrubberNav";
 
 export interface BeUIDockItem {
   id: string;
@@ -60,7 +61,6 @@ export function BeUIPaginatedDock({
   isSearchActive = false,
 }: BeUIPaginatedDockProps) {
   const [[currentPage, direction], setPage] = useState<[number, number]>([0, 0]);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
   const safePage = Math.min(totalPages - 1, Math.max(0, currentPage));
@@ -82,28 +82,6 @@ export function BeUIPaginatedDock({
       }
     }
   }, [activeItemId, itemsPerPage, totalPages, safePage]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const diffX = touchStartRef.current.x - touch.clientX;
-    const diffY = touchStartRef.current.y - touch.clientY;
-
-    // Detectar deslizamiento horizontal de iOS (> 30px y mayor que el vertical)
-    if (Math.abs(diffX) > Math.abs(diffY) * 1.2 && Math.abs(diffX) > 30) {
-      if (diffX > 0 && safePage < totalPages - 1) {
-        setPage([safePage + 1, 1]);
-      } else if (diffX < 0 && safePage > 0) {
-        setPage([safePage - 1, -1]);
-      }
-    }
-    touchStartRef.current = null;
-  };
 
   const pages: BeUIDockItem[][] = [];
   for (let i = 0; i < totalPages; i++) {
@@ -190,93 +168,44 @@ export function BeUIPaginatedDock({
           chromaticAberration={1.8}
           blur={1.5}
           overflow="hidden"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
           className="flex-1 min-w-0 h-[64px] px-2 py-1.5 rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center"
         >
           {/* Contenedor animado de pestañas por página */}
           <div className="relative w-full h-full overflow-hidden flex items-center">
-            <LayoutGroup id="beui-dock-layout">
-              <AnimatePresence initial={false} custom={direction} mode="wait">
-                <motion.div
-                  key={safePage}
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{
-                    x: { type: "spring", stiffness: 420, damping: 36, mass: 0.8 },
-                    opacity: { duration: 0.16, ease: "easeOut" },
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={safePage}
+                custom={direction}
+                variants={pageVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 420, damping: 36, mass: 0.8 },
+                  opacity: { duration: 0.16, ease: "easeOut" },
+                }}
+                className="w-full h-full flex items-center justify-center px-1"
+              >
+                <LiquidScrubberNav
+                  items={currentItems}
+                  activeId={activeItemId || ""}
+                  variant="dock"
+                  className="w-full h-full"
+                  activeColor="text-[#c25e1a] dark:text-[#f59e0b]"
+                  gridCols={itemsPerPage}
+                  onSwipePage={(dir) => {
+                    if (dir === 1 && safePage < totalPages - 1) {
+                      setPage([safePage + 1, 1]);
+                    } else if (dir === -1 && safePage > 0) {
+                      setPage([safePage - 1, -1]);
+                    }
                   }}
-                  className="w-full grid grid-cols-4 items-center justify-items-stretch gap-1 px-1 h-full"
-                >
-                  {currentItems.map((item) => {
-                    const isActive = !!item.active;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => item.onClick()}
-                        title={item.title || item.label}
-                        className="relative w-full h-[50px] flex flex-col items-center justify-center py-1 px-0.5 rounded-full select-none group cursor-pointer focus:outline-none transition-transform duration-150 active:scale-95"
-                      >
-                        {/* Píldora activa de cristal con agua líquida */}
-                        {isActive && (
-                          <motion.div
-                            layoutId="beui-dock-active-pill"
-                            initial={false}
-                            transition={{ type: "spring", stiffness: 450, damping: 35, mass: 0.6 }}
-                            className="absolute inset-0 rounded-full bg-white/90 dark:bg-white/20 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] border border-stone-200/80 dark:border-white/25 -z-0 pointer-events-none"
-                          />
-                        )}
-
-                        {/* Icono con badge */}
-                        <div className="relative z-10 flex items-center justify-center">
-                          <div
-                            className={`w-5 h-5 flex items-center justify-center transition-all duration-200 ${
-                              isActive
-                                ? "text-[#c25e1a] dark:text-[#f59e0b] scale-110 stroke-[2.4px]"
-                                : "text-stone-700 dark:text-stone-200 group-hover:text-stone-950 dark:group-hover:text-white"
-                            }`}
-                          >
-                            {item.icon}
-                          </div>
-
-                          {typeof item.badgeCount === "number" && item.badgeCount > 0 && (
-                            <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full text-[9px] font-black bg-[#fa2d48] text-white flex items-center justify-center ring-2 ring-white dark:ring-[#16161a] shadow-xs">
-                              {item.badgeCount > 99 ? "99+" : item.badgeCount}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Texto de alto contraste para lectura perfecta */}
-                        <span
-                          className={`relative z-10 text-[10px] tracking-tight mt-0.5 leading-none truncate max-w-[68px] text-center transition-colors duration-200 ${
-                            isActive
-                              ? "text-[#c25e1a] dark:text-[#f59e0b] font-black"
-                              : "text-stone-800 dark:text-stone-100 font-bold group-hover:text-stone-950 dark:group-hover:text-white"
-                          }`}
-                        >
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-
-                  {/* Espacios vacíos simétricos si la última página tiene menos de 4 elementos */}
-                  {Array.from({ length: Math.max(0, itemsPerPage - currentItems.length) }).map(
-                    (_, i) => (
-                      <div
-                        key={`empty-slot-${i}`}
-                        className="w-full h-12 pointer-events-none"
-                        aria-hidden="true"
-                      />
-                    )
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </LayoutGroup>
+                  onSelect={(id, item) => {
+                    item.onClick?.();
+                  }}
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </LiquidGlass>
 

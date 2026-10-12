@@ -71,7 +71,7 @@ function getDisplacementMap({ height, width, radius, depth }: DisplacementParams
   return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
 }
 
-function getDisplacementFilter({
+export function getDisplacementFilter({
   height,
   width,
   radius,

@@ -13,6 +13,7 @@ import { useCatalogStore } from "@/lib/catalogStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 import { LiquidGlass } from "@/components/ui/LiquidGlass";
+import { LiquidScrubberNav } from "@/components/ui/LiquidScrubberNav";
 import dynamic from 'next/dynamic';
 const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod => ({ default: mod.CartDrawer })), {
   ssr: false
@@ -216,47 +217,25 @@ export function Header() {
             </span>
           </Link>
 
-          {/* Liquid Glass Navigation */}
-          <LayoutGroup id="header-navbar">
-            <nav className="hidden md:flex items-center gap-1 relative">
-              {navTabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                const Icon = tab.icon;
-
-                return (
-                  <Link
-                    key={tab.id}
-                    href={tab.href}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={cn(
-                      "relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm select-none transition-all duration-150 active:scale-95",
-                      isActive
-                        ? "text-gray-950 dark:text-white font-semibold"
-                        : "text-gray-600 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white hover:bg-white/25 dark:hover:bg-white/10"
-                    )}
-                  >
-                    {/* Active Indicator (Liquid Pill / Gota de Agua Fluida) */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-pill"
-                        className="absolute inset-0 rounded-full bg-white/80 dark:bg-white/25 shadow-[0_3px_14px_rgba(0,0,0,0.06),inset_0_1px_1.5px_rgba(255,255,255,0.9)] border border-white/65 dark:border-white/20 -z-0 pointer-events-none"
-                        initial={false}
-                        transition={{
-                          type: "spring",
-                          stiffness: 420,
-                          damping: 32,
-                          mass: 0.6,
-                        }}
-                      />
-                    )}
-
-                    <Icon className="relative z-10 w-4 h-4 shrink-0 transition-transform duration-200" />
-                    <span className="relative z-10">{tab.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </LayoutGroup>
+          {/* Liquid Glass Navigation (Apple Fluid Hold & Slide + Direct Tap Scrubber) */}
+          <nav className="hidden md:flex items-center relative">
+            <LiquidScrubberNav
+              items={navTabs.map((tab) => ({
+                id: tab.id,
+                label: tab.label,
+                icon: <tab.icon className="w-4 h-4 shrink-0" />,
+                href: tab.href,
+              }))}
+              activeId={activeTab}
+              variant="pill"
+              onSelect={(id, item) => {
+                setActiveTab(id);
+                if (item.href) {
+                  router.push(item.href);
+                }
+              }}
+            />
+          </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-4 pr-1 sm:pr-2">
