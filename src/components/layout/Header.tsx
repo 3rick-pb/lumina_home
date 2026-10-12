@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, ShoppingBag, Menu, Home, Sparkles, User, X, ArrowRight, Layers } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useCartStore } from "@/lib/store";
@@ -32,7 +32,6 @@ export function Header() {
   const router = useRouter();
   const [nicheSlots, setNicheSlots] = useState<NicheSlotConfig[]>(DEFAULT_NICHE_SLOTS);
   const [activeTab, setActiveTab] = useState("home");
-  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [searchVal, setSearchVal] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -218,52 +217,46 @@ export function Header() {
           </Link>
 
           {/* Liquid Glass Navigation */}
-          <nav className="hidden md:flex items-center gap-1 relative" onMouseLeave={() => setHoveredTab(null)}>
-            {navTabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              const isHovered = hoveredTab === tab.id;
-              const Icon = tab.icon;
+          <LayoutGroup id="header-navbar">
+            <nav className="hidden md:flex items-center gap-1 relative">
+              {navTabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                const Icon = tab.icon;
 
-              return (
-                <Link
-                  key={tab.id}
-                  href={tab.href}
-                  onClick={() => setActiveTab(tab.id)}
-                  onMouseEnter={() => setHoveredTab(tab.id)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors duration-300",
-                    isActive ? "text-gray-900" : "text-gray-600 hover:text-gray-900"
-                  )}
-                >
-                  {/* Active Indicator (Liquid Pill) */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="active-pill"
-                      className="absolute inset-0 rounded-full bg-white/70 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-white/50"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                    />
-                  )}
-                  
-                  {/* Hover Indicator (Subtle Drop) */}
-                  {!isActive && isHovered && (
-                    <motion.div
-                      layoutId="hover-pill"
-                      className="absolute inset-0 rounded-full bg-white/30"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    />
-                  )}
+                return (
+                  <Link
+                    key={tab.id}
+                    href={tab.href}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm select-none transition-all duration-150 active:scale-95",
+                      isActive
+                        ? "text-gray-950 dark:text-white font-semibold"
+                        : "text-gray-600 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white hover:bg-white/25 dark:hover:bg-white/10"
+                    )}
+                  >
+                    {/* Active Indicator (Liquid Pill / Gota de Agua Fluida) */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-pill"
+                        className="absolute inset-0 rounded-full bg-white/80 dark:bg-white/25 shadow-[0_3px_14px_rgba(0,0,0,0.06),inset_0_1px_1.5px_rgba(255,255,255,0.9)] border border-white/65 dark:border-white/20 -z-0 pointer-events-none"
+                        initial={false}
+                        transition={{
+                          type: "spring",
+                          stiffness: 420,
+                          damping: 32,
+                          mass: 0.6,
+                        }}
+                      />
+                    )}
 
-                  <Icon className="relative z-10 w-4 h-4" />
-                  <span className="relative z-10">{tab.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+                    <Icon className="relative z-10 w-4 h-4 shrink-0 transition-transform duration-200" />
+                    <span className="relative z-10">{tab.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </LayoutGroup>
 
           {/* Actions */}
           <div className="flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-4 pr-1 sm:pr-2">
