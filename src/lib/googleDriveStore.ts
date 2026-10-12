@@ -286,6 +286,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       };
 
       const finishConnection = async (_payload?: { email?: string; name?: string }) => {
+        void _payload;
         if (resolved) return;
         resolved = true;
         cleanup();

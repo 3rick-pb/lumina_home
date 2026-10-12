@@ -217,9 +217,9 @@ export function LiquidGlass({
     });
   }, [hasSvgFilterSupport, dims.width, dims.height, radius, depth, strength, chromaticAberration]);
 
-  const dynamicGlassStyle: CSSProperties = useMemo(() => {
-    const baseBorderRadius = radius >= 9999 ? "9999px" : `${radius}px`;
+  const baseBorderRadius = radius >= 9999 ? "9999px" : `${radius}px`;
 
+  const dynamicGlassStyle: CSSProperties = useMemo(() => {
     if (hasSvgFilterSupport && filterUrl) {
       return {
         ...style,
@@ -246,7 +246,7 @@ export function LiquidGlass({
         0 8px 25px -4px rgba(0, 0, 0, 0.1)
       `,
     };
-  }, [style, radius, hasSvgFilterSupport, filterUrl, blur]);
+  }, [style, baseBorderRadius, hasSvgFilterSupport, filterUrl, blur]);
 
   return (
     <div
@@ -349,9 +349,9 @@ export const LiquidGlassButton = React.forwardRef<HTMLButtonElement, LiquidGlass
       });
     }, [hasSvgFilterSupport, dims.width, dims.height, radius, depth, strength, chromaticAberration]);
 
-    const dynamicGlassStyle: CSSProperties = useMemo(() => {
-      const baseBorderRadius = radius >= 9999 ? "9999px" : `${radius}px`;
+    const baseBorderRadius = radius >= 9999 ? "9999px" : `${radius}px`;
 
+    const dynamicGlassStyle: CSSProperties = useMemo(() => {
       if (hasSvgFilterSupport && filterUrl) {
         return {
           ...style,
@@ -378,7 +378,7 @@ export const LiquidGlassButton = React.forwardRef<HTMLButtonElement, LiquidGlass
           0 8px 25px -4px rgba(0, 0, 0, 0.1)
         `,
       };
-    }, [style, radius, hasSvgFilterSupport, filterUrl, blur]);
+    }, [style, baseBorderRadius, hasSvgFilterSupport, filterUrl, blur]);
 
     return (
       <button
