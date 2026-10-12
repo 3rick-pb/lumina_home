@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton, BeUITiltCard } from "./BeUIControls";
+import { LiquidGlass, LiquidGlassButton } from "./LiquidGlass";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
@@ -982,28 +983,45 @@ export function CartDrawer() {
       </span>
     </div>
 
-    {/* Close Button on Mobile (visible only < sm) */}
-    <button 
+    {/* Close Button on Mobile (visible only < sm) with Apple Liquid Glass Architecture */}
+    <LiquidGlassButton 
       onClick={() => setIsOpen(false)}
-      className="sm:hidden w-9 h-9 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+      radius={9999}
+      depth={4}
+      strength={30}
+      chromaticAberration={1.8}
+      className="lumina-bag-close-btn sm:hidden w-9 h-9 rounded-full bg-white/80 dark:bg-white/10 border border-black/[0.08] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.06)] text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
       title="Cerrar bolsa"
     >
-      <X className="w-4 h-4" />
-    </button>
+      <motion.div
+        whileHover={{ rotate: 90 }}
+        transition={{ type: "spring", stiffness: 380, damping: 20 }}
+      >
+        <X className="w-4 h-4" />
+      </motion.div>
+    </LiquidGlassButton>
   </div>
 
-  {/* Center Step Indicator (2IXO Pill Dock with pure GPU beUI spring pill) - Sits below title on mobile */}
+  {/* Center Step Indicator: Apple Liquid Glass Pill Dock */}
   <div className="flex items-center justify-center w-full sm:w-auto">
-    <div className="relative grid grid-cols-2 items-center bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl w-full sm:w-auto min-w-[270px] sm:min-w-[300px]">
-      {/* Pure GPU CSS Spring Pill Indicator */}
+    <LiquidGlass
+      radius={9999}
+      depth={5}
+      strength={26}
+      chromaticAberration={1.6}
+      blur={1.5}
+      className="relative grid grid-cols-2 items-center bg-black/[0.03] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.05] dark:border-white/10 w-full sm:w-auto min-w-[270px] sm:min-w-[300px]"
+    >
+      {/* Pure GPU CSS Spring Pill Indicator with Liquid Glass Specular Shine */}
       <div
         style={{
           transform: step === "bag" ? "translate3d(0%, 0, 0)" : "translate3d(100%, 0, 0)",
           transition: "transform 480ms cubic-bezier(0.22, 1.35, 0.36, 1)",
         }}
-        className="pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_10px_rgba(0,0,0,0.09)] z-0"
+        className="pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_12px_rgba(0,0,0,0.12),inset_0_1px_1.5px_rgba(255,255,255,0.9)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] z-0"
       />
       <button 
+        type="button"
         onClick={() => {
           setStep("bag");
         }}
@@ -1016,6 +1034,7 @@ export function CartDrawer() {
         1. Bolsa ({items.length})
       </button>
       <button 
+        type="button"
         onClick={() => {
           if (items.length > 0) {
             handleProceedToPayment();
@@ -1030,18 +1049,27 @@ export function CartDrawer() {
       >
         2. Pasarela de Pago
       </button>
-    </div>
+    </LiquidGlass>
   </div>
 
-  {/* Right Action: 2IXO Circular Glass Close Button (Desktop sm:flex) */}
+  {/* Right Action: Liquid Glass Close Button (Desktop sm:flex) */}
   <div className="hidden sm:flex items-center gap-3">
-    <button 
+    <LiquidGlassButton 
       onClick={() => setIsOpen(false)}
-      className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+      radius={9999}
+      depth={5}
+      strength={32}
+      chromaticAberration={2}
+      className="lumina-bag-close-btn w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 border border-black/[0.08] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.06)] text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
       title="Cerrar bolsa"
     >
-      <X className="w-4 h-4" />
-    </button>
+      <motion.div
+        whileHover={{ rotate: 90 }}
+        transition={{ type: "spring", stiffness: 380, damping: 20 }}
+      >
+        <X className="w-4 h-4" />
+      </motion.div>
+    </LiquidGlassButton>
   </div>
 </header>
 
