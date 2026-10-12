@@ -887,34 +887,28 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON WITH EXCEL 2025 ICON */}
-        {/* Perfectly circular, 100% symmetric, vibrant energetic emerald styling */}
+        {/* 3. MAIN SQUIRCLE ARCHITECTURE TRIGGER BUTTON WITH EXCEL 2026 ICON */}
         <button
           type="button"
           onClick={handleToggleMenu}
           aria-label="Exportar datos a Excel"
           title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-          style={{
-            boxShadow: isOpen 
-              ? "0 0 32px rgba(34, 197, 94, 0.5), 0 16px 36px rgba(0,0,0,0.25), inset 0 2px 2px rgba(255,255,255,0.9), inset 0 -2px 2px rgba(0,0,0,0.2)"
-              : "0 4px 18px rgba(16, 124, 65, 0.3), 0 8px 24px rgba(0,0,0,0.08), inset 0 1.5px 1.5px rgba(255,255,255,0.85), inset 0 -1.5px 1.5px rgba(0,0,0,0.1)"
-          }}
-          className={`relative z-50 w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-3xl overflow-hidden active:scale-95 ${
+          className={`relative z-50 h-10 sm:h-11 w-10 sm:w-11 rounded-2xl flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-2xl overflow-hidden active:scale-95 shrink-0 ${
             isOpen
-              ? "border-emerald-400 bg-emerald-600 text-white scale-105"
-              : "border-emerald-500/40 dark:border-emerald-400/50 bg-gradient-to-br from-white via-emerald-50/80 to-emerald-100/70 dark:from-[#1b3826] dark:via-[#142c1e] dark:to-[#0f2317] hover:scale-108 hover:border-emerald-500 dark:hover:border-emerald-300"
+              ? "border-rose-500 bg-rose-600 dark:bg-rose-600 text-white shadow-[0_4px_20px_rgba(244,63,94,0.4)] scale-105"
+              : "border-black/10 dark:border-white/15 bg-white/95 dark:bg-[#151916]/95 hover:border-emerald-500/60 dark:hover:border-emerald-400/60 shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_3px_rgba(16,185,129,0.12)] hover:shadow-[0_8px_24px_rgba(16,185,129,0.22)] hover:scale-105"
           }`}
         >
-          {/* Liquid glass top specular reflection */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/80 via-white/25 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
+          {/* Subtle ambient emerald glow on hover */}
+          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-tr from-emerald-500/10 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity" />
 
-          {/* Liquid pulse wave on open */}
+          {/* Pulse wave on open */}
           {isOpen && (
             <motion.div 
               initial={{ scale: 0.8, opacity: 0.8 }}
-              animate={{ scale: 1.4, opacity: 0 }}
+              animate={{ scale: 1.3, opacity: 0 }}
               transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
-              className="pointer-events-none absolute inset-0 rounded-full border-2 border-emerald-400"
+              className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-rose-400"
             />
           )}
 
@@ -929,7 +923,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             {isOpen ? (
               <X className="w-5 h-5 text-white" />
             ) : (
-              <MicrosoftExcel className="w-6 h-6 transition-transform duration-200" />
+              <MicrosoftExcel className="w-5.5 h-5.5 sm:w-6 sm:h-6 drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200" />
             )}
           </motion.div>
         </button>

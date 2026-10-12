@@ -35,6 +35,9 @@ import {
   Hash,
   User,
   Activity,
+  Cpu,
+  Radio,
+  Sliders,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -43,6 +46,9 @@ import { useBrand } from "@/core/hooks/useBrand";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { CodeBlock } from "@/components/ui/code-block";
 
+// ============================================================================
+// TYPES & SERVICE STATUS
+// ============================================================================
 type ViewSection = "all" | "smtp" | "supabase" | "google" | "payphone" | "hosting" | "wallets";
 
 interface ServiceConfigStatus {
@@ -91,6 +97,228 @@ interface ServiceConfigStatus {
   };
 }
 
+// ============================================================================
+// HARDWARE DOT-MATRIX GRAPHICS (TAL CUAL Desing.jpg)
+// ============================================================================
+
+/**
+ * 01. Audio / Signal Waveform made of glowing LED dots
+ * Inspired by Card 01 of Desing.jpg
+ */
+function DotWaveformVisualizer({ active = true }: { active?: boolean }) {
+  // Height levels of dots per column (1 to 6)
+  const columns = [
+    1, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 4, 3, 5, 4, 2, 3, 1, 2, 1,
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 py-3 px-2">
+      {columns.map((height, colIdx) => {
+        const isCenter = colIdx >= 7 && colIdx <= 12;
+        return (
+          <div key={colIdx} className="flex flex-col items-center gap-1">
+            {Array.from({ length: 6 }).map((_, dotIdx) => {
+              const invertedDotIdx = 5 - dotIdx;
+              const isDotLit = invertedDotIdx < height;
+
+              let dotClass = "w-1.5 h-1.5 rounded-full transition-colors duration-300 ";
+              if (!isDotLit) {
+                dotClass += "bg-white/[0.06]";
+              } else if (isCenter) {
+                dotClass += active
+                  ? "bg-[#ff5500] shadow-[0_0_6px_#ff5500]"
+                  : "bg-amber-500/60";
+              } else {
+                dotClass += active
+                  ? "bg-zinc-200 shadow-[0_0_4px_rgba(255,255,255,0.4)]"
+                  : "bg-zinc-500";
+              }
+
+              return <span key={dotIdx} className={dotClass} />;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Telemetry Avatar Face made of white dots with glowing red LED eyes
+ * Inspired by Card 01 of Desing.jpg
+ */
+function DotAvatarFace({ online = true }: { online?: boolean }) {
+  return (
+    <div className="relative w-14 h-14 mx-auto flex items-center justify-center">
+      {/* Outer ring of dots */}
+      <svg className="w-14 h-14" viewBox="0 0 56 56">
+        {Array.from({ length: 16 }).map((_, i) => {
+          const angle = (i * 360) / 16;
+          const rad = (angle * Math.PI) / 180;
+          const cx = 28 + 22 * Math.cos(rad);
+          const cy = 28 + 22 * Math.sin(rad);
+          return (
+            <circle
+              key={i}
+              cx={cx}
+              cy={cy}
+              r="1.4"
+              className={online ? "fill-zinc-300" : "fill-zinc-600"}
+            />
+          );
+        })}
+        {/* Left eye dot (red glowing LED) */}
+        <circle
+          cx="22"
+          cy="26"
+          r="2.4"
+          className={online ? "fill-[#ff3b30] filter drop-shadow-[0_0_4px_#ff3b30]" : "fill-zinc-600"}
+        />
+        {/* Right eye dot (red glowing LED) */}
+        <circle
+          cx="34"
+          cy="26"
+          r="2.4"
+          className={online ? "fill-[#ff3b30] filter drop-shadow-[0_0_4px_#ff3b30]" : "fill-zinc-600"}
+        />
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * 02. Vertical Equalizer / Bar Graph of LED dots
+ * Inspired by Card 02 of Desing.jpg
+ */
+function DotBarEqualizer({ count = 0, max = 7 }: { count: number; max?: number }) {
+  const bars = [3, 5, 2, 6, 4, 3, 5, 7];
+
+  return (
+    <div className="flex items-end justify-center gap-2 py-2">
+      {bars.map((maxDots, colIdx) => {
+        const isPeak = colIdx === 7 || colIdx === 3;
+        const activeLevel = Math.min(
+          maxDots,
+          Math.max(1, Math.round((count / max) * maxDots) + (colIdx % 2))
+        );
+
+        return (
+          <div key={colIdx} className="flex flex-col items-center gap-1">
+            {Array.from({ length: 7 }).map((_, dotIdx) => {
+              const inverted = 6 - dotIdx;
+              const isLit = inverted < activeLevel;
+              const isTopActiveDot = inverted === activeLevel - 1;
+
+              let dotClass = "w-1.5 h-1.5 rounded-full transition-all ";
+              if (!isLit) {
+                dotClass += "bg-white/[0.06]";
+              } else if (isTopActiveDot && isPeak) {
+                dotClass += "bg-[#ff5500] shadow-[0_0_6px_#ff5500]";
+              } else if (isPeak) {
+                dotClass += "bg-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.5)]";
+              } else {
+                dotClass += "bg-zinc-300";
+              }
+
+              return <span key={dotIdx} className={dotClass} />;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 03. Circular Dot Dial Gauge
+ * Inspired by Card 03 of Desing.jpg
+ */
+function CircularDotDial({ percent = 96, label = "HEALTH" }: { percent?: number; label?: string }) {
+  // Arc of 26 dots spanning 300 degrees, opening at bottom
+  const totalDots = 26;
+  const startAngle = 120; // Starts bottom-left
+  const sweepAngle = 300;
+
+  return (
+    <div className="relative w-28 h-28 flex items-center justify-center">
+      <svg className="w-28 h-28" viewBox="0 0 112 112">
+        {Array.from({ length: totalDots }).map((_, i) => {
+          const angle = startAngle + (i * sweepAngle) / (totalDots - 1);
+          const rad = (angle * Math.PI) / 180;
+          const cx = 56 + 44 * Math.cos(rad);
+          const cy = 56 + 44 * Math.sin(rad);
+          const litThreshold = Math.round((percent / 100) * totalDots);
+          const isLit = i <= litThreshold;
+
+          return (
+            <circle
+              key={i}
+              cx={cx}
+              cy={cy}
+              r="2"
+              className={
+                isLit
+                  ? "fill-zinc-200 filter drop-shadow-[0_0_2px_rgba(255,255,255,0.7)]"
+                  : "fill-white/[0.08]"
+              }
+            />
+          );
+        })}
+      </svg>
+      {/* Center Digital Telemetry */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="font-mono text-xl font-bold tracking-tight text-white">
+          {percent}%
+        </span>
+        <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-400">
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 04. Dot-Matrix ECG / Pulse Line
+ * Inspired by Card 06 of Desing.jpg
+ */
+function DotHeartbeat({ active = true }: { active?: boolean }) {
+  return (
+    <div className="flex items-center justify-center py-2 px-1">
+      <svg className="w-full max-w-[240px] h-10" viewBox="0 0 200 40">
+        {/* Baseline dots */}
+        {[
+          [10, 20], [20, 20], [30, 20], [40, 20], [50, 20],
+          [60, 24], [70, 14], [80, 20],
+          [90, 20], [98, 20],
+          // Pulse Spike with orange peak
+          [105, 34], [112, 6], [118, 30], [125, 20],
+          [135, 20], [145, 20], [155, 17], [165, 20],
+          [175, 20], [185, 20], [195, 20],
+        ].map(([cx, cy], i) => {
+          const isSpike = cx >= 105 && cx <= 125;
+          return (
+            <circle
+              key={i}
+              cx={cx}
+              cy={cy}
+              r={isSpike ? 2.2 : 1.5}
+              className={
+                isSpike && active
+                  ? "fill-[#ff5500] filter drop-shadow-[0_0_5px_#ff5500]"
+                  : "fill-zinc-400"
+              }
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN COMPONENT: INTEGRATIONS TAB (Desing.jpg TAL CUAL)
+// ============================================================================
 export function IntegrationsTab() {
   const brand = useBrand();
   const { user } = useUserStore();
@@ -102,7 +330,7 @@ export function IntegrationsTab() {
   const [servicesStatus, setServicesStatus] = useState<ServiceConfigStatus | null>(null);
   const [showLiveCode, setShowLiveCode] = useState(true);
 
-  // Combobox Apple Liquid Glass state
+  // Combobox Dropdown State
   const [isComboboxOpen, setIsComboboxOpen] = useState(false);
   const comboboxRef = useRef<HTMLDivElement>(null);
 
@@ -121,16 +349,16 @@ export function IntegrationsTab() {
     };
   }, [isComboboxOpen]);
 
-  // Copy states
+  // Copy feedback state
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const markCopied = (key: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2500);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   // ==========================================
-  // 1. SMTP & DESPACHO STATE
+  // 1. SMTP SERVER STATE
   // ==========================================
   const [smtpProvider, setSmtpProvider] = useState<"gmail" | "custom">("gmail");
   const [smtpHost, setSmtpHost] = useState("smtp.gmail.com");
@@ -151,7 +379,7 @@ export function IntegrationsTab() {
   const [showGoogleGuide, setShowGoogleGuide] = useState(false);
 
   // ==========================================
-  // 2. SUPABASE STATE
+  // 2. SUPABASE DB STATE
   // ==========================================
   const [supabaseUrl, setSupabaseUrl] = useState(process.env.NEXT_PUBLIC_SUPABASE_URL || "");
   const [supabaseAnonKey, setSupabaseAnonKey] = useState(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "");
@@ -162,7 +390,7 @@ export function IntegrationsTab() {
   // 3. GOOGLE CLOUD & DRIVE STATE
   // ==========================================
   const [googleClientId, setGoogleClientId] = useState(
-    (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").replace("YOUR_GOOGLE_CLIENT_ID_HERE", "")
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || ""
   );
   const [googleClientSecret, setGoogleClientSecret] = useState("");
   const [googleRedirectUri, setGoogleRedirectUri] = useState(() => {
@@ -203,7 +431,7 @@ export function IntegrationsTab() {
   const [googleWalletIssuerId, setGoogleWalletIssuerId] = useState("");
   const [googleWalletClientEmail, setGoogleWalletClientEmail] = useState("");
 
-  // Generate random 32-byte secret key helper
+  // Random 32-byte generator
   const generateRandomHexKey = () => {
     const arr = new Uint8Array(32);
     crypto.getRandomValues(arr);
@@ -227,7 +455,6 @@ export function IntegrationsTab() {
         if (data.success && data.services) {
           setServicesStatus(data.services);
 
-          // Pre-populate form fields if available from server
           if (data.services.smtp) {
             const s = data.services.smtp;
             if (s.user) setSmtpUser((prev) => prev || s.user);
@@ -273,7 +500,7 @@ export function IntegrationsTab() {
         const payphoneData = await payphoneRes.json();
         if (payphoneData.success) {
           setPayphoneMode(payphoneData.mode === "redirect" ? "redirect" : "box");
-          if (payphoneData.storeId && !payphoneData.storeId.includes("•••")) {
+          if (payphoneData.storeId && !payphoneData.storeId.includes("••••")) {
             setPayphoneStoreId(payphoneData.storeId);
           }
         }
@@ -289,7 +516,7 @@ export function IntegrationsTab() {
     fetchEnvConfig();
   }, [fetchEnvConfig]);
 
-  // Master Save to Database handler triggered by "Guardar"
+  // Master Save handler
   const handleSaveAllToDatabase = async () => {
     setIsSavingAll(true);
     setToolState("working");
@@ -300,7 +527,7 @@ export function IntegrationsTab() {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
-      // 1. Guardar receptores de bodega si están configurados
+      // Save dispatch recipients
       if (dispatchRecipients.length > 0) {
         await fetch("/api/admin/smtp", {
           method: "POST",
@@ -312,7 +539,7 @@ export function IntegrationsTab() {
         });
       }
 
-      // 2. Guardar modo y parámetros de PayPhone si están disponibles
+      // Save PayPhone mode
       if (payphoneMode) {
         await fetch("/api/admin/payphone/settings", {
           method: "POST",
@@ -324,7 +551,6 @@ export function IntegrationsTab() {
         });
       }
 
-      // 3. Refrescar estado general del servidor
       await fetchEnvConfig();
       setToolState("done");
       setTimeout(() => setToolState("idle"), 2500);
@@ -336,7 +562,7 @@ export function IntegrationsTab() {
     }
   };
 
-  // Handle PayPhone Mode Toggle (Box vs Redirect)
+  // PayPhone Mode Toggle
   const handleSavePayphoneMode = async (modeToSave: "box" | "redirect") => {
     setIsSavingPayphone(true);
     setPayphoneMsg(null);
@@ -364,7 +590,7 @@ export function IntegrationsTab() {
       setPayphoneMode(modeToSave);
       setPayphoneMsg({
         success: true,
-        text: `Modo de checkout guardado: ${modeToSave === "box" ? "Cajita Embebida en Tienda" : "Redirección 3D-Secure"}`,
+        text: `Modo de checkout guardado: ${modeToSave === "box" ? "Cajita Embebida" : "Redirección 3D-Secure"}`,
       });
       fetchEnvConfig();
     } catch (err: unknown) {
@@ -467,7 +693,7 @@ export function IntegrationsTab() {
       setDispatchMsg({
         success: true,
         text: isAuto
-          ? "✓ Guardado en la base de datos."
+          ? "Guardado en la base de datos."
           : data.message || "Receptores de despacho guardados exitosamente.",
       });
     } catch (err: unknown) {
@@ -562,7 +788,7 @@ export function IntegrationsTab() {
 
       setDispatchMsg({
         success: true,
-        text: `✓ Notificación de prueba enviada exitosamente a ${data.sentToCount || dispatchRecipients.length} receptores de bodega.`,
+        text: `Notificación de prueba enviada a ${data.sentToCount || dispatchRecipients.length} receptores de bodega.`,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error al enviar prueba de despacho.";
@@ -572,7 +798,7 @@ export function IntegrationsTab() {
     }
   };
 
-  // Real-time computed Master .env string containing ALL website environment variables
+  // Real-time computed Master .env string
   const computedMasterEnv = useMemo(() => {
     const lines = [
       `# ==============================================================================`,
@@ -675,1512 +901,1218 @@ export function IntegrationsTab() {
   };
 
   const navCategories = [
-    { id: "all" as const, label: "Todas las Secciones", icon: Layers, desc: "Vista unificada de toda la infraestructura", ready: true },
-    { id: "smtp" as const, label: "SMTP & Correos", icon: Mail, desc: "Servidor de emails y bodegas", ready: servicesStatus?.smtp?.configured },
-    { id: "supabase" as const, label: "Supabase DB", icon: Database, desc: "PostgreSQL, Auth y Storage", ready: servicesStatus?.supabase?.configured },
-    { id: "google" as const, label: "Google Cloud", icon: Cloud, desc: "OAuth 2.0 y Drive API", ready: servicesStatus?.googleDrive?.configured },
-    { id: "payphone" as const, label: "PayPhone Pagos", icon: CreditCard, desc: "Tarjetas y modo de cobro", ready: servicesStatus?.payphone?.configured },
-    { id: "hosting" as const, label: "Hosting & Mapas", icon: Globe, desc: "Dominio web y token Mapbox", ready: Boolean(servicesStatus?.hosting?.siteUrl) },
-    { id: "wallets" as const, label: "Google Wallet", icon: Smartphone, desc: "Pases digitales de cliente y fidelidad", ready: servicesStatus?.wallets?.configured },
+    { id: "all" as const, label: "00 TODAS LAS SECCIONES", icon: Layers, desc: "Telemetría completa de la infraestructura", ready: true },
+    { id: "smtp" as const, label: "01 SMTP & CORREOS", icon: Mail, desc: "Servidor de emails, test y bodegas", ready: servicesStatus?.smtp?.configured },
+    { id: "supabase" as const, label: "02 SUPABASE DB", icon: Database, desc: "PostgreSQL, Auth y Storage", ready: servicesStatus?.supabase?.configured },
+    { id: "google" as const, label: "03 GOOGLE CLOUD", icon: Cloud, desc: "OAuth 2.0 y Drive API", ready: servicesStatus?.googleDrive?.configured },
+    { id: "payphone" as const, label: "04 PAYPHONE PAGOS", icon: CreditCard, desc: "Tarjetas y modo de cobro", ready: servicesStatus?.payphone?.configured },
+    { id: "hosting" as const, label: "05 HOSTING & MAPAS", icon: Globe, desc: "Dominio web y token Mapbox", ready: Boolean(servicesStatus?.hosting?.siteUrl) },
+    { id: "wallets" as const, label: "06 GOOGLE WALLET", icon: Smartphone, desc: "Pases digitales de cliente", ready: servicesStatus?.wallets?.configured },
   ];
 
   const selectedCategory = navCategories.find((c) => c.id === activeSection) || navCategories[0];
   const SelectedIcon = selectedCategory.icon;
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in font-sans" data-state={toolState}>
+    <div
+      className="relative overflow-hidden rounded-[2.5rem] sm:rounded-[3rem] bg-[#0c0d12] text-zinc-100 p-4 sm:p-7 md:p-9 border border-white/[0.08] shadow-[0_30px_90px_rgba(0,0,0,0.8)] space-y-7 sm:space-y-8 animate-fade-in font-sans"
+      data-state={toolState}
+    >
       {/* ==================================================================== */}
-      {/* MASTER HUB CONTAINER (APPLE / LUMINA LUXURY BENTO)                    */}
+      {/* AMBIENT LIGHTING & DOT MATRIX GRID OVERLAY (TAL CUAL Desing.jpg)     */}
       {/* ==================================================================== */}
-      <div className="bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl p-4 sm:p-7 md:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-black/5 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.03)] space-y-6 sm:space-y-7">
+      {/* Ethereal sunset/amber glow pouring from upper-left */}
+      <div className="pointer-events-none absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(245,158,11,0.28)_0%,rgba(234,88,12,0.12)_40%,transparent_75%)] blur-3xl" />
+      <div className="pointer-events-none absolute top-1/3 -right-40 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,85,0,0.06)_0%,transparent_70%)] blur-3xl" />
+      
+      {/* Fine tactical background dot grid */}
+      <div 
+        className="pointer-events-none absolute inset-0 opacity-[0.14]" 
+        style={{
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px)",
+          backgroundSize: "20px 20px"
+        }}
+      />
+
+      {/* ==================================================================== */}
+      {/* TOP HEADER: HARDWARE TELEMETRY & DOT MATRIX TITLE                    */}
+      {/* ==================================================================== */}
+      <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-white/[0.08]">
+        <div>
+          {/* LED Status line with pulsing amber indicator */}
+          <div className="font-mono text-xs uppercase tracking-[0.25em] text-amber-500 font-bold mb-2 flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_8px_#ff5500] animate-pulse" />
+            <span>ALL SYSTEMS OPERATIONAL</span>
+          </div>
+
+          <h1 className="font-mono text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white">
+            LUMINA CLOUD
+          </h1>
+          <p className="font-mono text-xs text-zinc-400 tracking-wider mt-1">
+            INFRASTRUCTURE & .ENV TELEMETRY ENGINE
+          </p>
+
+          <div className="mt-3">
+            <CloudSyncStatus
+              isSyncing={isSavingAll || isSavingDispatch || isSavingPayphone}
+              syncError={null}
+              onSave={handleSaveAllToDatabase}
+              saveLabel="Guardar Todo"
+              savedLabel="Hardware Sincronizado"
+            />
+          </div>
+        </div>
+
+        {/* Action buttons (Mac/Obsidian Hardware Style) */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={fetchEnvConfig}
+            disabled={isLoadingStatus}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-[#171821] hover:bg-[#1f202b] text-zinc-300 text-xs font-mono font-medium rounded-xl border border-white/10 transition-all cursor-pointer active:scale-95 shadow-sm"
+            title="Refrescar telemetría"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-zinc-400 ${isLoadingStatus ? "animate-spin text-amber-500" : ""}`} />
+            <span>REFRESH</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => markCopied("master_all", computedMasterEnv)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#ff5500] hover:bg-[#ff691e] text-white text-xs font-mono font-bold rounded-xl transition-all cursor-pointer active:scale-95 shadow-[0_0_20px_rgba(255,85,0,0.35)]"
+          >
+            {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5 text-white stroke-[3]" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedKey === "master_all" ? "COPIADO" : "COPY MASTER .ENV"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDownloadEnv(".env.local")}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-[#171821] hover:bg-[#1f202b] text-amber-400 text-xs font-mono font-semibold rounded-xl border border-amber-500/25 transition-all cursor-pointer active:scale-95 shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span>.env.local</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDownloadEnv(".env.production")}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-[#171821] hover:bg-[#1f202b] text-zinc-300 text-xs font-mono font-semibold rounded-xl border border-white/10 transition-all cursor-pointer active:scale-95 shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5 text-zinc-400" />
+            <span>.env.prod</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ==================================================================== */}
+      {/* SECTION NAV COMBOBOX: OBSIDIAN GLASS WITH VERTICAL SCROLL ONLY        */}
+      {/* ==================================================================== */}
+      <div className="relative z-20 pt-1">
+        <div ref={comboboxRef} className="relative w-full sm:max-w-md">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <label className="text-[11px] font-mono font-bold tracking-widest text-zinc-400 uppercase">
+              MODULO DE TELEMETRÍA:
+            </label>
+            <span className="text-[10px] font-mono text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25">
+              FILTRAR MODULO
+            </span>
+          </div>
+
+          <motion.button
+            type="button"
+            onClick={() => setIsComboboxOpen((prev) => !prev)}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-[#141419]/90 hover:bg-[#1b1b22]/90 backdrop-blur-2xl border border-white/10 hover:border-amber-500/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_10px_25px_rgba(0,0,0,0.5)] text-xs font-mono font-semibold text-white transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
+                <SelectedIcon className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col text-left min-w-0">
+                <span className="truncate leading-tight font-bold text-white text-xs sm:text-sm">
+                  {selectedCategory.label}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-normal leading-tight mt-0.5 truncate">
+                  {selectedCategory.desc}
+                </span>
+              </div>
+            </div>
+
+            <motion.div
+              animate={{ rotate: isComboboxOpen ? 180 : 0 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center"
+            >
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+            </motion.div>
+          </motion.button>
+
+          <AnimatePresence>
+            {isComboboxOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                transition={{ type: "spring", stiffness: 440, damping: 22 }}
+                className="absolute left-0 right-0 top-full mt-2.5 rounded-2xl bg-[#141419]/95 backdrop-blur-2xl border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.08)] p-2 z-50 overflow-hidden"
+              >
+                <div className="space-y-1 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.2)_transparent]">
+                  {navCategories.map((cat) => {
+                    const Icon = cat.icon;
+                    const isSelected = activeSection === cat.id;
+
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveSection(cat.id);
+                          setIsComboboxOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-mono transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/35"
+                            : "text-zinc-300 hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                            isSelected ? "bg-amber-500 text-stone-950 border-amber-400" : "bg-white/5 text-zinc-400 border-white/10"
+                          }`}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="truncate leading-tight">{cat.label}</span>
+                            <span className="text-[10px] text-zinc-500 truncate">{cat.desc}</span>
+                          </div>
+                        </div>
+                        {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0 stroke-[2.5]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ==================================================================== */}
+      {/* TELEMETRY BENTO ROW: 01, 02, 03 (TAL CUAL Desing.jpg)                */}
+      {/* ==================================================================== */}
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
         
-        {/* Cabecera Principal */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-black/5 dark:border-white/10">
-          <div className="min-w-0">
-            <div className="mb-2.5">
-              <CloudSyncStatus
-                isSyncing={isSavingAll || isSavingDispatch || isSavingPayphone}
-                syncError={null}
-                onSave={handleSaveAllToDatabase}
-                saveLabel="Guardar"
-                savedLabel="Guardado en nube"
-              />
+        {/* CARD 01: AGENT / SMTP STATUS */}
+        <div className="relative overflow-hidden rounded-[28px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+                01 SMTP STATUS
+              </span>
+              <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_8px_#ff5500] animate-pulse" />
             </div>
-            <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-              <Server className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 shrink-0" />
-              <span>Infraestructura & Generador Universal .env</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-              Configura y genera todas las variables de entorno de la plataforma en un solo lugar. Cambia de cuenta de Supabase, proyecto en Google Cloud Console, proveedor SMTP o dominio web sin confusiones.
-            </p>
+
+            <h3 className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">
+              {servicesStatus?.smtp?.configured ? "CONNECTED..." : "STANDBY..."}
+            </h3>
+
+            {/* Dot avatar face with LED eyes */}
+            <DotAvatarFace online={Boolean(servicesStatus?.smtp?.configured)} />
+
+            {/* Glowing Dot Waveform visualizer */}
+            <DotWaveformVisualizer active={Boolean(servicesStatus?.smtp?.configured)} />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={fetchEnvConfig}
-              disabled={isLoadingStatus}
-              className="flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-medium rounded-xl transition-all cursor-pointer active:scale-95"
-              title="Refrescar estado de los servicios"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-zinc-500 ${isLoadingStatus ? "animate-spin text-blue-500" : ""}`} />
-              <span>Refrescar</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => markCopied("master_all", computedMasterEnv)}
-              className="flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2 bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-semibold rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
-            >
-              {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedKey === "master_all" ? "¡Copiado Todo!" : "Copiar Todo"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDownloadEnv(".env.local")}
-              className="flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-xl border border-blue-200/60 dark:border-blue-500/30 transition-all cursor-pointer active:scale-95"
-              title="Descargar para entorno de desarrollo"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>.env.local</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDownloadEnv(".env.production")}
-              className="flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold rounded-xl border border-black/5 dark:border-white/10 transition-all cursor-pointer active:scale-95"
-              title="Descargar para Vercel o VPS"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>.env.prod</span>
-            </button>
+          <div className="grid grid-cols-3 gap-2 pt-4 mt-2 border-t border-white/[0.06] text-center font-mono">
+            <div>
+              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">PORT</span>
+              <span className="text-xs font-bold text-white block mt-0.5">{smtpPort}</span>
+            </div>
+            <div>
+              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">SECURITY</span>
+              <span className="text-xs font-bold text-white block mt-0.5">TLS 1.3</span>
+            </div>
+            <div>
+              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">HEALTH</span>
+              <span className="text-xs font-bold text-[#ff5500] block mt-0.5">100%</span>
+            </div>
           </div>
         </div>
 
-        {/* ==================================================================== */}
-        {/* SELECTOR COMBOBOX APPLE LIQUID GLASS CON EFECTO REBOTE (WWDC25)      */}
-        {/* ==================================================================== */}
-        <div className="pt-1 pb-1">
-          <div ref={comboboxRef} className="relative z-30 w-full sm:max-w-md">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <label className="text-[11px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                Módulo o Sección para Configurar:
-              </label>
-              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                Navegación Rápida
+        {/* CARD 02: CLOUD DISPATCH (BODEGAS) */}
+        <div className="relative overflow-hidden rounded-[28px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+                02 CLOUD DISPATCH
+              </span>
+              <span className="font-mono text-[10px] text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25">
+                MAX 7
               </span>
             </div>
 
-            {/* Botón Trigger Cápsula de Cristal Líquido (Apple Liquid Glass) */}
-            <motion.button
-              type="button"
-              onClick={() => setIsComboboxOpen((prev) => !prev)}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 500, damping: 25 }}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-white/75 dark:bg-[#202024]/75 hover:bg-white/90 dark:hover:bg-[#28282c]/90 backdrop-blur-3xl backdrop-saturate-[200%] border border-white/60 dark:border-white/15 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.06),inset_0_1.5px_1px_rgba(255,255,255,0.85),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_32px_-5px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.22),inset_0_-1px_1px_rgba(0,0,0,0.4)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
-              aria-expanded={isComboboxOpen}
-              aria-haspopup="listbox"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 border border-amber-500/35 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]">
-                  <SelectedIcon className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col text-left min-w-0">
-                  <span className="truncate leading-tight font-bold text-zinc-900 dark:text-white text-xs sm:text-sm">
-                    {selectedCategory.label}
-                  </span>
-                  <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-normal leading-tight mt-0.5 truncate">
-                    {selectedCategory.desc}
-                  </span>
-                </div>
-              </div>
+            <div className="font-mono text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              {dispatchRecipients.length}/7
+            </div>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500 block mb-2">
+              BODEGAS CONECTADAS
+            </span>
 
-              <div className="flex items-center gap-2 shrink-0">
-                {selectedCategory.id !== "all" && (
-                  selectedCategory.ready ? (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" title="Configurado" />
-                  ) : (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 ring-4 ring-amber-400/20" title="Pendiente" />
-                  )
-                )}
-                <motion.div
-                  animate={{ rotate: isComboboxOpen ? 180 : 0 }}
-                  transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors"
-                >
-                  <ChevronDown className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-300" />
-                </motion.div>
-              </div>
-            </motion.button>
+            {/* Vertical Dot Equalizer */}
+            <DotBarEqualizer count={dispatchRecipients.length} max={7} />
+          </div>
 
-            {/* Menú Desplegable Liquid Glass Apple con Scroll Vertical Estilizado (Sin Scroll Horizontal) */}
-            <AnimatePresence>
-              {isComboboxOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: -8, transition: { duration: 0.14, ease: "easeOut" } }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 440,
-                    damping: 20,
-                    mass: 0.7,
-                  }}
-                  style={{ transformOrigin: "top left" }}
-                  className="absolute left-0 right-0 top-full mt-2.5 rounded-[1.75rem] bg-white/85 dark:bg-[#161618]/90 backdrop-blur-3xl backdrop-saturate-[210%] border border-white/60 dark:border-white/15 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.25),inset_0_1.5px_1px_0_rgba(255,255,255,0.85),inset_0_-1px_1px_0_rgba(0,0,0,0.06)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7),inset_0_1.5px_1px_0_rgba(255,255,255,0.22),inset_0_-1px_1px_0_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
-                  role="listbox"
-                >
-                  <div className="space-y-1 max-h-[320px] overflow-y-auto overflow-x-hidden pr-1.5 [scrollbar-width:thin] [scrollbar-color:rgba(156,163,175,0.4)_transparent] dark:[scrollbar-color:rgba(113,113,122,0.4)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-300 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
-                    {navCategories.map((cat) => {
-                      const Icon = cat.icon;
-                      const isSelected = activeSection === cat.id;
-
-                      return (
-                        <motion.button
-                          key={cat.id}
-                          type="button"
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            setActiveSection(cat.id);
-                            setIsComboboxOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-left text-xs transition-colors cursor-pointer ${
-                            isSelected
-                              ? "bg-amber-500/20 text-zinc-950 dark:text-amber-100 font-semibold border border-amber-500/35 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
-                              : "text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10"
-                          }`}
-                          role="option"
-                          aria-selected={isSelected}
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
-                              isSelected 
-                                ? "bg-amber-500 text-stone-950 border-amber-400 font-bold shadow-xs" 
-                                : "bg-white/70 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-400 border-white/30 dark:border-white/10"
-                            }`}>
-                              <Icon className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="truncate leading-tight font-medium">{cat.label}</span>
-                              <span className="text-[10.5px] text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5 truncate">
-                                {cat.desc}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            {cat.id !== "all" && (
-                              <span className={`w-1.5 h-1.5 rounded-full ${cat.ready ? "bg-emerald-500" : "bg-amber-400"}`} />
-                            )}
-                            {isSelected && (
-                              <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
-                            )}
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="flex items-center justify-between pt-4 mt-2 border-t border-white/[0.06] font-mono">
+            <div>
+              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">RECIPIENTS</span>
+              <span className="text-xs font-bold text-white block mt-0.5">{dispatchRecipients.length} ACTIVOS</span>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#ff5500]/15 text-[#ff5500] border border-[#ff5500]/30">
+              +{Math.round((dispatchRecipients.length / 7) * 100)}%
+            </span>
           </div>
         </div>
 
-        {/* ==================================================================== */}
-        {/* PANEL MAESTRO: TERMINAL OBSIDIAN CON RARE-UI CODE BLOCK (.ENV)       */}
-        {/* ==================================================================== */}
-        <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-[#090a0f] border-2 border-amber-500/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6),0_0_40px_-15px_rgba(247,80,1,0.18)] p-2 sm:p-2.5 transition-all">
-          {/* Luces ambientales cálidas */}
-          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-orange-600/10 blur-3xl pointer-events-none" />
+        {/* CARD 03: SYSTEM TELEMETRY */}
+        <div className="relative overflow-hidden rounded-[28px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+                03 SYSTEM TELEMETRY
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+            </div>
 
-          {/* Núcleo interior del Terminal */}
-          <div className="relative rounded-[calc(2rem-0.5rem)] sm:rounded-[calc(2.5rem-0.5rem)] bg-[#0e0f17]/95 border border-white/5 p-4 sm:p-6 md:p-7 space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              {/* Circular Dot Dial */}
+              <CircularDotDial percent={96} label="ONLINE" />
+
+              {/* Status List with glowing LED dots */}
+              <div className="space-y-2.5 font-mono text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />
+                  <span className="text-zinc-300 font-bold">ONLINE</span>
+                  <span className="text-zinc-500 ml-auto">96%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-zinc-500" />
+                  <span className="text-zinc-400">OFFLINE</span>
+                  <span className="text-zinc-500 ml-auto">4%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_6px_#ff5500]" />
+                  <span className="text-[#ff5500] font-bold">ALERTS</span>
+                  <span className="text-zinc-400 ml-auto">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 mt-2 border-t border-white/[0.06] flex items-center justify-between font-mono text-[11px]">
+            <span className="text-zinc-400">STATUS: ACTIVE</span>
+            <span className="text-emerald-400 font-bold">VERIFIED ●</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ==================================================================== */}
+      {/* 04 & 05 & 06: SMTP VAULT, TEST LAB & DISPATCH RECIPIENTS             */}
+      {/* ==================================================================== */}
+      {(activeSection === "all" || activeSection === "smtp") && (
+        <div className="relative z-10 space-y-6">
+          
+          {/* Bento Grid: Vault (Left) + Test & Dispatch (Right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             
-            {/* Header del Terminal con Botones Estilo Mac y Telemetría */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
-              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#F75001]/25 via-amber-500/20 to-orange-500/10 border border-[#F75001]/40 text-[#F75001] flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(247,80,1,0.25)]">
-                  <Terminal className="w-5 h-5" />
+            {/* TILE 04: SMTP CREDENTIALS VAULT */}
+            <div className="rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-5">
+              <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+                <div>
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+                    04 SMTP CREDENTIALS
+                  </span>
+                  <h3 className="font-mono text-base sm:text-lg font-bold text-white mt-0.5">
+                    Bóveda de Servidor Transaccional
+                  </h3>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Botones de ventana macOS */}
-                    <div className="flex items-center gap-1.5 mr-1 hidden sm:flex">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 ring-1 ring-red-400/30" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 ring-1 ring-amber-400/30" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 ring-1 ring-emerald-400/30" />
-                    </div>
-                    <h3 className="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-2">
-                      <span>Terminal Maestro de Variables (.env)</span>
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      Rare UI Engine
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Sincronizado en Vivo</span>
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-                    Configuración maestra universal: Supabase, Servidor SMTP, PayPhone, Google Cloud y Hosting en un único archivo de despliegue.
-                  </p>
-                </div>
+                <span className="font-mono text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  AES-256 VAULT
+                </span>
               </div>
 
-              {/* Acciones Rápidas del Header */}
-              <div className="flex items-center gap-2 flex-wrap shrink-0">
-                <motion.button
+              {/* Provider Selector Tiles (Gmail Cloud vs Custom) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono">
+                <button
                   type="button"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => markCopied("master_all", computedMasterEnv)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-[#F75001] hover:bg-[#ff641c] text-white text-xs font-bold rounded-xl transition-all shadow-[0_4px_16px_rgba(247,80,1,0.3)] cursor-pointer"
-                >
-                  {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === "master_all" ? "¡Copiado Todo!" : "Copiar .env Maestro"}</span>
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setShowLiveCode((prev) => !prev)}
-                  className="px-3.5 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-xs text-zinc-300 font-medium transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <FileCode className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>{showLiveCode ? "Ocultar Código" : "Expandir Terminal"}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-300 ${showLiveCode ? "rotate-180" : ""}`} />
-                </motion.button>
-              </div>
-            </div>
-
-            {/* Barra de Atajos para Copiar Bloques Específicos */}
-            <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
-              <span className="text-[11px] font-mono text-zinc-400">
-                Copiar fragmento directo:
-              </span>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.95 }}
                   onClick={() => {
-                    const snip = `SMTP_HOST="${smtpProvider === "gmail" ? "smtp.gmail.com" : smtpHost}"\nSMTP_PORT="${smtpProvider === "gmail" ? "587" : smtpPort}"\nSMTP_SECURE="${smtpSecure ? "true" : "false"}"\nSMTP_USER="${smtpUser}"\nSMTP_PASS="${smtpPass}"\nSMTP_FROM="${senderName} <${smtpUser}>"`;
-                    markCopied("smtp_snip", snip);
+                    setSmtpProvider("gmail");
+                    setSmtpHost("smtp.gmail.com");
+                    setSmtpPort(587);
+                    setSmtpSecure(false);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-blue-300 border border-blue-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                  className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                    smtpProvider === "gmail"
+                      ? "bg-amber-500/15 border-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                      : "bg-[#18181f] border-white/5 text-zinc-400 hover:text-white"
+                  }`}
                 >
-                  {copiedKey === "smtp_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <Mail className="w-3 h-3 text-blue-400" />}
-                  <span>Solo SMTP</span>
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    const snip = `NEXT_PUBLIC_SUPABASE_URL="${supabaseUrl}"\nNEXT_PUBLIC_SUPABASE_ANON_KEY="${supabaseAnonKey}"\nSUPABASE_SERVICE_ROLE_KEY="${supabaseServiceRoleKey}"`;
-                    markCopied("supabase_snip", snip);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-emerald-300 border border-emerald-500/20 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  {copiedKey === "supabase_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <Database className="w-3 h-3 text-emerald-400" />}
-                  <span>Solo Supabase</span>
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    const snip = `PAYPHONE_TOKEN="${payphoneToken}"\nNEXT_PUBLIC_PAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_STORE_ID="${payphoneStoreId}"\nPAYPHONE_ENV="${payphoneEnv}"\nPAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
-                    markCopied("payphone_snip", snip);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-amber-300 border border-amber-500/20 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  {copiedKey === "payphone_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <CreditCard className="w-3 h-3 text-amber-400" />}
-                  <span>Solo PayPhone</span>
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    const snip = `GOOGLE_CLIENT_ID="${googleClientId}"\nGOOGLE_CLIENT_SECRET="${googleClientSecret}"\nGOOGLE_REDIRECT_URI="${googleRedirectUri}"`;
-                    markCopied("google_snip", snip);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-sky-300 border border-sky-500/20 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  {copiedKey === "google_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <Cloud className="w-3 h-3 text-sky-400" />}
-                  <span>Solo Google Cloud</span>
-                </motion.button>
-              </div>
-            </div>
-
-            {/* Rare UI CodeBlock con Resaltado Completo y Altura Natural */}
-            <AnimatePresence>
-              {showLiveCode && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ type: "spring", stiffness: 380, damping: 28 }}
-                  className="overflow-hidden pt-1"
-                >
-                  <CodeBlock
-                    code={computedMasterEnv}
-                    language="env"
-                    accent="#F75001"
-                    filename=".env.production"
-                    showHeader={true}
-                    showLineNumbers={true}
-                    showCopyButton={true}
-                    defaultExpanded={true}
-                    maxHeight={false}
-                    showFooter={true}
-                    className="w-full rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* ==================================================================== */}
-        {/* SECCIONES EDITABLES UNIFICADAS                                       */}
-        {/* ==================================================================== */}
-        <div className="space-y-8 sm:space-y-10 pt-2">
-
-          {/* ------------------------------------------------------------------ */}
-          {/* 1. SERVIDOR SMTP & NOTIFICACIONES (MAIL) - DOUBLE BEZEL CHASSIS     */}
-          {/* ------------------------------------------------------------------ */}
-          {(activeSection === "all" || activeSection === "smtp") && (
-            <div className="rounded-[2.5rem] sm:rounded-[3rem] p-4 sm:p-7 md:p-8 bg-gradient-to-b from-sky-500/[0.04] via-blue-500/[0.02] to-white/95 dark:from-sky-950/20 dark:via-zinc-900/40 dark:to-[#141418]/95 border-2 border-sky-500/20 dark:border-sky-500/25 shadow-[0_20px_50px_-15px_rgba(56,189,248,0.08)] space-y-7">
-              
-              {/* Header Principal del Módulo SMTP */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-black/5 dark:border-white/10">
-                <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500/20 via-blue-600/20 to-indigo-500/10 border border-sky-500/35 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(56,189,248,0.2)]">
-                    <Mail className="w-6 h-6" />
+                  <div>
+                    <span className="text-xs font-bold block">GMAIL CLOUD</span>
+                    <span className="text-[10px] text-zinc-400 block mt-0.5">STARTTLS 587</span>
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full border border-sky-500/20">
-                        INFRAESTRUCTURA DE MENSAJERÍA
-                      </span>
-                      <h3 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                        Servidor SMTP & Notificaciones Transaccionales
-                      </h3>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${
-                        servicesStatus?.smtp?.configured
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                      }`}>
-                        <span className={`w-2 h-2 rounded-full ${servicesStatus?.smtp?.configured ? "bg-emerald-500 animate-pulse" : "bg-amber-400"}`} />
-                        <span>{servicesStatus?.smtp?.configured ? "Servidor Conectado" : "Configuración Pendiente"}</span>
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-                      Motor de despacho para comprobantes por compra, facturas al cliente y avisos inmediatos a las bodegas de empaque.
-                    </p>
-                  </div>
-                </div>
+                  {smtpProvider === "gmail" && <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_6px_#ff5500]" />}
+                </button>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setShowGoogleGuide(!showGoogleGuide)}
-                    className="px-3.5 py-2 rounded-xl border border-sky-500/25 bg-sky-50/80 hover:bg-sky-100 dark:bg-sky-500/10 dark:hover:bg-sky-500/20 text-xs text-sky-600 dark:text-sky-400 font-semibold transition-all cursor-pointer flex items-center gap-2 shadow-xs"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-sky-500" />
-                    <span>{showGoogleGuide ? "Ocultar Guía Gmail" : "Guía Gmail 16 Dígitos"}</span>
-                  </motion.button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setSmtpProvider("custom")}
+                  className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                    smtpProvider === "custom"
+                      ? "bg-amber-500/15 border-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                      : "bg-[#18181f] border-white/5 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <div>
+                    <span className="text-xs font-bold block">CUSTOM RELAY</span>
+                    <span className="text-[10px] text-zinc-400 block mt-0.5">HOSTING PROPIO</span>
+                  </div>
+                  {smtpProvider === "custom" && <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_6px_#ff5500]" />}
+                </button>
               </div>
 
-              {/* Bento Ribbon de Métricas en Vivo */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div className="p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-800/50 backdrop-blur-md flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
+              {/* Collapsible Gmail 16-character guide button */}
+              <div className="font-mono">
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleGuide((prev) => !prev)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 text-xs text-amber-400 font-bold transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>CÓMO GENERAR CONTRASEÑA DE APP (16 LETRAS)</span>
                   </div>
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Seguridad & Protocolo</span>
-                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate block">
-                      {smtpProvider === "gmail" ? "STARTTLS (Puerto 587)" : `Puerto ${smtpPort} ${smtpSecure ? "(SSL Directo)" : "(STARTTLS)"}`}
-                    </span>
-                  </div>
-                </div>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showGoogleGuide ? "rotate-180" : ""}`} />
+                </button>
 
-                <div className="p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-800/50 backdrop-blur-md flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
-                    <Zap className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Canal Activo</span>
-                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate block">
-                      {smtpProvider === "gmail" ? "Google Cloud Relay" : (smtpHost || "Custom SMTP Host")}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-800/50 backdrop-blur-md flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-                    <Truck className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Bodegas en Alerta</span>
-                      <span className="text-[11px] font-mono font-bold text-zinc-700 dark:text-zinc-300">{dispatchRecipients.length}/7</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full mt-1.5 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-full transition-all duration-300"
-                        style={{ width: `${Math.min(100, (dispatchRecipients.length / 7) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guía Visual Desplegable Gmail (4 Pasos Ilustrados) */}
-              <AnimatePresence>
-                {showGoogleGuide && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0, y: -10 }}
-                    animate={{ opacity: 1, height: "auto", y: 0 }}
-                    exit={{ opacity: 0, height: 0, y: -10 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                    className="overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/[0.04] to-blue-500/10 border border-amber-500/25 space-y-4"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-500" />
-                        <span>Cómo generar tu Contraseña de Aplicación de 16 caracteres en Gmail</span>
-                      </h4>
-                      <motion.a
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                <AnimatePresence>
+                  {showGoogleGuide && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden pt-3 space-y-2 text-xs"
+                    >
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
+                          <span className="text-[#ff5500] font-bold block">01 VERIFICACIÓN</span>
+                          <span className="text-zinc-400">Activa verificación en 2 pasos en tu cuenta Google.</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
+                          <span className="text-[#ff5500] font-bold block">02 CONTRASEÑAS</span>
+                          <span className="text-zinc-400">Busca &quot;Contraseñas de aplicaciones&quot; en Seguridad.</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
+                          <span className="text-[#ff5500] font-bold block">03 CREAR</span>
+                          <span className="text-zinc-400">Nombra la app &quot;{brand.name}&quot; y genera la clave.</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
+                          <span className="text-[#ff5500] font-bold block">04 PEGAR</span>
+                          <span className="text-zinc-400">Pega las 16 letras en el campo SMTP_PASS abajo.</span>
+                        </div>
+                      </div>
+                      <a
                         href="https://myaccount.google.com/apppasswords"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all shadow-xs cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-[11px] text-amber-400 hover:underline pt-1"
                       >
-                        <span>Abrir Seguridad Google</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </motion.a>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
-                        <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-bold flex items-center justify-center text-[11px]">
-                          01
-                        </span>
-                        <span className="font-bold text-zinc-900 dark:text-white block">2 Pasos Activo</span>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                          Ingresa a tu cuenta de Google y verifica tener encendida la &quot;Verificación en 2 pasos&quot;.
-                        </p>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
-                        <span className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 font-mono font-bold flex items-center justify-center text-[11px]">
-                          02
-                        </span>
-                        <span className="font-bold text-zinc-900 dark:text-white block">Contraseñas de App</span>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                          Busca &quot;Contraseñas de aplicaciones&quot; en la barra de búsqueda de tu cuenta de Google.
-                        </p>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
-                        <span className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-mono font-bold flex items-center justify-center text-[11px]">
-                          03
-                        </span>
-                        <span className="font-bold text-zinc-900 dark:text-white block">Nombre de App</span>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                          Nombra la app como &quot;{brand.name}&quot; y presiona el botón Crear contraseña.
-                        </p>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 shadow-xs space-y-1.5">
-                        <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold flex items-center justify-center text-[11px]">
-                          04
-                        </span>
-                        <span className="font-bold text-zinc-900 dark:text-white block">Pegar 16 Letras</span>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                          Copia el código generado de 16 caracteres y pégalo en el campo Contraseña abajo.
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Selector Visual de Proveedor (Cards Interactivas) */}
-              <div className="space-y-2.5">
-                <label className="text-[11px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase block px-1">
-                  Selecciona la Plataforma de Correo:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  
-                  {/* Tarjeta Proveedor 1: Gmail Cloud */}
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.01, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setSmtpProvider("gmail");
-                      setSmtpHost("smtp.gmail.com");
-                      setSmtpPort(587);
-                      setSmtpSecure(false);
-                    }}
-                    className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-left border-2 transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
-                      smtpProvider === "gmail"
-                        ? "bg-gradient-to-br from-sky-500/[0.08] to-blue-500/[0.04] dark:from-sky-500/15 dark:to-blue-600/10 border-sky-500 shadow-[0_10px_25px_-5px_rgba(56,189,248,0.25)] ring-2 ring-sky-500/20"
-                        : "bg-white/60 dark:bg-zinc-900/40 border-black/5 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-800/60 opacity-80"
-                    }`}
-                  >
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500/20 to-blue-600/20 border border-sky-500/30 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs">
-                      <Mail className="w-5 h-5 text-sky-500" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">Gmail / Google Workspace</span>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
-                          Recomendado
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                        Puerto 587 STARTTLS automático. Máxima reputación contra filtros de spam sin configurar DNS complejos.
-                      </p>
-                    </div>
-                    {smtpProvider === "gmail" && (
-                      <div className="w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                    )}
-                  </motion.button>
-
-                  {/* Tarjeta Proveedor 2: SMTP Propio */}
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.01, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setSmtpProvider("custom")}
-                    className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-left border-2 transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
-                      smtpProvider === "custom"
-                        ? "bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.04] dark:from-amber-500/15 dark:to-orange-600/10 border-amber-500 shadow-[0_10px_25px_-5px_rgba(245,158,11,0.25)] ring-2 ring-amber-500/20"
-                        : "bg-white/60 dark:bg-zinc-900/40 border-black/5 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-800/60 opacity-80"
-                    }`}
-                  >
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0 shadow-xs">
-                      <Server className="w-5 h-5 text-amber-500" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">Hosting Propio / Relay</span>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
-                          Personalizado
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                        Servidor cPanel, AWS SES, Resend o SendGrid con puertos configurables (587, 465, 25).
-                      </p>
-                    </div>
-                    {smtpProvider === "custom" && (
-                      <div className="w-6 h-6 rounded-full bg-amber-500 text-stone-950 flex items-center justify-center shrink-0 shadow-xs">
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                    )}
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* ================================================================ */}
-              {/* LOS 3 RECUADROS TOTALMENTE DIFERENCIADOS POR COLOR Y ARQUITECTURA */}
-              {/* ================================================================ */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-7 items-start">
-                
-                {/* -------------------------------------------------------------- */}
-                {/* RECUADRO 1 (AZUL SKY): BÓVEDA DE AUTENTICACIÓN SMTP            */}
-                {/* -------------------------------------------------------------- */}
-                <div className="rounded-3xl border-2 border-sky-500/35 dark:border-sky-500/40 bg-gradient-to-br from-sky-500/[0.04] via-white to-sky-500/[0.02] dark:from-sky-950/30 dark:via-[#161722] dark:to-zinc-900/60 p-5 sm:p-7 shadow-[0_12px_35px_-8px_rgba(56,189,248,0.12)] space-y-4 sm:space-y-5">
-                  <div className="flex items-center justify-between pb-3.5 border-b border-sky-500/20 dark:border-sky-500/25">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs">
-                        <KeyRound className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
-                          Credenciales de Autenticación
-                        </h4>
-                        <span className="text-[10px] text-zinc-400">
-                          {smtpProvider === "gmail" ? "Protocolo Google Workspace Relay" : "Servidor SMTP Estándar"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2.5 py-0.5 rounded-full">
-                      BÓVEDA PRIVADA
-                    </span>
-                  </div>
-
-                  {smtpProvider === "custom" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                          <Server className="w-3.5 h-3.5 text-sky-500" />
-                          <span>Host SMTP</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={smtpHost}
-                          onChange={(e) => setSmtpHost(e.target.value)}
-                          placeholder="mail.tudominio.com"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                          <Hash className="w-3.5 h-3.5 text-sky-500" />
-                          <span>Puerto</span>
-                        </label>
-                        <input
-                          type="number"
-                          value={smtpPort}
-                          onChange={(e) => setSmtpPort(Number(e.target.value))}
-                          placeholder="587 o 465"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-                        />
-                      </div>
-                    </div>
+                        <span>Abrir Seguridad de Cuenta Google</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </motion.div>
                   )}
-
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                      <AtSign className="w-3.5 h-3.5 text-sky-500" />
-                      <span>Correo Remitente (SMTP_USER)</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={smtpUser}
-                      onChange={(e) => setSmtpUser(e.target.value)}
-                      placeholder="contacto@luminahome.com"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                        <KeyRound className="w-3.5 h-3.5 text-sky-500" />
-                        <span>{smtpProvider === "gmail" ? "Contraseña de App (16 caracteres)" : "Contraseña del Servidor"}</span>
-                      </label>
-                      <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono font-medium">SMTP_PASS</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showSmtpPass ? "text" : "password"}
-                        value={smtpPass}
-                        onChange={(e) => setSmtpPass(e.target.value)}
-                        placeholder="••••••••••••••••"
-                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSmtpPass(!showSmtpPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-sky-500 cursor-pointer p-1 transition-colors"
-                        aria-label="Ver u ocultar contraseña"
-                      >
-                        {showSmtpPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-sky-500" />
-                      <span>Nombre Visible de la Marca (SMTP_FROM)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      placeholder={brand.name}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-                    />
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between border-t border-sky-500/15 dark:border-sky-500/20">
-                    <span className="text-[10.5px] text-zinc-400">¿Deseas exportar esta configuración?</span>
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => {
-                        const snippet = `SMTP_HOST="${smtpProvider === "gmail" ? "smtp.gmail.com" : smtpHost}"\nSMTP_PORT="${smtpProvider === "gmail" ? "587" : smtpPort}"\nSMTP_SECURE="${smtpSecure ? "true" : "false"}"\nSMTP_USER="${smtpUser}"\nSMTP_PASS="${smtpPass}"\nSMTP_FROM="${senderName} <${smtpUser}>"`;
-                        markCopied("smtp_snip", snippet);
-                      }}
-                      className="px-3.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-600 dark:text-sky-300 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-sky-500/30"
-                    >
-                      {copiedKey === "smtp_snip" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>Copiar Bloque SMTP</span>
-                    </motion.button>
-                  </div>
-                </div>
-
-                {/* Columna Derecha: Recuadro 2 (Diagnóstico) y Recuadro 3 (Bodegas) */}
-                <div className="space-y-6">
-                  
-                  {/* ------------------------------------------------------------ */}
-                  {/* RECUADRO 2 (VERDE ESMERALDA): LABORATORIO DE DIAGNÓSTICO     */}
-                  {/* ------------------------------------------------------------ */}
-                  <div className="rounded-3xl border-2 border-emerald-500/40 dark:border-emerald-500/45 bg-gradient-to-br from-emerald-500/[0.05] via-white to-emerald-500/[0.02] dark:from-emerald-950/30 dark:via-[#131d17] dark:to-zinc-900/60 p-5 sm:p-6 shadow-[0_12px_35px_-8px_rgba(16,185,129,0.14)] space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-emerald-500/20 dark:border-emerald-500/25">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-xs">
-                          <Send className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
-                            Prueba de Conexión en Vivo
-                          </h4>
-                          <span className="text-[10px] text-zinc-400">Verificación de credenciales en tiempo real</span>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 rounded-full">
-                        LABORATORIO REAL
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      Envía un correo de prueba al instante para comprobar que los puertos y la contraseña funcionen sin restricciones de firewall ni rebotes.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        type="email"
-                        value={testEmail}
-                        onChange={(e) => setTestEmail(e.target.value)}
-                        placeholder="tu_correo_personal@gmail.com"
-                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-emerald-500/25 dark:border-emerald-500/35 bg-white dark:bg-zinc-800/80 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[42px] sm:min-h-0"
-                      />
-                      <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={handleTestSmtpConnection}
-                        disabled={isTestingSmtp}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 shadow-sm shadow-emerald-600/30 min-h-[42px] sm:min-h-0"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>{isTestingSmtp ? "Comprobando..." : "Lanzar Prueba"}</span>
-                      </motion.button>
-                    </div>
-
-                    {smtpTestResult && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                        className={`p-3.5 rounded-2xl border text-xs font-medium leading-relaxed flex items-start gap-2.5 ${
-                          smtpTestResult.success
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
-                            : "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
-                        }`}
-                      >
-                        {smtpTestResult.success ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                        )}
-                        <span>{smtpTestResult.message}</span>
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* ------------------------------------------------------------ */}
-                  {/* RECUADRO 3 (VIOLETA ÍNDIGO): CENTRO DE DESPACHO A BODEGAS    */}
-                  {/* ------------------------------------------------------------ */}
-                  <div className="rounded-3xl border-2 border-indigo-500/40 dark:border-indigo-500/45 bg-gradient-to-br from-indigo-500/[0.05] via-white to-indigo-500/[0.02] dark:from-indigo-950/30 dark:via-[#171528] dark:to-zinc-900/60 p-5 sm:p-6 shadow-[0_12px_35px_-8px_rgba(99,102,241,0.14)] space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-indigo-500/20 dark:border-indigo-500/25">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-xs">
-                          <Truck className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
-                            Receptores de Órdenes (Bodegas)
-                          </h4>
-                          <span className="text-[10px] text-zinc-400">Notificaciones automáticas al concretar compra</span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
-                        {dispatchRecipients.length}/7 cupos
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      Hasta 7 correos recibirán una alerta automática con el desglose del pedido cada vez que un cliente pague exitosamente.
-                    </p>
-
-                    {/* Chips de correos registrados */}
-                    <div className="flex flex-wrap gap-2 min-h-[44px] p-2 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-indigo-500/15">
-                      {dispatchRecipients.length === 0 ? (
-                        <div className="flex items-center gap-2 px-2 py-1 text-xs text-zinc-400 italic">
-                          <Info className="w-3.5 h-3.5 text-indigo-400" />
-                          <span>No hay correos de bodega registrados todavía. Agrega uno abajo.</span>
-                        </div>
-                      ) : (
-                        dispatchRecipients.map((em, idx) => (
-                          <motion.span
-                            key={em}
-                            whileHover={{ scale: 1.02 }}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-indigo-500/25 text-xs text-zinc-800 dark:text-zinc-200 shadow-xs"
-                          >
-                            <span className="w-4 h-4 rounded-md bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] flex items-center justify-center">
-                              B{idx + 1}
-                            </span>
-                            <span className="font-mono text-[11px]">{em}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveRecipient(em)}
-                              className="text-zinc-400 hover:text-red-500 cursor-pointer p-0.5 transition-colors"
-                              aria-label={`Eliminar correo ${em}`}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </motion.span>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Input para agregar bodega */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        type="email"
-                        value={recipientInput}
-                        onChange={(e) => setRecipientInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleAddRecipient();
-                          }
-                        }}
-                        placeholder="bodega_norte@luminahome.com"
-                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-indigo-500/25 dark:border-indigo-500/35 bg-white dark:bg-zinc-800/80 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[42px] sm:min-h-0"
-                      />
-                      <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={handleAddRecipient}
-                        disabled={dispatchRecipients.length >= 7 || !recipientInput.trim()}
-                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0 shadow-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Agregar</span>
-                      </motion.button>
-                    </div>
-
-                    {/* Acción de prueba de alerta a bodegas */}
-                    <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
-                      <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={handleTestDispatchEmail}
-                        disabled={isTestingDispatch || dispatchRecipients.length === 0}
-                        className="px-3.5 py-2 rounded-xl border border-indigo-500/30 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-xs"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>{isTestingDispatch ? "Enviando alerta..." : "Probar Alerta a Bodegas"}</span>
-                      </motion.button>
-                      <span className="text-[10.5px] text-zinc-400">Despacha a todos los destinatarios</span>
-                    </div>
-
-                    {dispatchMsg && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 3 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                        className={`p-3 rounded-2xl text-xs font-medium flex items-center gap-2 ${
-                          dispatchMsg.success
-                            ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/25"
-                            : "bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/25"
-                        }`}
-                      >
-                        <Info className="w-3.5 h-3.5 shrink-0" />
-                        <span>{dispatchMsg.text}</span>
-                      </motion.div>
-                    )}
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* ------------------------------------------------------------------ */}
-          {/* 2. BASE DE DATOS & AUTH (SUPABASE)                                 */}
-          {/* ------------------------------------------------------------------ */}
-          {(activeSection === "all" || activeSection === "supabase") && (
-            <div className="p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/5 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-                    <Database className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <span>Base de Datos PostgreSQL & Autenticación (Supabase)</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                        {servicesStatus?.supabase?.configured ? "Conectado" : "Pendiente"}
-                      </span>
-                    </h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      Alberga el catálogo de productos, compras, perfiles de clientes y cupones de descuento.
-                    </p>
-                  </div>
-                </div>
-
-                <a
-                  href="https://supabase.com/dashboard"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-zinc-700 dark:text-zinc-300 font-medium transition-colors shrink-0"
-                >
-                  <span>Dashboard Supabase</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                </AnimatePresence>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-3.5">
+              {/* Form Controls */}
+              <div className="space-y-3.5 font-mono text-xs">
+                {smtpProvider === "custom" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-zinc-400 text-[10px] uppercase">SMTP_HOST</label>
+                      <input
+                        type="text"
+                        value={smtpHost}
+                        onChange={(e) => setSmtpHost(e.target.value)}
+                        placeholder="mail.tudominio.com"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-zinc-400 text-[10px] uppercase">SMTP_PORT</label>
+                      <input
+                        type="number"
+                        value={smtpPort}
+                        onChange={(e) => setSmtpPort(Number(e.target.value))}
+                        placeholder="587"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    URL del Proyecto (NEXT_PUBLIC_SUPABASE_URL)
-                  </label>
+                  <label className="text-zinc-400 text-[10px] uppercase">CORREO REMITENTE (SMTP_USER)</label>
                   <input
-                    type="text"
-                    value={supabaseUrl}
-                    onChange={(e) => setSupabaseUrl(e.target.value)}
-                    placeholder="https://tu-proyecto.supabase.co"
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-emerald-500 min-h-[42px] sm:min-h-0"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    Clave Pública Anónima (NEXT_PUBLIC_SUPABASE_ANON_KEY)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={supabaseAnonKey}
-                    onChange={(e) => setSupabaseAnonKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-emerald-500 resize-none break-all"
+                    type="email"
+                    value={smtpUser}
+                    onChange={(e) => setSmtpUser(e.target.value)}
+                    placeholder="contacto@luminahome.com"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      Clave Secreta Service Role (SUPABASE_SERVICE_ROLE_KEY)
-                    </label>
+                    <label className="text-zinc-400 text-[10px] uppercase">CONTRASEÑA DE APP (SMTP_PASS)</label>
                     <button
                       type="button"
-                      onClick={() => setShowSupabaseServiceKey(!showSupabaseServiceKey)}
-                      className="text-[11px] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer flex items-center gap-1"
+                      onClick={() => setShowSmtpPass(!showSmtpPass)}
+                      className="text-zinc-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer"
                     >
-                      {showSupabaseServiceKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      <span>{showSupabaseServiceKey ? "Ocultar" : "Mostrar"}</span>
+                      {showSmtpPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <textarea
-                    rows={2}
-                    value={supabaseServiceRoleKey}
-                    onChange={(e) => setSupabaseServiceRoleKey(e.target.value)}
-                    placeholder={showSupabaseServiceKey ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." : "••••••••••••••••••••••••••••••••••••••••"}
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-emerald-500 resize-none break-all"
+                  <input
+                    type={showSmtpPass ? "text" : "password"}
+                    value={smtpPass}
+                    onChange={(e) => setSmtpPass(e.target.value)}
+                    placeholder="••••••••••••••••"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
                   />
                 </div>
 
-                <div className="pt-2 flex flex-wrap items-center gap-2">
+                <div className="space-y-1">
+                  <label className="text-zinc-400 text-[10px] uppercase">NOMBRE VISIBLE (SMTP_FROM)</label>
+                  <input
+                    type="text"
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    placeholder={brand.name}
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="pt-2 flex items-center justify-between border-t border-white/[0.06] font-mono text-xs">
+                <span className="text-zinc-500 text-[11px]">CONFIGURACIÓN LISTA</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const snippet = `SMTP_HOST="${smtpProvider === "gmail" ? "smtp.gmail.com" : smtpHost}"\nSMTP_PORT="${smtpProvider === "gmail" ? "587" : smtpPort}"\nSMTP_SECURE="${smtpSecure ? "true" : "false"}"\nSMTP_USER="${smtpUser}"\nSMTP_PASS="${smtpPass}"\nSMTP_FROM="${senderName} <${smtpUser}>"`;
+                    markCopied("smtp_snip", snippet);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-400 text-xs font-bold transition-all border border-amber-500/25 flex items-center gap-1.5 cursor-pointer"
+                >
+                  {copiedKey === "smtp_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>COPIAR SMTP</span>
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: 05 TEST LAB & 06 DISPATCH RECIPIENTS */}
+            <div className="space-y-6">
+              
+              {/* TILE 05: SMTP TEST LAB */}
+              <div className="rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+                  <div>
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400 font-bold block">
+                      05 REALTIME DIAGNOSTIC
+                    </span>
+                    <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                      Laboratorio de Prueba SMTP
+                    </h3>
+                  </div>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                </div>
+
+                {/* ECG Heartbeat Visualizer */}
+                <DotHeartbeat active={Boolean(servicesStatus?.smtp?.configured)} />
+
+                <div className="flex flex-col sm:flex-row gap-2 font-mono text-xs">
+                  <input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="correo_destinatario@gmail.com"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500"
+                  />
                   <button
                     type="button"
-                    onClick={() => {
-                      const snip = `NEXT_PUBLIC_SUPABASE_URL="${supabaseUrl}"\nNEXT_PUBLIC_SUPABASE_ANON_KEY="${supabaseAnonKey}"\nSUPABASE_SERVICE_ROLE_KEY="${supabaseServiceRoleKey}"`;
-                      markCopied("supabase_snip", snip);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                    onClick={handleTestSmtpConnection}
+                    disabled={isTestingSmtp}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                   >
-                    {copiedKey === "supabase_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>Copiar Bloque Supabase</span>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{isTestingSmtp ? "PROBANDO..." : "LANZAR TEST"}</span>
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* ------------------------------------------------------------------ */}
-          {/* 3. GOOGLE CLOUD CONSOLE & DRIVE API                                */}
-          {/* ------------------------------------------------------------------ */}
-          {(activeSection === "all" || activeSection === "google") && (
-            <div className="p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/5 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
-                    <Cloud className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
+                {smtpTestResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3 rounded-xl border font-mono text-xs ${
+                      smtpTestResult.success
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                        : "bg-red-500/10 border-red-500/30 text-red-300"
+                    }`}
+                  >
+                    {smtpTestResult.message}
+                  </motion.div>
+                )}
+              </div>
+
+              {/* TILE 06: BODEGAS DISPATCH RECIPIENTS */}
+              <div className="rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                   <div>
-                    <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <span>Google Cloud Console & Drive OAuth 2.0</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                        {servicesStatus?.googleDrive?.configured ? "Conectado" : "Pendiente"}
-                      </span>
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+                      06 DISPATCH RECIPIENTS
+                    </span>
+                    <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                      Bodegas de Despacho
                     </h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      Conexión con carpetas de Google Drive para la galería de fotoproductos.
-                    </p>
                   </div>
-                </div>
-
-                <a
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-zinc-700 dark:text-zinc-300 font-medium transition-colors shrink-0"
-                >
-                  <span>Credenciales GCP</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-
-              <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-3.5">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    ID de Cliente OAuth (GOOGLE_CLIENT_ID)
-                  </label>
-                  <input
-                    type="text"
-                    value={googleClientId}
-                    onChange={(e) => setGoogleClientId(e.target.value)}
-                    placeholder="1234567890-abcdef.apps.googleusercontent.com"
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      Clave Secreta de Cliente (GOOGLE_CLIENT_SECRET)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowGoogleSecret(!showGoogleSecret)}
-                      className="text-[11px] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer flex items-center gap-1"
-                    >
-                      {showGoogleSecret ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      <span>{showGoogleSecret ? "Ocultar" : "Mostrar"}</span>
-                    </button>
-                  </div>
-                  <input
-                    type={showGoogleSecret ? "text" : "password"}
-                    value={googleClientSecret}
-                    onChange={(e) => setGoogleClientSecret(e.target.value)}
-                    placeholder="GOCSPX-••••••••••••••••"
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    URI de Redirección Autorizado (GOOGLE_REDIRECT_URI)
-                  </label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      value={googleRedirectUri}
-                      onChange={(e) => setGoogleRedirectUri(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => markCopied("redir_uri", googleRedirectUri)}
-                      className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-xs font-medium cursor-pointer flex items-center justify-center gap-1 active:scale-95 shrink-0 min-h-[42px] sm:min-h-0"
-                    >
-                      {copiedKey === "redir_uri" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>Copiar URI</span>
-                    </button>
-                  </div>
-                  <span className="text-[10px] text-zinc-400 block mt-1">
-                    Pega esta URL en los &quot;URIs de redireccionamiento autorizados&quot; de tu Google Cloud Console.
+                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    {dispatchRecipients.length}/7 CUPOS
                   </span>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      Clave de Cifrado AES-256 para Tokens (GOOGLE_TOKEN_ENCRYPTION_KEY)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setGoogleEncryptionKey(generateRandomHexKey())}
-                      className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline"
-                    >
-                      Generar 32 bytes
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={googleEncryptionKey}
-                    onChange={(e) => setGoogleEncryptionKey(e.target.value)}
-                    placeholder="32 bytes hexadecimales para cifrado"
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-blue-500 min-h-[42px] sm:min-h-0"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const snip = `GOOGLE_CLIENT_ID="${googleClientId}"\nNEXT_PUBLIC_GOOGLE_CLIENT_ID="${googleClientId}"\nGOOGLE_CLIENT_SECRET="${googleClientSecret}"\nGOOGLE_REDIRECT_URI="${googleRedirectUri}"\nGOOGLE_TOKEN_ENCRYPTION_KEY="${googleEncryptionKey}"`;
-                      markCopied("gcloud_snip", snip);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                  >
-                    {copiedKey === "gcloud_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>Copiar Bloque Google Cloud</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ------------------------------------------------------------------ */}
-          {/* 4. PASARELA DE PAGOS PAYPHONE ECUADOR                              */}
-          {/* ------------------------------------------------------------------ */}
-          {(activeSection === "all" || activeSection === "payphone") && (
-            <div className="p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/5 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
-                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <span>Pasarela PayPhone Ecuador (Tarjetas de Crédito/Débito)</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                        {payphoneEnv === "production" ? "Producción" : "Sandbox"}
-                      </span>
-                    </h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      Cobros electrónicos con Visa, MasterCard y diferidos para clientes en Ecuador.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleSavePayphoneMode("box")}
-                    disabled={isSavingPayphone}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
-                      payphoneMode === "box"
-                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs font-semibold"
-                        : "text-zinc-500 hover:text-zinc-800"
-                    }`}
-                  >
-                    Cajita Embebida
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSavePayphoneMode("redirect")}
-                    disabled={isSavingPayphone}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
-                      payphoneMode === "redirect"
-                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs font-semibold"
-                        : "text-zinc-500 hover:text-zinc-800"
-                    }`}
-                  >
-                    Redirección 3D-Secure
-                  </button>
-                </div>
-              </div>
-
-              {payphoneMsg && (
-                <div className={`p-2.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
-                  payphoneMsg.success
-                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
-                    : "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
-                }`}>
-                  <Info className="w-3.5 h-3.5 shrink-0" />
-                  <span>{payphoneMsg.text}</span>
-                </div>
-              )}
-
-              <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-3.5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                        Token de Comercio Bearer (PAYPHONE_TOKEN)
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowPayphoneToken(!showPayphoneToken)}
-                        className="text-[11px] text-zinc-500 hover:text-zinc-800 cursor-pointer flex items-center gap-1"
-                      >
-                        {showPayphoneToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        <span>{showPayphoneToken ? "Ocultar" : "Mostrar"}</span>
-                      </button>
-                    </div>
-                    <input
-                      type={showPayphoneToken ? "text" : "password"}
-                      value={payphoneToken}
-                      onChange={(e) => setPayphoneToken(e.target.value)}
-                      placeholder="eyJhbGciOiJSUzI1NiIsInR5cCI6..."
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-amber-500 min-h-[42px] sm:min-h-0"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      ID de Sucursal (PAYPHONE_STORE_ID)
-                    </label>
-                    <input
-                      type="text"
-                      value={payphoneStoreId}
-                      onChange={(e) => setPayphoneStoreId(e.target.value)}
-                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-amber-500 min-h-[42px] sm:min-h-0"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      ID de Aplicación (NEXT_PUBLIC_PAYPHONE_APP_ID)
-                    </label>
-                    <input
-                      type="text"
-                      value={payphoneAppId}
-                      onChange={(e) => setPayphoneAppId(e.target.value)}
-                      placeholder="tu_app_id_generado"
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-amber-500 min-h-[42px] sm:min-h-0"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      Entorno Activo (PAYPHONE_ENV)
-                    </label>
-                    <select
-                      value={payphoneEnv}
-                      onChange={(e) => setPayphoneEnv(e.target.value as "sandbox" | "production")}
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-medium outline-none focus:border-amber-500 min-h-[42px] sm:min-h-0"
-                    >
-                      <option value="sandbox">Sandbox (Modo Pruebas PayPhone)</option>
-                      <option value="production">Producción (Cobros Monetarios Reales)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const snip = `PAYPHONE_TOKEN="${payphoneToken}"\nNEXT_PUBLIC_PAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_STORE_ID="${payphoneStoreId}"\nNEXT_PUBLIC_PAYPHONE_ENV="${payphoneEnv}"\nPAYPHONE_ENV="${payphoneEnv}"\nPAYPHONE_API_URL="https://pay.payphonetodoesposible.com/api"\nPAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
-                      markCopied("payphone_snip", snip);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                  >
-                    {copiedKey === "payphone_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>Copiar Bloque PayPhone</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ------------------------------------------------------------------ */}
-          {/* 5. HOSTING, DOMINIO & MAPBOX                                       */}
-          {/* ------------------------------------------------------------------ */}
-          {(activeSection === "all" || activeSection === "hosting") && (
-            <div className="p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-4">
-              <div className="flex items-center gap-3 pb-3 border-b border-black/5 dark:border-white/10">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
-                  <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                    <span>Hosting, Dominio Web & Mapas Mapbox</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
-                      Producción
+                {/* Chips of added emails */}
+                <div className="flex flex-wrap gap-2 min-h-[44px] p-2 rounded-xl bg-white/[0.02] border border-white/5">
+                  {dispatchRecipients.length === 0 ? (
+                    <span className="font-mono text-xs text-zinc-500 italic px-2 py-1">
+                      No hay bodegas agregadas. Agrega un correo abajo.
                     </span>
-                  </h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    URL pública para redirecciones bancarias, SEO y geolocalización de envíos.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-3.5">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    URL Pública del Sitio (NEXT_PUBLIC_SITE_URL / NEXT_PUBLIC_APP_URL)
-                  </label>
-                  <input
-                    type="text"
-                    value={siteUrl}
-                    onChange={(e) => setSiteUrl(e.target.value)}
-                    placeholder="https://tudominio.com"
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-indigo-500 min-h-[42px] sm:min-h-0"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      Token Público de Mapbox (NEXT_PUBLIC_MAPBOX_TOKEN)
-                    </label>
-                    <a
-                      href="https://account.mapbox.com/access-tokens/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1"
-                    >
-                      <span>Tokens Mapbox</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                  <input
-                    type="text"
-                    value={mapboxToken}
-                    onChange={(e) => setMapboxToken(e.target.value)}
-                    placeholder="pk.eyJ1Ijoi..."
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-indigo-500 min-h-[42px] sm:min-h-0"
-                  />
+                  ) : (
+                    dispatchRecipients.map((em, idx) => (
+                      <span
+                        key={em}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#181822] border border-white/10 text-xs font-mono text-zinc-200"
+                      >
+                        <span className="w-4 h-4 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold flex items-center justify-center">
+                          B{idx + 1}
+                        </span>
+                        <span>{em}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRecipient(em)}
+                          className="text-zinc-500 hover:text-red-400 cursor-pointer p-0.5 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))
+                  )}
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    Correo del Administrador Raíz (MASTER_ADMIN_EMAIL)
-                  </label>
+                {/* Add email input */}
+                <div className="flex flex-col sm:flex-row gap-2 font-mono text-xs">
                   <input
                     type="email"
-                    value={masterAdminEmail}
-                    onChange={(e) => setMasterAdminEmail(e.target.value)}
-                    placeholder="admin@luminahome.com"
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs outline-none focus:border-indigo-500 min-h-[42px] sm:min-h-0"
+                    value={recipientInput}
+                    onChange={(e) => setRecipientInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddRecipient();
+                      }
+                    }}
+                    placeholder="bodega_norte@luminahome.com"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
                   />
-                </div>
-
-                <div className="pt-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      const snip = `NEXT_PUBLIC_SITE_URL="${siteUrl}"\nNEXT_PUBLIC_APP_URL="${siteUrl}"\nNEXT_PUBLIC_MAPBOX_TOKEN="${mapboxToken}"\nMASTER_ADMIN_EMAIL="${masterAdminEmail}"`;
-                      markCopied("host_snip", snip);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                    onClick={handleAddRecipient}
+                    disabled={dispatchRecipients.length >= 7 || !recipientInput.trim()}
+                    className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 shrink-0"
                   >
-                    {copiedKey === "host_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>Copiar Bloque Hosting</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>AGREGAR</span>
                   </button>
                 </div>
+
+                {/* Test dispatch email button */}
+                <div className="flex items-center justify-between pt-1 font-mono text-xs">
+                  <button
+                    type="button"
+                    onClick={handleTestDispatchEmail}
+                    disabled={isTestingDispatch || dispatchRecipients.length === 0}
+                    className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 font-bold transition-all border border-white/10 flex items-center gap-2 cursor-pointer disabled:opacity-40"
+                  >
+                    <Send className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{isTestingDispatch ? "ENVIANDO..." : "PROBAR ALERTA BODEGAS"}</span>
+                  </button>
+                  <span className="text-[10px] text-zinc-500">DESPACHO A TODAS</span>
+                </div>
+
+                {dispatchMsg && (
+                  <div className={`p-2.5 rounded-xl font-mono text-xs ${
+                    dispatchMsg.success ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" : "bg-red-500/10 text-red-300 border border-red-500/20"
+                  }`}>
+                    {dispatchMsg.text}
+                  </div>
+                )}
               </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 07: SUPABASE DATABASE MODULE                                         */}
+      {/* ==================================================================== */}
+      {(activeSection === "all" || activeSection === "supabase") && (
+        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400 font-bold block">
+                  07 SUPABASE DATABASE
+                </span>
+                <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                  PostgreSQL, Autenticación y Storage
+                </h3>
+              </div>
+            </div>
+            <a
+              href="https://supabase.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-xs text-emerald-400 hover:underline flex items-center gap-1"
+            >
+              <span>DASHBOARD</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          <div className="space-y-3 font-mono text-xs">
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">NEXT_PUBLIC_SUPABASE_URL</label>
+              <input
+                type="text"
+                value={supabaseUrl}
+                onChange={(e) => setSupabaseUrl(e.target.value)}
+                placeholder="https://tu-proyecto.supabase.co"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">NEXT_PUBLIC_SUPABASE_ANON_KEY</label>
+              <textarea
+                rows={2}
+                value={supabaseAnonKey}
+                onChange={(e) => setSupabaseAnonKey(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500 resize-none break-all"
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-zinc-400 text-[10px] uppercase">SUPABASE_SERVICE_ROLE_KEY</label>
+                <button
+                  type="button"
+                  onClick={() => setShowSupabaseServiceKey(!showSupabaseServiceKey)}
+                  className="text-zinc-400 hover:text-emerald-400 flex items-center gap-1 cursor-pointer"
+                >
+                  {showSupabaseServiceKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                </button>
+              </div>
+              <input
+                type={showSupabaseServiceKey ? "text" : "password"}
+                value={supabaseServiceRoleKey}
+                onChange={(e) => setSupabaseServiceRoleKey(e.target.value)}
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                const snip = `NEXT_PUBLIC_SUPABASE_URL="${supabaseUrl}"\nNEXT_PUBLIC_SUPABASE_ANON_KEY="${supabaseAnonKey}"\nSUPABASE_SERVICE_ROLE_KEY="${supabaseServiceRoleKey}"`;
+                markCopied("supabase_snip", snip);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-emerald-400 text-xs font-bold border border-emerald-500/25 flex items-center gap-1.5 cursor-pointer"
+            >
+              {copiedKey === "supabase_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>COPIAR SUPABASE</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 08: GOOGLE CLOUD & DRIVE API MODULE                                  */}
+      {/* ==================================================================== */}
+      {(activeSection === "all" || activeSection === "google") && (
+        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center">
+                <Cloud className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-mono text-[11px] uppercase tracking-wider text-sky-400 font-bold block">
+                  08 GOOGLE CLOUD ENGINE
+                </span>
+                <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                  OAuth 2.0 & Google Drive API (Fotoproductos)
+                </h3>
+              </div>
+            </div>
+            <a
+              href="https://console.cloud.google.com/apis/credentials"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-xs text-sky-400 hover:underline flex items-center gap-1"
+            >
+              <span>GCP CONSOLE</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 font-mono text-xs">
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">GOOGLE_CLIENT_ID</label>
+              <input
+                type="text"
+                value={googleClientId}
+                onChange={(e) => setGoogleClientId(e.target.value)}
+                placeholder="tu_client_id.apps.googleusercontent.com"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-sky-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-zinc-400 text-[10px] uppercase">GOOGLE_CLIENT_SECRET</label>
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleSecret(!showGoogleSecret)}
+                  className="text-zinc-400 hover:text-sky-400 flex items-center gap-1 cursor-pointer"
+                >
+                  {showGoogleSecret ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                </button>
+              </div>
+              <input
+                type={showGoogleSecret ? "text" : "password"}
+                value={googleClientSecret}
+                onChange={(e) => setGoogleClientSecret(e.target.value)}
+                placeholder="GOCSPX-••••••••"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-sky-500"
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <label className="text-zinc-400 text-[10px] uppercase">GOOGLE_REDIRECT_URI</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={googleRedirectUri}
+                  onChange={(e) => setGoogleRedirectUri(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-sky-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => markCopied("redir_uri", googleRedirectUri)}
+                  className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sky-400 font-bold border border-sky-500/25 cursor-pointer"
+                >
+                  {copiedKey === "redir_uri" ? <Check className="w-3.5 h-3.5" /> : "COPIAR"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                const snip = `GOOGLE_CLIENT_ID="${googleClientId}"\nGOOGLE_CLIENT_SECRET="${googleClientSecret}"\nGOOGLE_REDIRECT_URI="${googleRedirectUri}"`;
+                markCopied("gcloud_snip", snip);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-sky-400 text-xs font-bold border border-sky-500/25 flex items-center gap-1.5 cursor-pointer"
+            >
+              {copiedKey === "gcloud_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>COPIAR GOOGLE CLOUD</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 09: PAYPHONE ECUADOR PAYMENT GATEWAY MODULE                          */}
+      {/* ==================================================================== */}
+      {(activeSection === "all" || activeSection === "payphone") && (
+        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                <CreditCard className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+                  09 PAYPHONE ECUADOR
+                </span>
+                <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                  Pasarela de Tarjetas Visa / MasterCard
+                </h3>
+              </div>
+            </div>
+
+            {/* Mode toggle */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#16161c] border border-white/10 font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => handleSavePayphoneMode("box")}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  payphoneMode === "box" ? "bg-amber-500 text-stone-950 font-bold shadow-xs" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Cajita Embebida
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSavePayphoneMode("redirect")}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  payphoneMode === "redirect" ? "bg-amber-500 text-stone-950 font-bold shadow-xs" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Redirección 3D
+              </button>
+            </div>
+          </div>
+
+          {payphoneMsg && (
+            <div className={`p-2.5 rounded-xl font-mono text-xs ${
+              payphoneMsg.success ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" : "bg-red-500/10 text-red-300 border border-red-500/20"
+            }`}>
+              {payphoneMsg.text}
             </div>
           )}
 
-          {/* ------------------------------------------------------------------ */}
-          {/* 6. BILLETERA DIGITAL (GOOGLE WALLET PASSES)                        */}
-          {/* ------------------------------------------------------------------ */}
-          {(activeSection === "all" || activeSection === "wallets") && (
-            <div className="p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-4">
-              <div className="flex items-center gap-3 pb-3 border-b border-black/5 dark:border-white/10">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center shrink-0">
-                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                    <span>Google Wallet Passes (Billetera Digital)</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">
-                      Opcional
-                    </span>
-                  </h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    Permite a los clientes guardar tarjetas de fidelidad y tickets de seguimiento de pedido en Google Wallet en sus teléfonos móviles.
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 font-mono text-xs">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-zinc-400 text-[10px] uppercase">PAYPHONE_TOKEN</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPayphoneToken(!showPayphoneToken)}
+                  className="text-zinc-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer"
+                >
+                  {showPayphoneToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                </button>
               </div>
+              <input
+                type={showPayphoneToken ? "text" : "password"}
+                value={payphoneToken}
+                onChange={(e) => setPayphoneToken(e.target.value)}
+                placeholder="eyJhbGciOiJSUzI1Ni..."
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">PAYPHONE_STORE_ID</label>
+              <input
+                type="text"
+                value={payphoneStoreId}
+                onChange={(e) => setPayphoneStoreId(e.target.value)}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">NEXT_PUBLIC_PAYPHONE_APP_ID</label>
+              <input
+                type="text"
+                value={payphoneAppId}
+                onChange={(e) => setPayphoneAppId(e.target.value)}
+                placeholder="app_id_payphone"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">PAYPHONE_ENV</label>
+              <select
+                value={payphoneEnv}
+                onChange={(e) => setPayphoneEnv(e.target.value as "sandbox" | "production")}
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+              >
+                <option value="sandbox">Sandbox (Pruebas)</option>
+                <option value="production">Producción (Cobros Reales)</option>
+              </select>
+            </div>
+          </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900/60 space-y-3.5">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                      Clave HMAC para Tokens de Seguimiento (WALLET_SECRET_KEY)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setWalletSecretKey(generateRandomHexKey())}
-                      className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold cursor-pointer hover:underline"
-                    >
-                      Generar Clave Segura
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={walletSecretKey}
-                    onChange={(e) => setWalletSecretKey(e.target.value)}
-                    placeholder="clave_secreta_anti_enumeracion_32_bytes"
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-rose-500 min-h-[42px] sm:min-h-0"
-                  />
-                </div>
+          <div className="pt-2 font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                const snip = `PAYPHONE_TOKEN="${payphoneToken}"\nNEXT_PUBLIC_PAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_STORE_ID="${payphoneStoreId}"\nPAYPHONE_ENV="${payphoneEnv}"\nPAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
+                markCopied("payphone_snip", snip);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-400 text-xs font-bold border border-amber-500/25 flex items-center gap-1.5 cursor-pointer"
+            >
+              {copiedKey === "payphone_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>COPIAR PAYPHONE</span>
+            </button>
+          </div>
+        </div>
+      )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Google Wallet Issuer ID</label>
-                    <input
-                      type="text"
-                      value={googleWalletIssuerId}
-                      onChange={(e) => setGoogleWalletIssuerId(e.target.value)}
-                      placeholder="3388000000022XXXXXX"
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-rose-500 min-h-[42px] sm:min-h-0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Google Service Account Email</label>
-                    <input
-                      type="text"
-                      value={googleWalletClientEmail}
-                      onChange={(e) => setGoogleWalletClientEmail(e.target.value)}
-                      placeholder="wallet@tu-gcp.iam.gserviceaccount.com"
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 text-base sm:text-xs font-mono outline-none focus:border-rose-500 min-h-[42px] sm:min-h-0"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const snip = `WALLET_SECRET_KEY="${walletSecretKey}"\nGOOGLE_WALLET_ISSUER_ID="${googleWalletIssuerId}"\nGOOGLE_WALLET_CLIENT_EMAIL="${googleWalletClientEmail}"`;
-                      markCopied("wallet_snip", snip);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                  >
-                    {copiedKey === "wallet_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>Copiar Bloque Google Wallet</span>
-                  </button>
-                </div>
+      {/* ==================================================================== */}
+      {/* 10: HOSTING, DOMAIN & MAPBOX MODULE                                  */}
+      {/* ==================================================================== */}
+      {(activeSection === "all" || activeSection === "hosting") && (
+        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+                <Globe className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-mono text-[11px] uppercase tracking-wider text-indigo-400 font-bold block">
+                  10 HOSTING & MAPBOX
+                </span>
+                <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                  Dominio Público y Token de Mapas
+                </h3>
               </div>
             </div>
-          )}
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 font-mono text-xs">
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">NEXT_PUBLIC_SITE_URL</label>
+              <input
+                type="text"
+                value={siteUrl}
+                onChange={(e) => setSiteUrl(e.target.value)}
+                placeholder="https://tudominio.com"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-zinc-400 text-[10px] uppercase">NEXT_PUBLIC_MAPBOX_TOKEN</label>
+              <input
+                type="text"
+                value={mapboxToken}
+                onChange={(e) => setMapboxToken(e.target.value)}
+                placeholder="pk.eyJ1Ijoi..."
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <label className="text-zinc-400 text-[10px] uppercase">MASTER_ADMIN_EMAIL</label>
+              <input
+                type="email"
+                value={masterAdminEmail}
+                onChange={(e) => setMasterAdminEmail(e.target.value)}
+                placeholder="admin@luminahome.com"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                const snip = `NEXT_PUBLIC_SITE_URL="${siteUrl}"\nNEXT_PUBLIC_APP_URL="${siteUrl}"\nNEXT_PUBLIC_MAPBOX_TOKEN="${mapboxToken}"\nMASTER_ADMIN_EMAIL="${masterAdminEmail}"`;
+                markCopied("host_snip", snip);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-indigo-400 text-xs font-bold border border-indigo-500/25 flex items-center gap-1.5 cursor-pointer"
+            >
+              {copiedKey === "host_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>COPIAR HOSTING</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 11: GOOGLE WALLET DIGITAL PASSES MODULE                              */}
+      {/* ==================================================================== */}
+      {(activeSection === "all" || activeSection === "wallets") && (
+        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+                <Smartphone className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-mono text-[11px] uppercase tracking-wider text-rose-400 font-bold block">
+                  11 GOOGLE WALLET PASSES
+                </span>
+                <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                  Billetera Digital y Pases de Fidelidad
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 font-mono text-xs">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-zinc-400 text-[10px] uppercase">WALLET_SECRET_KEY</label>
+                <button
+                  type="button"
+                  onClick={() => setWalletSecretKey(generateRandomHexKey())}
+                  className="text-rose-400 hover:underline cursor-pointer"
+                >
+                  GENERAR CLAVE 32 BYTES
+                </button>
+              </div>
+              <input
+                type="text"
+                value={walletSecretKey}
+                onChange={(e) => setWalletSecretKey(e.target.value)}
+                placeholder="clave_secreta_anti_enumeracion"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-rose-500"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="space-y-1">
+                <label className="text-zinc-400 text-[10px] uppercase">GOOGLE_WALLET_ISSUER_ID</label>
+                <input
+                  type="text"
+                  value={googleWalletIssuerId}
+                  onChange={(e) => setGoogleWalletIssuerId(e.target.value)}
+                  placeholder="3388000000022XXXXXX"
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-rose-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-zinc-400 text-[10px] uppercase">GOOGLE_WALLET_CLIENT_EMAIL</label>
+                <input
+                  type="text"
+                  value={googleWalletClientEmail}
+                  onChange={(e) => setGoogleWalletClientEmail(e.target.value)}
+                  placeholder="wallet@proyecto.iam.gserviceaccount.com"
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-rose-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                const snip = `WALLET_SECRET_KEY="${walletSecretKey}"\nGOOGLE_WALLET_ISSUER_ID="${googleWalletIssuerId}"\nGOOGLE_WALLET_CLIENT_EMAIL="${googleWalletClientEmail}"`;
+                markCopied("wallet_snip", snip);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-rose-400 text-xs font-bold border border-rose-500/25 flex items-center gap-1.5 cursor-pointer"
+            >
+              {copiedKey === "wallet_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>COPIAR WALLET</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 12: MASTER .ENV TERMINAL (FULL CODE VIEW WITH RARE-UI CODEBLOCK)     */}
+      {/* ==================================================================== */}
+      <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 mr-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 ring-1 ring-red-400/30" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 ring-1 ring-amber-400/30" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 ring-1 ring-emerald-400/30" />
+            </div>
+            <div>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+                12 MASTER .ENV TERMINAL
+              </span>
+              <h3 className="font-mono text-base font-bold text-white mt-0.5">
+                Variables de Entorno Generadas en Vivo
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 font-mono text-xs">
+            <button
+              type="button"
+              onClick={() => markCopied("master_all", computedMasterEnv)}
+              className="px-3.5 py-1.5 rounded-xl bg-[#ff5500] hover:bg-[#ff691e] text-white font-bold transition-all cursor-pointer shadow-[0_0_15px_rgba(255,85,0,0.3)] flex items-center gap-1.5"
+            >
+              {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>COPIAR TODO</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLiveCode((prev) => !prev)}
+              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 font-bold border border-white/10 cursor-pointer"
+            >
+              {showLiveCode ? "PLEGAR" : "EXPANDIR"}
+            </button>
+          </div>
+        </div>
+
+        {/* CodeBlock Component: Natural Height, no lines clipped */}
+        <AnimatePresence>
+          {showLiveCode && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden pt-1"
+            >
+              <CodeBlock
+                code={computedMasterEnv}
+                language="env"
+                accent="#ff5500"
+                filename=".env.production"
+                showHeader={true}
+                showLineNumbers={true}
+                showCopyButton={true}
+                defaultExpanded={true}
+                maxHeight={false}
+                showFooter={true}
+                className="w-full rounded-2xl shadow-2xl overflow-hidden border border-white/10"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ==================================================================== */}
+      {/* HARDWARE FOOTER: TAL CUAL Desing.jpg                                 */}
+      {/* ==================================================================== */}
+      <div className="relative z-10 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 font-mono text-xs text-zinc-500 border-t border-white/[0.06]">
+        <div>
+          <span className="text-zinc-400 block tracking-wider">BUILD ANYTHING</span>
+          <span className="text-zinc-200 block tracking-wider font-bold">
+            WITH INTELLIGENCE <span className="text-[#ff5500] animate-pulse">_</span>
+          </span>
+        </div>
+
+        <div className="text-left sm:text-right">
+          <span className="text-zinc-400 block tracking-wider">Lumina Core</span>
+          <span className="text-zinc-500 block tracking-wider text-[11px]">by Engineering</span>
         </div>
       </div>
+
     </div>
   );
 }
