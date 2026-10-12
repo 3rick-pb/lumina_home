@@ -150,6 +150,7 @@ export interface LiquidGlassProps extends HTMLAttributes<HTMLDivElement> {
   strength?: number;
   chromaticAberration?: number;
   blur?: number;
+  overflow?: "hidden" | "visible";
   style?: CSSProperties;
 }
 
@@ -161,6 +162,7 @@ export function LiquidGlass({
   strength = 28,
   chromaticAberration = 1.6,
   blur = 1.5,
+  overflow = "hidden",
   style = {},
   ...props
 }: LiquidGlassProps) {
@@ -249,17 +251,17 @@ export function LiquidGlass({
   return (
     <div
       ref={elementRef}
-      className={`relative overflow-hidden transition-all duration-200 select-none ${className}`}
+      className={`relative ${overflow === "visible" ? "overflow-visible" : "overflow-hidden"} transition-all duration-200 select-none ${className}`}
       style={dynamicGlassStyle}
       {...props}
     >
+      {/* Internal highlight clipped to shape */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent"
-        style={{
-          borderTopLeftRadius: radius >= 9999 ? "9999px" : `${radius}px`,
-          borderTopRightRadius: radius >= 9999 ? "9999px" : `${radius}px`,
-        }}
-      />
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ borderRadius: baseBorderRadius }}
+      >
+        <div className="absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent" />
+      </div>
       {children}
     </div>
   );
@@ -387,12 +389,11 @@ export const LiquidGlassButton = React.forwardRef<HTMLButtonElement, LiquidGlass
         {...props}
       >
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent"
-          style={{
-            borderTopLeftRadius: radius >= 9999 ? "9999px" : `${radius}px`,
-            borderTopRightRadius: radius >= 9999 ? "9999px" : `${radius}px`,
-          }}
-        />
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          style={{ borderRadius: baseBorderRadius }}
+        >
+          <div className="absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent" />
+        </div>
         {children}
       </button>
     );
