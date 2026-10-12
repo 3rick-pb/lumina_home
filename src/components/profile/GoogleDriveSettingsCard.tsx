@@ -45,6 +45,7 @@ import {
   GoogleDriveFolder, 
   GoogleDriveFile
 } from "@/lib/googleDriveStore";
+import { GoogleDrive2026 } from "@thesvg/react";
 import { cn } from "@/lib/utils";
 
 // Tipografía Space Mono solicitada por el usuario
@@ -55,16 +56,7 @@ const spaceMono = Space_Mono({
 
 // Iconos exportados para compatibilidad con otros módulos que los importan
 export function GoogleDriveIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
-      <path d="M43.65 25 29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44A8.97 8.97 0 0 0 0 53h27.5z" fill="#00ac47" />
-      <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.85 10.1z" fill="#ea4335" />
-      <path d="M43.65 25 57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.4-4.5 1.2z" fill="#00832d" />
-      <path d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.4 4.5-1.2z" fill="#2684fc" />
-      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.15 28h27.5c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00" />
-    </svg>
-  );
+  return <GoogleDrive2026 className={className} />;
 }
 
 export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -391,9 +383,15 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     }
   };
 
-  const handleUnlockKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleUnlockKeyDown = async (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !unlockPinDigits[index] && index > 0) {
       unlockInputRefs.current[index - 1]?.focus();
+    } else if (e.key === "Enter") {
+      const fullPin = unlockPinDigits.join("");
+      if (fullPin.length === 6) {
+        e.preventDefault();
+        await handleVerifyUnlockPin(fullPin);
+      }
     }
   };
 
@@ -846,8 +844,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         <button
           type="button"
           onClick={() => setShowAdminPinMenu(false)}
-          className="w-6 h-6 rounded-full bg-zinc-200/50 hover:bg-zinc-200 dark:bg-zinc-700/50 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer active:scale-95"
+          className="lumina-bag-close-btn w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
           title="Cerrar"
+          aria-label="Cerrar"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -884,6 +883,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               maxLength={6}
               value={adminNewPin}
               onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && adminNewPin.length === 6 && adminConfirmPin.length === 6) {
+                  e.preventDefault();
+                  handleAdminSaveNewPin();
+                }
+              }}
               placeholder="••••••"
               className={cn(
                 "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
@@ -903,6 +908,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               maxLength={6}
               value={adminConfirmPin}
               onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && adminNewPin.length === 6 && adminConfirmPin.length === 6) {
+                  e.preventDefault();
+                  handleAdminSaveNewPin();
+                }
+              }}
               placeholder="••••••"
               className={cn(
                 "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
@@ -934,6 +945,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               maxLength={6}
               value={adminCurrentPin}
               onChange={(e) => setAdminCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && adminCurrentPin.length === 6 && adminNewPin.length === 6 && adminConfirmPin.length === 6) {
+                  e.preventDefault();
+                  handleAdminChangePin();
+                }
+              }}
               placeholder="••••••"
               className={cn(
                 "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
@@ -953,6 +970,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               maxLength={6}
               value={adminNewPin}
               onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && adminCurrentPin.length === 6 && adminNewPin.length === 6 && adminConfirmPin.length === 6) {
+                  e.preventDefault();
+                  handleAdminChangePin();
+                }
+              }}
               placeholder="••••••"
               className={cn(
                 "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
@@ -972,6 +995,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               maxLength={6}
               value={adminConfirmPin}
               onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && adminCurrentPin.length === 6 && adminNewPin.length === 6 && adminConfirmPin.length === 6) {
+                  e.preventDefault();
+                  handleAdminChangePin();
+                }
+              }}
               placeholder="••••••"
               className={cn(
                 "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
@@ -1131,25 +1160,15 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         spaceMono.className
       )}
     >
-      {/* Botón Flotante Maestro Exterior de Cierre (Always accessible on Mobile, Tablets & Desktop) */}
-      {onClose && (
-        <button
-          type="button"
-          onClick={onClose}
-          className={cn(
-            "md:hidden absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 z-[70] w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer active:scale-90 shadow-xl backdrop-blur-2xl select-none",
-            isDark
-              ? "bg-[#1c1c1e]/90 hover:bg-[#2c2c2e] active:bg-black text-white border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
-              : "bg-white/95 hover:bg-zinc-100 active:bg-zinc-200 text-zinc-900 border-black/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
-          )}
-          style={{ touchAction: "manipulation" }}
-          title="Cerrar galería (Esc)"
-          aria-label="Cerrar galería"
-        >
-          <X className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
-        </button>
-      )}
-      
+      <style>{`
+        .lumina-bag-close-btn,
+        .lumina-bag-close-btn * {
+          transition-property: all !important;
+          transition-duration: 150ms !important;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+      `}</style>
+
       {/* 1. RAIL DE ICONOS VERTICAL (IZQUIERDA EXTREMA) */}
       <div className={cn(
         "hidden lg:flex w-14 shrink-0 flex-col items-center justify-between py-5 border-r transition-colors duration-200 relative z-50",
@@ -1251,7 +1270,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                       initial={{ opacity: 0, x: -8, scale: 0.96 }}
                       animate={{ opacity: 1, x: 0, scale: 1 }}
                       exit={{ opacity: 0, x: -8, scale: 0.96 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{ type: "spring", damping: 25, stiffness: 350 }}
                       className={cn(
                         "absolute left-full top-0 ml-3.5 w-80 rounded-[22px] border shadow-2xl p-4 z-50 backdrop-blur-3xl font-sans antialiased select-none transition-all",
                         isDark 
@@ -1293,17 +1312,30 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       >
         {/* Cabecera del Sidebar con título y Scroll Progress */}
         <div className="p-3 sm:p-5 pb-2.5 sm:pb-3 space-y-2.5 sm:space-y-3.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
               <h3 className={cn(
-                "font-bold text-xs uppercase tracking-widest font-mono",
+                "font-bold text-xs uppercase tracking-widest font-mono truncate",
                 isDark ? "text-zinc-300" : "text-zinc-700"
               )}>
                 CARPETAS DE DRIVE
               </h3>
             </div>
-            <ArcScrollProgress percent={settings.isConnected ? arcProgressPercent : 0} isDark={isDark} />
+            <div className="flex items-center gap-2 shrink-0">
+              <ArcScrollProgress percent={settings.isConnected ? arcProgressPercent : 0} isDark={isDark} />
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="lumina-bag-close-btn md:hidden w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+                  title="Cerrar galería"
+                  aria-label="Cerrar galería"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Buscador de carpetas con alineación y simetría perfecta */}
@@ -1338,7 +1370,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
         {/* beUI Arc Picker en modo Right con fondo ambiental y desenfoque/enfoque suave interactivo */}
         <div 
-          className="flex-1 flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-visible z-30 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]"
+          className="flex-1 max-h-[220px] md:max-h-none flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-hidden md:overflow-visible z-30 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]"
           onMouseEnter={() => {
             if (!isLocked) setIsWheelHovered(true);
           }}
@@ -1464,13 +1496,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         
         {/* Barra Superior del Canvas Principal (Apple Glass Bar) */}
         <div className={cn(
-          "px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-b flex items-center justify-between gap-2 sm:gap-4 shrink-0 backdrop-blur-xl sticky top-0 z-30 transition-colors duration-200 pr-12 sm:pr-14 md:pr-6",
+          "px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-b flex items-center justify-between gap-2 sm:gap-3 shrink-0 backdrop-blur-xl sticky top-0 z-30 transition-colors duration-200",
           isDark ? "bg-[#0a0a0f]/85 border-zinc-800/80 text-white" : "bg-white/80 border-zinc-200/80 text-zinc-900"
         )}>
           {/* Breadcrumb / Navegación */}
-          <div className="flex items-center gap-2 min-w-0 font-mono">
+          <div className="flex items-center gap-2 min-w-0 flex-1 font-mono">
             {mainFolder ? (
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 truncate">
                 <button
                   type="button"
                   onClick={() => {
@@ -1490,7 +1522,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
                 </button>
                 <span className={cn(
-                  "text-xs sm:text-sm font-bold truncate max-w-[180px] sm:max-w-[280px]",
+                  "text-xs sm:text-sm font-bold truncate max-w-[120px] sm:max-w-[240px] md:max-w-[280px]",
                   isDark ? "text-white" : "text-zinc-950"
                 )}>
                   {mainFolder.name}
@@ -1505,7 +1537,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     handleSelectFolder({ id: 'root', name: 'Mi Unidad', itemCount: rootFolders.length });
                   }}
                   className={cn(
-                    "ml-1.5 px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer border active:scale-95 flex items-center gap-1 font-sans",
+                    "ml-1.5 px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer border active:scale-95 flex items-center gap-1 font-sans shrink-0",
                     savedPinHash && isLocked
                       ? "bg-red-500/10 text-red-500 border-red-500/25 hover:bg-red-500/15"
                       : isDark 
@@ -1519,21 +1551,21 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div className={cn(
-                  "w-6 h-6 rounded-lg flex items-center justify-center border",
+                  "w-6 h-6 rounded-lg flex items-center justify-center border shrink-0",
                   isDark ? "bg-zinc-800 border-zinc-700 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600"
                 )}>
                   <FolderOpen className="w-3.5 h-3.5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <span className={cn(
-                    "text-xs sm:text-sm font-bold block leading-none",
+                    "text-xs sm:text-sm font-bold block leading-none truncate",
                     isDark ? "text-white" : "text-zinc-950"
                   )}>
                     Mi Unidad
                   </span>
-                  <span className={cn("text-[10px] font-medium leading-none mt-1 block", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                  <span className={cn("text-[10px] font-medium leading-none mt-1 block truncate", isDark ? "text-zinc-500" : "text-zinc-400")}>
                     Explorador de recursos
                   </span>
                 </div>
@@ -1542,9 +1574,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
 
           {/* Acciones de la derecha: Scroll Progress, Sincronizar, Toggle vista, Cerrar */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {settings.isConnected && (
-              <ArcScrollProgress percent={contentScrollPercent} isDark={isDark} />
+              <span className="hidden sm:inline-flex">
+                <ArcScrollProgress percent={contentScrollPercent} isDark={isDark} />
+              </span>
             )}
 
             <button
@@ -1606,7 +1640,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               type="button"
               onClick={() => setShowMobileWheel((prev) => !prev)}
               className={cn(
-                "md:hidden px-2.5 py-1.5 rounded-xl border text-[11px] font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95",
+                "md:hidden px-2 sm:px-2.5 py-1.5 rounded-xl border text-[11px] font-mono font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer active:scale-95",
                 showMobileWheel
                   ? "bg-blue-600 text-white border-blue-500 shadow-xs"
                   : isDark
@@ -1616,7 +1650,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               title={showMobileWheel ? "Ocultar rueda de carpetas" : "Ver rueda de carpetas"}
             >
               <Folder className="w-3.5 h-3.5" />
-              <span>{showMobileWheel ? "Ocultar Rueda" : "Rueda"}</span>
+              <span>{showMobileWheel ? "Ocultar" : "Rueda"}</span>
             </button>
 
             {/* Candado Rojo en Móvil/Tablet */}
@@ -1656,14 +1690,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 type="button"
                 onClick={onClose}
                 className={cn(
-                  "hidden md:flex p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90",
-                  isDark 
-                    ? "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700" 
-                    : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100 shadow-xs"
+                  "lumina-bag-close-btn w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0",
+                  showMobileWheel ? "hidden md:flex" : "flex"
                 )}
-                title="Cerrar modal"
+                title="Cerrar galería"
+                aria-label="Cerrar galería"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -2225,102 +2258,113 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         )}
 
         {/* MODAL DE ESTADÍSTICAS (Executive Metrics Dashboard) */}
-        {showStatsModal && (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className={cn(
-              "w-full max-w-md border rounded-[2rem] p-6 shadow-2xl space-y-5 transition-colors font-mono",
-              isDark ? "bg-[#111119] border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
-            )}>
-              <div className={cn("flex items-center justify-between pb-3.5 border-b", isDark ? "border-zinc-800" : "border-zinc-200")}>
-                <div className="flex items-center gap-2.5">
+        <AnimatePresence>
+          {showStatsModal && (
+            <div 
+              className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
+              onClick={() => setShowStatsModal(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94, y: 14 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.94, y: 14 }}
+                transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  "w-full max-w-md border rounded-[2rem] p-6 shadow-2xl space-y-5 transition-colors font-mono",
+                  isDark ? "bg-[#111119] border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                )}
+              >
+                <div className={cn("flex items-center justify-between pb-3.5 border-b", isDark ? "border-zinc-800" : "border-zinc-200")}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center border shrink-0",
+                      isDark ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-200"
+                    )}>
+                      <GoogleDrive2026 className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm tracking-tight">Estadísticas Multimedia</h4>
+                      <p className={cn("text-[11px]", isDark ? "text-zinc-400" : "text-zinc-500")}>Conectado a Google Drive</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowStatsModal(false)}
+                    className="lumina-bag-close-btn w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+                    title="Cerrar estadísticas"
+                    aria-label="Cerrar estadísticas"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center border",
-                    isDark ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600"
+                    "p-4 rounded-2xl border space-y-1",
+                    isDark ? "bg-zinc-900/60 border-zinc-800" : "bg-zinc-50 border-zinc-200"
                   )}>
-                    <BarChart2 className="w-4 h-4" />
+                    <p className={cn("text-[10px] font-bold uppercase tracking-wider", isDark ? "text-zinc-400" : "text-zinc-500")}>Fotos en Carpeta</p>
+                    <p className="text-2xl font-bold tracking-tight">{filteredFiles.length}</p>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-sm tracking-tight">Estadísticas Multimedia</h4>
-                    <p className={cn("text-[11px]", isDark ? "text-zinc-400" : "text-zinc-500")}>Banco de Fotos Lumina</p>
+                  <div className={cn(
+                    "p-4 rounded-2xl border space-y-1",
+                    isDark ? "bg-zinc-900/60 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                  )}>
+                    <p className={cn("text-[10px] font-bold uppercase tracking-wider", isDark ? "text-zinc-400" : "text-zinc-500")}>Total Carpetas</p>
+                    <p className="text-2xl font-bold tracking-tight">{rootFolders.length}</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowStatsModal(false)}
-                  className={cn(
-                    "p-1.5 rounded-lg border transition-all cursor-pointer active:scale-90",
-                    isDark ? "bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white" : "bg-zinc-100 border-zinc-200 text-zinc-500 hover:text-zinc-950"
-                  )}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div className={cn(
-                  "p-4 rounded-2xl border space-y-1",
+                  "p-4 rounded-2xl border space-y-2.5 text-xs",
                   isDark ? "bg-zinc-900/60 border-zinc-800" : "bg-zinc-50 border-zinc-200"
                 )}>
-                  <p className={cn("text-[10px] font-bold uppercase tracking-wider", isDark ? "text-zinc-400" : "text-zinc-500")}>Fotos en Carpeta</p>
-                  <p className="text-2xl font-bold tracking-tight">{filteredFiles.length}</p>
+                  <div className="flex justify-between items-center">
+                    <span className={isDark ? "text-zinc-400" : "text-zinc-500"}>Cuenta vinculada:</span>
+                    <span className="font-semibold truncate max-w-[180px]">{settings.accountEmail || "Sin vincular"}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className={isDark ? "text-zinc-400" : "text-zinc-500"}>Estado de enlace:</span>
+                    <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      {settings.isConnected ? "Conectado" : "Desconectado"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className={isDark ? "text-zinc-400" : "text-zinc-500"}>Directorio actual:</span>
+                    <span className="truncate max-w-[180px] font-bold">{mainFolder ? mainFolder.name : "Mi Unidad"}</span>
+                  </div>
                 </div>
-                <div className={cn(
-                  "p-4 rounded-2xl border space-y-1",
-                  isDark ? "bg-zinc-900/60 border-zinc-800" : "bg-zinc-50 border-zinc-200"
-                )}>
-                  <p className={cn("text-[10px] font-bold uppercase tracking-wider", isDark ? "text-zinc-400" : "text-zinc-500")}>Total Carpetas</p>
-                  <p className="text-2xl font-bold tracking-tight">{rootFolders.length}</p>
-                </div>
-              </div>
 
-              <div className={cn(
-                "p-4 rounded-2xl border space-y-2.5 text-xs",
-                isDark ? "bg-zinc-900/60 border-zinc-800" : "bg-zinc-50 border-zinc-200"
-              )}>
-                <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-zinc-400" : "text-zinc-500"}>Cuenta vinculada:</span>
-                  <span className="font-semibold truncate max-w-[180px]">{settings.accountEmail || "Sin vincular"}</span>
+                <div className="flex gap-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleSyncClick}
+                    disabled={isSyncing}
+                    className={cn(
+                      "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 shadow-sm",
+                      isDark ? "bg-white text-zinc-950 hover:bg-zinc-200" : "bg-zinc-950 text-white hover:bg-zinc-800"
+                    )}
+                  >
+                    <RefreshCw className={cn("w-3.5 h-3.5", isSyncing ? "animate-spin" : "")} />
+                    <span>Sincronizar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowStatsModal(false)}
+                    className={cn(
+                      "py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-95 border",
+                      isDark ? "bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700" : "bg-zinc-100 border-zinc-300 text-zinc-800 hover:bg-zinc-200"
+                    )}
+                  >
+                    Cerrar
+                  </button>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-zinc-400" : "text-zinc-500"}>Estado de enlace:</span>
-                  <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    {settings.isConnected ? "Conectado" : "Desconectado"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-zinc-400" : "text-zinc-500"}>Directorio actual:</span>
-                  <span className="truncate max-w-[180px] font-bold">{mainFolder ? mainFolder.name : "Mi Unidad"}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={handleSyncClick}
-                  disabled={isSyncing}
-                  className={cn(
-                    "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 shadow-sm",
-                    isDark ? "bg-white text-zinc-950 hover:bg-zinc-200" : "bg-zinc-950 text-white hover:bg-zinc-800"
-                  )}
-                >
-                  <RefreshCw className={cn("w-3.5 h-3.5", isSyncing ? "animate-spin" : "")} />
-                  <span>Sincronizar</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowStatsModal(false)}
-                  className={cn(
-                    "py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-95 border",
-                    isDark ? "bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700" : "bg-zinc-100 border-zinc-300 text-zinc-800 hover:bg-zinc-200"
-                  )}
-                >
-                  Cerrar
-                </button>
-              </div>
+              </motion.div>
             </div>
-          </div>
-        )}
+          )}
+        </AnimatePresence>
       </div>
 
       {/* LIGHTBOX / VISOR HD EN PANTALLA COMPLETA CON NAVEGACIÓN COMPLETA */}
@@ -2365,15 +2409,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 <button
                   type="button"
                   onClick={() => setPreviewPhoto(null)}
-                  className={cn(
-                    "p-2 sm:p-2.5 rounded-full transition-all cursor-pointer active:scale-95 border flex items-center justify-center shrink-0",
-                    isDark ? "bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border-white/20 shadow-md" : "bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300 text-zinc-800 border-zinc-200 shadow-sm"
-                  )}
-                  style={{ touchAction: "manipulation", minWidth: "42px", minHeight: "42px" }}
+                  className="lumina-bag-close-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+                  style={{ touchAction: "manipulation" }}
                   title="Cerrar vista previa (Esc)"
                   aria-label="Cerrar vista previa"
                 >
-                  <X className="w-5 h-5 text-current" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
                 </button>
               </div>
             </div>
@@ -2461,7 +2502,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 initial={{ opacity: 0, scale: 0.92, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 16 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ type: "spring", damping: 25, stiffness: 350 }}
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
                   "w-full max-w-sm rounded-[24px] border shadow-2xl p-4.5 backdrop-blur-3xl font-sans antialiased select-none transition-all max-h-[90vh] overflow-y-auto",

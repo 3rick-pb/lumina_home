@@ -16,6 +16,8 @@ import {
   Wifi,
 } from "lucide-react";
 import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
+import { hasCardSecurityPin } from "@/lib/cardSecurityStore";
+import { CardSecurityPinModal } from "@/components/profile/CardSecurityPinModal";
 
 export interface AddCardAnimatedModalProps {
   isOpen: boolean;
@@ -255,6 +257,7 @@ export function AddCardAnimatedModal({
   const [isFlipped, setIsFlipped] = useState(false);
   const [step, setStep] = useState<"form" | "processing" | "success">("form");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showSecurityPinModal, setShowSecurityPinModal] = useState(false);
 
   // Ensure scroll is always cleanly restored when modal closes or unmounts
   useEffect(() => {
@@ -339,23 +342,7 @@ export function AddCardAnimatedModal({
     onClose();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    if (rawDigits.length < 15) {
-      setErrorMessage("Por favor ingresa los 16 dígitos del número de tu tarjeta.");
-      return;
-    }
-    if (cardExp.length < 5) {
-      setErrorMessage("Por favor ingresa una fecha de vencimiento válida (MM/AA).");
-      return;
-    }
-    if (cardCvv.length < 3) {
-      setErrorMessage("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos).");
-      return;
-    }
-
+  const executeSaveCard = () => {
     setIsFlipped(false);
     setFocusedField(null);
     setStep("processing");
@@ -395,6 +382,32 @@ export function AddCardAnimatedModal({
     }, 2000);
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (rawDigits.length < 15) {
+      setErrorMessage("Por favor ingresa los 16 dígitos del número de tu tarjeta.");
+      return;
+    }
+    if (cardExp.length < 5) {
+      setErrorMessage("Por favor ingresa una fecha de vencimiento válida (MM/AA).");
+      return;
+    }
+    if (cardCvv.length < 3) {
+      setErrorMessage("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos).");
+      return;
+    }
+
+    // Si aún no se ha configurado el PIN de 5 dígitos de la billetera, solicitar registrarlo primero
+    if (!hasCardSecurityPin()) {
+      setShowSecurityPinModal(true);
+      return;
+    }
+
+    executeSaveCard();
+  };
+
   // Format 4 groups of 4 characters for the live 3D card display
   const formattedGroups = [0, 1, 2, 3].map((groupIdx) => {
     const slice = rawDigits.slice(groupIdx * 4, groupIdx * 4 + 4);
@@ -402,7 +415,8 @@ export function AddCardAnimatedModal({
   });
 
   return (
-    <BeUICenterMorphModal
+    <>
+      <BeUICenterMorphModal
       open={isOpen}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) handleResetAndClose();
@@ -956,5 +970,18 @@ export function AddCardAnimatedModal({
         </div>
       </div>
     </BeUICenterMorphModal>
+
+    <CardSecurityPinModal
+      isOpen={showSecurityPinModal}
+      mode="register"
+      title="Crea tu PIN de seguridad (5 dígitos)"
+      description="Para resguardar tus tarjetas y autorizar la revelación de datos sensibles, registra un PIN de 5 dígitos."
+      onClose={() => setShowSecurityPinModal(false)}
+      onSuccess={() => {
+        setShowSecurityPinModal(false);
+        executeSaveCard();
+      }}
+    />
+  </>
   );
 }

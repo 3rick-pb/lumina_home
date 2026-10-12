@@ -14,6 +14,7 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { playCardEnvelopeSound } from "@/lib/soundUtils";
+import { CardSecurityPinModal } from "@/components/profile/CardSecurityPinModal";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -250,12 +251,17 @@ export function CardFolder({
     onClick?.();
   };
 
+  const [showSecurityPinModal, setShowSecurityPinModal] = useState(false);
+
   const toggleDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (disabled) return;
-    const nextVisible = !areDetailsVisible;
-    if (!detailsControlled) setInternalDetailsVisible(nextVisible);
-    onDetailsVisibleChange?.(nextVisible);
+    if (areDetailsVisible) {
+      if (!detailsControlled) setInternalDetailsVisible(false);
+      onDetailsVisibleChange?.(false);
+    } else {
+      setShowSecurityPinModal(true);
+    }
   };
 
   return (
@@ -464,6 +470,16 @@ export function CardFolder({
           <EllipsisVertical className="size-4" aria-hidden="true" />
         </motion.button>
       ) : null}
+
+      <CardSecurityPinModal
+        isOpen={showSecurityPinModal}
+        onClose={() => setShowSecurityPinModal(false)}
+        onSuccess={() => {
+          if (!detailsControlled) setInternalDetailsVisible(true);
+          onDetailsVisibleChange?.(true);
+          setShowSecurityPinModal(false);
+        }}
+      />
     </div>
   );
 }

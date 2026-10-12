@@ -14,6 +14,7 @@ import {
   FileSpreadsheet,
   ChevronRight
 } from "lucide-react";
+import { MicrosoftExcel } from "@thesvg/react";
 import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
@@ -75,54 +76,7 @@ export const NICHE_INVENTORY_HEADERS = [
 ] as const;
 
 /**
- * Excel 2025 Fluent Modern Icon
- * Multi-layer 3D emerald spreadsheet sheet + front badge with bold X
- */
-function Excel2025Icon({ className = "w-6 h-6" }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      viewBox="0 0 28 28" 
-      fill="none" 
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <linearGradient id="exBackGrad" x1="7" y1="3" x2="24" y2="25" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#107C41" />
-          <stop offset="0.6" stopColor="#0E6837" />
-          <stop offset="1" stopColor="#084222" />
-        </linearGradient>
-        <linearGradient id="exFrontGrad" x1="2.5" y1="8" x2="15" y2="21" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#22C55E" />
-          <stop offset="0.45" stopColor="#16A34A" />
-          <stop offset="1" stopColor="#107C41" />
-        </linearGradient>
-        <filter id="exShadow" x="0.5" y="6.5" width="17" height="17" filterUnits="userSpaceOnUse">
-          <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.4" />
-        </filter>
-      </defs>
 
-      {/* Back Spreadsheet Card */}
-      <rect x="7.5" y="3.5" width="16" height="21" rx="3.5" fill="url(#exBackGrad)" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-      
-      {/* Grid lines inside back card */}
-      <path d="M12.5 8.5H20.5M12.5 13.5H20.5M12.5 18.5H20.5" stroke="white" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M16 5.5V22.5" stroke="white" strokeOpacity="0.4" strokeWidth="1.2" strokeLinecap="round" />
-
-      {/* Front Excel Badge with 3D Shadow */}
-      <g filter="url(#exShadow)">
-        <rect x="2.5" y="8" width="12" height="12" rx="2.8" fill="url(#exFrontGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
-        {/* Bold Modern X */}
-        <path d="M5.5 11.2L11.5 16.8M11.5 11.2L5.5 16.8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      </g>
-
-      {/* Specular gloss sheen across top */}
-      <path d="M7.5 4.5C9 6.5 14 7.5 23 5V9.5C16 10.5 10 9 7.5 7V4.5Z" fill="white" fillOpacity="0.22" />
-    </svg>
-  );
-}
-
-/**
  * Official Dropi Isotipo (Iconic Smiling Character)
  * Brand Color: #FF5500 (Dropi Official Vibrant Orange)
  */
@@ -975,7 +929,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             {isOpen ? (
               <X className="w-5 h-5 text-white" />
             ) : (
-              <Excel2025Icon className="w-6 h-6 transition-transform duration-200" />
+              <MicrosoftExcel className="w-6 h-6 transition-transform duration-200" />
             )}
           </motion.div>
         </button>

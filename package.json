@@ -11,6 +11,7 @@
   "dependencies": {
     "@blobatar/react": "^2.7.0",
     "@supabase/supabase-js": "^2.114.0",
+    "@thesvg/react": "^3.3.13",
     "@types/mapbox-gl": "^3.4.1",
     "blobatar": "^2.7.0",
     "boneyard-js": "^1.10.0",
