@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, useSpring, useMotionValue } from "framer-motion";
+import { LiquidGlass } from "@/components/ui/LiquidGlass";
 
 export interface LiquidScrubberItem {
   id: string;
@@ -539,84 +540,39 @@ export function LiquidScrubberNav({
           />
 
           {/* ------------------------------------------------------------- */}
-          {/* CAPA 2: LIQUID GLASS APPLE ORIGINAL (DEFORMACIÓN ÓPTICA, MENISCO Y DISPERSIÓN) */}
+          {/* CAPA 2: LIQUID GLASS ORIGINAL (CRISTAL PURO SIN PINTURA NI COLORES) */}
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 1 : 0 }}
             transition={{ duration: 0.12 }}
             className="absolute inset-0 rounded-full pointer-events-none"
           >
-            {/* Sombra de relieve 3D proyectada por la lente física que sobrepasa el menú */}
-            <div className="absolute inset-0 rounded-full shadow-[0_16px_36px_-4px_rgba(0,0,0,0.36),0_6px_16px_-2px_rgba(0,0,0,0.22)] pointer-events-none" />
-
-            {/* Contenedor principal de la lente de vidrio líquido */}
-            <div
-              className="relative w-full h-full rounded-full overflow-hidden"
+            <LiquidGlass
+              radius={9999}
+              depth={4}
+              strength={24}
+              chromaticAberration={0}
+              blur={1.8}
+              className="w-full h-full rounded-full"
               style={{
-                /* Base de cristal puro transparente (Cero blancura lechosa, pura transparencia vítrea) */
-                background: "rgba(255, 255, 255, 0.04)",
-                backdropFilter: "blur(6px) saturate(180%) brightness(1.05)",
-                WebkitBackdropFilter: "blur(6px) saturate(180%) brightness(1.05)",
-                border: "1.2px solid rgba(255, 255, 255, 0.85)",
+                background: "rgba(255, 255, 255, 0.42)",
+                border: "1px solid rgba(255, 255, 255, 0.9)",
                 boxShadow: `
-                  /* Bisel refractivo perimetral oscuro que deforma el espacio exterior (Menisco de Apple.png) */
-                  inset 0 5.5px 8px -1px rgba(0, 0, 0, 0.78),
-                  inset 0 -5.5px 8px -1px rgba(0, 0, 0, 0.78),
-                  inset 5px 0 7px -1px rgba(0, 0, 0, 0.45),
-                  inset -5px 0 7px -1px rgba(0, 0, 0, 0.45),
-                  /* Reflejos de borde interior */
-                  inset 0 1.2px 1.5px 0 rgba(255, 255, 255, 0.95),
-                  inset 0 -1.2px 1.5px 0 rgba(255, 255, 255, 0.4)
+                  0 12px 28px -4px rgba(0, 0, 0, 0.16),
+                  0 4px 10px -2px rgba(0, 0, 0, 0.08),
+                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95),
+                  inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.08),
+                  inset 1.5px 0 2px 0 rgba(255, 255, 255, 0.5),
+                  inset -1.5px 0 2px 0 rgba(0, 0, 0, 0.05)
                 `,
               }}
             >
-              {/* DEFORMACIÓN ARRIBA Y ABAJO: Menisco Refractivo Oscuro Curvado */}
-              <div
-                className="absolute inset-x-2 top-0 h-[10px] rounded-t-full pointer-events-none opacity-95"
-                style={{
-                  background: "radial-gradient(ellipse 90% 100% at 50% 0%, rgba(0, 0, 0, 0.9) 0%, rgba(10, 15, 25, 0.7) 60%, transparent 100%)",
-                }}
-              />
-              <div
-                className="absolute inset-x-2 bottom-0 h-[10px] rounded-b-full pointer-events-none opacity-95"
-                style={{
-                  background: "radial-gradient(ellipse 90% 100% at 50% 100%, rgba(0, 0, 0, 0.9) 0%, rgba(10, 15, 25, 0.7) 60%, transparent 100%)",
-                }}
-              />
+              {/* Reflejo curvado especular superior (Cúpula física de cristal) */}
+              <div className="absolute inset-x-0 top-0 h-[48%] rounded-t-full bg-gradient-to-b from-white/50 via-white/10 to-transparent pointer-events-none" />
 
-              {/* ANILLO DE DISPERSIÓN PRISMÁTICA (Aberración Cromática y Cáusticas de Apple.png) */}
-              <div
-                className="absolute inset-0 rounded-full pointer-events-none opacity-90"
-                style={{
-                  background: `
-                    /* Espectro superior: Cyan -> Amarillo/Dorado -> Magenta */
-                    radial-gradient(ellipse 92% 50% at 50% 0%, rgba(0, 240, 255, 0.65) 0%, rgba(255, 220, 0, 0.48) 38%, rgba(255, 30, 110, 0.4) 68%, transparent 100%),
-                    /* Espectro inferior: Cyan -> Amarillo/Dorado -> Violeta */
-                    radial-gradient(ellipse 92% 50% at 50% 100%, rgba(0, 240, 255, 0.65) 0%, rgba(255, 220, 0, 0.48) 38%, rgba(255, 30, 110, 0.4) 68%, transparent 100%),
-                    /* Curvatura lateral izquierda */
-                    radial-gradient(ellipse 42% 90% at 0% 50%, rgba(0, 255, 210, 0.5) 0%, rgba(255, 150, 0, 0.35) 65%, transparent 100%),
-                    /* Curvatura lateral derecha */
-                    radial-gradient(ellipse 42% 90% at 100% 50%, rgba(255, 40, 160, 0.5) 0%, rgba(0, 220, 255, 0.35) 65%, transparent 100%)
-                  `,
-                  mixBlendMode: "screen",
-                }}
-              />
-
-              {/* HAZ CÁUSTICO DIAGONAL (Firma óptica Apple: destello transversal de refracción) */}
-              <div
-                className="absolute inset-0 rounded-full pointer-events-none opacity-80"
-                style={{
-                  background: "linear-gradient(116deg, transparent 16%, rgba(255, 255, 255, 0.5) 28%, rgba(0, 240, 255, 0.4) 36%, rgba(255, 230, 0, 0.35) 44%, rgba(255, 50, 130, 0.3) 52%, transparent 68%)",
-                  mixBlendMode: "screen",
-                }}
-              />
-
-              {/* LÍNEA DE REFLEJO ESPECULAR SUPERIOR (Filo de cristal nítido) */}
-              <div className="absolute inset-x-3 top-0 h-[1.5px] rounded-full bg-gradient-to-r from-transparent via-white/95 to-transparent pointer-events-none" />
-
-              {/* LÍNEA DE REFLEJO ESPECULAR INFERIOR */}
-              <div className="absolute inset-x-4 bottom-0 h-[1px] rounded-full bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
-            </div>
+              {/* Reflejo curvado especular inferior sutil */}
+              <div className="absolute inset-x-0 bottom-0 h-[22%] rounded-b-full bg-gradient-to-t from-white/20 to-transparent pointer-events-none" />
+            </LiquidGlass>
           </motion.div>
         </motion.div>
       )}
