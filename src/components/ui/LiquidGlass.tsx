@@ -31,7 +31,7 @@ interface FilterParams extends DisplacementParams {
 
 function getDisplacementMap({ height, width, radius, depth }: DisplacementParams): string {
   const safeRadius = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
-  const safeDepth = Math.max(1, Math.min(depth, Math.min(width, height) / 4));
+  const safeDepth = Math.max(1, depth);
 
   const y1 = Math.max(0, Math.ceil((safeRadius / height) * 15));
   const y2 = Math.min(100, Math.floor(100 - (safeRadius / height) * 15));
@@ -191,7 +191,7 @@ export function LiquidGlass({
   useEffect(() => {
     if (typeof navigator !== "undefined") {
       const ua = navigator.userAgent.toLowerCase();
-      const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
+      const isChromium = /chrome|chromium|crios|edg/.test(ua) && !/firefox|fxios/.test(ua);
       setHasSvgFilterSupport(isChromium);
     }
   }, []);
@@ -270,7 +270,7 @@ export function LiquidGlass({
   return (
     <div
       ref={elementRef}
-      className={`relative ${overflow === "visible" ? "overflow-visible" : "overflow-hidden"} transition-all duration-200 select-none ${className}`}
+      className={`relative ${overflow === "visible" ? "overflow-visible" : "overflow-hidden"} select-none ${className}`}
       style={dynamicGlassStyle}
       {...props}
     >

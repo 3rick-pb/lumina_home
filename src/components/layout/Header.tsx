@@ -200,14 +200,8 @@ export function Header() {
     <>
       <CartDrawer />
       <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
-        <LiquidGlass
-          radius={9999}
-          depth={6}
-          strength={30}
-          chromaticAberration={0}
-          blur={1.5}
-          overflow="visible"
-          className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full border border-white/75 dark:border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.08)] bg-white/40 dark:bg-[#18181b]/50 relative transform-gpu max-w-full"
+        <div
+          className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full border border-white/75 dark:border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.08)] bg-white/40 dark:bg-[#18181b]/50 backdrop-blur-xl relative transform-gpu max-w-full"
         >
           
           {/* Logo Section */}
@@ -427,7 +421,7 @@ export function Header() {
               {isMobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3px]" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3px]" />}
             </button>
           </div>
-        </LiquidGlass>
+        </div>
 
         {/* Mobile Navigation Floating Liquid Glass Drawer */}
         <AnimatePresence>

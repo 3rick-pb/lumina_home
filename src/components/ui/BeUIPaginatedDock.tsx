@@ -160,15 +160,9 @@ export function BeUIPaginatedDock({
 
       {/* Contenedor Flotante iOS: Menú de Pestañas + Lupa Circular Externa */}
       <div className="flex items-center justify-center gap-2.5 sm:gap-3 w-[calc(100%-1.25rem)] max-w-[420px] pointer-events-auto">
-        {/* Cápsula Flotante Liquid Glass de las Pestañas */}
-        <LiquidGlass
-          radius={9999}
-          depth={5}
-          strength={28}
-          chromaticAberration={0}
-          blur={1.5}
-          overflow="visible"
-          className="flex-1 min-w-0 h-[56px] p-[2px] rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center relative"
+        {/* Cápsula Flotante de las Pestañas (Material Glass iOS) */}
+        <div
+          className="flex-1 min-w-0 h-[56px] p-[2px] rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 backdrop-blur-xl flex items-center justify-center relative overflow-visible"
         >
           {/* Contenedor animado de pestañas por página */}
           <div className="relative w-full h-full overflow-visible flex items-center">
@@ -207,7 +201,7 @@ export function BeUIPaginatedDock({
               </motion.div>
             </AnimatePresence>
           </div>
-        </LiquidGlass>
+        </div>
 
         {/* Botón Circular de Búsqueda FUERA DEL MENÚ (Isla flotante Liquid Glass) */}
         {onSearchClick && (

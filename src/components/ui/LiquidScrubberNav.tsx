@@ -266,7 +266,7 @@ export function LiquidScrubberNav({
     }
 
     // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 10 : 8;
+    const lateralExpand = variant === "dock" ? 14 : 8;
     const currentUnderIdx = getClosestIndex(relX);
     const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
     const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
@@ -385,7 +385,7 @@ export function LiquidScrubberNav({
     }
 
     // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 10 : 8;
+    const lateralExpand = variant === "dock" ? 14 : 8;
     const currentUnderIdx = getClosestIndex(relX);
     const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
     const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
@@ -550,25 +550,34 @@ export function LiquidScrubberNav({
           >
             <LiquidGlass
               radius={9999}
-              depth={5}
-              strength={40}
+              depth={14}
+              strength={85}
               chromaticAberration={0}
-              blur={1.6}
+              blur={1.5}
               overflow="visible"
               className="w-full h-full rounded-full"
               style={{
-                /* Vidrio traslúcido — se ve a través, pero con presencia física */
-                background: "rgba(255, 255, 255, 0.28)",
-                /* Borde fino de cristal */
-                border: "1px solid rgba(255, 255, 255, 0.88)",
+                /* Cristal óptico translúcido puro */
+                background: "rgba(255, 255, 255, 0.16)",
+                border: "1.5px solid rgba(255, 255, 255, 0.90)",
                 boxShadow: `
-                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.92),
-                  inset 0 -1px 1px 0 rgba(255, 255, 255, 0.30),
-                  0 10px 28px -4px rgba(0, 0, 0, 0.18),
-                  0 4px 10px -2px rgba(0, 0, 0, 0.10)
+                  /* Arcos de refracción cóncavos oscuros (menisco físico Apple idéntico a Como debe ser.jpeg) */
+                  inset 0 9px 13px -3px rgba(0, 0, 0, 0.70),
+                  inset 0 -9px 13px -3px rgba(0, 0, 0, 0.70),
+                  inset 7px 0 11px -2px rgba(0, 0, 0, 0.45),
+                  inset -7px 0 11px -2px rgba(0, 0, 0, 0.45),
+                  /* Cúpula especular de luz superior */
+                  inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.95),
+                  inset 0 -1px 1px 0 rgba(255, 255, 255, 0.35),
+                  /* Sombra exterior de elevación 3D */
+                  0 14px 32px -4px rgba(0, 0, 0, 0.22),
+                  0 5px 12px -2px rgba(0, 0, 0, 0.12)
                 `,
               }}
-            />
+            >
+              {/* Reflejo especular superior fino de cristal Apple */}
+              <div className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/90 to-transparent pointer-events-none" />
+            </LiquidGlass>
           </motion.div>
         </motion.div>
       )}
@@ -591,7 +600,7 @@ export function LiquidScrubberNav({
               aria-selected={isSpotlight}
               draggable={false}
               onClick={(e) => handleDirectItemClick(e, item, idx)}
-              className="relative z-40 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
+              className="relative z-10 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
               style={{ touchAction: "none" }}
             >
               {/* Icono */}
@@ -645,7 +654,7 @@ export function LiquidScrubberNav({
             aria-selected={isSpotlight}
             draggable={false}
             onClick={(e) => handleDirectItemClick(e, item, idx)}
-            className="relative z-40 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
+            className="relative z-10 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
             style={{ touchAction: "none" }}
           >
             <div
