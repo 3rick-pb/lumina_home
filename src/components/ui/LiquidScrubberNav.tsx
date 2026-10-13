@@ -549,29 +549,35 @@ export function LiquidScrubberNav({
           >
             <LiquidGlass
               radius={9999}
-              depth={4}
-              strength={24}
+              depth={6}
+              strength={42}
               chromaticAberration={0}
-              blur={1.8}
+              blur={2.2}
               className="w-full h-full rounded-full"
               style={{
-                background: "rgba(255, 255, 255, 0.42)",
-                border: "1px solid rgba(255, 255, 255, 0.9)",
+                /* Casi totalmente transparente: el vidrio solo dobla la luz */
+                background: "rgba(255, 255, 255, 0.06)",
+                /* Borde exterior: línea de cristal muy fina */
+                border: "1.5px solid rgba(255, 255, 255, 0.82)",
                 boxShadow: `
-                  0 12px 28px -4px rgba(0, 0, 0, 0.16),
-                  0 4px 10px -2px rgba(0, 0, 0, 0.08),
-                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95),
-                  inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.08),
-                  inset 1.5px 0 2px 0 rgba(255, 255, 255, 0.5),
-                  inset -1.5px 0 2px 0 rgba(0, 0, 0, 0.05)
+                  /* Arco de refracción oscuro — ARRIBA (menisco cóncavo) */
+                  inset 0 9px 16px -3px rgba(0, 0, 0, 0.70),
+                  /* Arco de refracción oscuro — ABAJO */
+                  inset 0 -9px 16px -3px rgba(0, 0, 0, 0.70),
+                  /* Arco de refracción oscuro — IZQUIERDA */
+                  inset 7px 0 12px -3px rgba(0, 0, 0, 0.45),
+                  /* Arco de refracción oscuro — DERECHA */
+                  inset -7px 0 12px -3px rgba(0, 0, 0, 0.45),
+                  /* Línea especular brillante en la cúpula superior (física del cristal) */
+                  inset 0 2px 1px 0 rgba(255, 255, 255, 0.90),
+                  /* Sombra exterior de elevación */
+                  0 16px 36px -4px rgba(0, 0, 0, 0.26),
+                  0 6px 14px -2px rgba(0, 0, 0, 0.14)
                 `,
               }}
             >
-              {/* Reflejo curvado especular superior (Cúpula física de cristal) */}
-              <div className="absolute inset-x-0 top-0 h-[48%] rounded-t-full bg-gradient-to-b from-white/50 via-white/10 to-transparent pointer-events-none" />
-
-              {/* Reflejo curvado especular inferior sutil */}
-              <div className="absolute inset-x-0 bottom-0 h-[22%] rounded-b-full bg-gradient-to-t from-white/20 to-transparent pointer-events-none" />
+              {/* Línea especular delgada en el borde superior — como cristal físico */}
+              <div className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/85 to-transparent pointer-events-none" />
             </LiquidGlass>
           </motion.div>
         </motion.div>
