@@ -480,6 +480,7 @@ export function LiquidScrubberNav({
   };
 
   const spotlightIndex = previewIndex !== null ? previewIndex : activeIndex;
+  const spotlightItem = items[spotlightIndex];
   const hasValidGeometry = !!tabsGeo[activeIndex];
 
   return (
@@ -555,28 +556,58 @@ export function LiquidScrubberNav({
               chromaticAberration={0}
               blur={1.5}
               overflow="visible"
-              className="w-full h-full rounded-full"
+              className="w-full h-full rounded-full flex items-center justify-center relative"
               style={{
-                /* Cristal óptico translúcido puro */
-                background: "rgba(255, 255, 255, 0.16)",
-                border: "1.5px solid rgba(255, 255, 255, 0.90)",
+                /* Cristal Apple líquido puro y translúcido */
+                background: "rgba(255, 255, 255, 0.45)",
+                border: "1px solid rgba(255, 255, 255, 0.95)",
                 boxShadow: `
-                  /* Arcos de refracción cóncavos oscuros (menisco físico Apple idéntico a Como debe ser.jpeg) */
-                  inset 0 9px 13px -3px rgba(0, 0, 0, 0.70),
-                  inset 0 -9px 13px -3px rgba(0, 0, 0, 0.70),
-                  inset 7px 0 11px -2px rgba(0, 0, 0, 0.45),
-                  inset -7px 0 11px -2px rgba(0, 0, 0, 0.45),
-                  /* Cúpula especular de luz superior */
-                  inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.95),
-                  inset 0 -1px 1px 0 rgba(255, 255, 255, 0.35),
-                  /* Sombra exterior de elevación 3D */
-                  0 14px 32px -4px rgba(0, 0, 0, 0.22),
-                  0 5px 12px -2px rgba(0, 0, 0, 0.12)
+                  /* Borde físico y reflejos especulares de cristal */
+                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.98),
+                  inset 0 -1.5px 2px 0 rgba(255, 255, 255, 0.70),
+                  inset 1.5px 0 2px 0 rgba(255, 255, 255, 0.60),
+                  inset -1.5px 0 2px 0 rgba(255, 255, 255, 0.60),
+                  /* Suave oclusión de lente suspendido */
+                  inset 0 0 12px 0 rgba(0, 0, 0, 0.04),
+                  /* Elevación 3D natural */
+                  0 12px 28px -4px rgba(0, 0, 0, 0.16),
+                  0 4px 10px -2px rgba(0, 0, 0, 0.08)
                 `,
               }}
             >
-              {/* Reflejo especular superior fino de cristal Apple */}
-              <div className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/90 to-transparent pointer-events-none" />
+              {/* Reflejo especular curvado superior fino */}
+              <div className="absolute inset-x-4 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/95 to-transparent pointer-events-none" />
+
+              {/* ÍTEM ACTIVO MONTADO DENTRO DE LA CÚPULA DE CRISTAL (NITIDEZ TOTAL) */}
+              {spotlightItem && (
+                <div
+                  className={`relative z-20 w-full h-full flex ${
+                    variant === "dock"
+                      ? "flex-col items-center justify-center py-0.5 px-1"
+                      : "items-center justify-center gap-2 px-5 py-2"
+                  } select-none pointer-events-none`}
+                >
+                  <div className="relative flex items-center justify-center scale-110 -translate-y-0.5 transition-transform duration-100">
+                    <div className="w-5 h-5 flex items-center justify-center text-black dark:text-white stroke-[2.8px]">
+                      {spotlightItem.icon}
+                    </div>
+                    {typeof spotlightItem.badgeCount === "number" && spotlightItem.badgeCount > 0 && (
+                      <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full text-[9px] font-black bg-[#fa2d48] text-white flex items-center justify-center ring-2 ring-white shadow-xs">
+                        {spotlightItem.badgeCount > 99 ? "99+" : spotlightItem.badgeCount}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`${
+                      variant === "dock"
+                        ? "text-[10px] tracking-tight mt-0.5 leading-none max-w-[95px] px-0.5 text-center"
+                        : "text-sm"
+                    } text-black dark:text-white font-black truncate`}
+                  >
+                    {spotlightItem.label}
+                  </span>
+                </div>
+              )}
             </LiquidGlass>
           </motion.div>
         </motion.div>
@@ -601,7 +632,10 @@ export function LiquidScrubberNav({
               draggable={false}
               onClick={(e) => handleDirectItemClick(e, item, idx)}
               className="relative z-10 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
-              style={{ touchAction: "none" }}
+              style={{
+                touchAction: "none",
+                opacity: isScrubbing && isSpotlight ? 0 : 1,
+              }}
             >
               {/* Icono */}
               <div
@@ -655,7 +689,10 @@ export function LiquidScrubberNav({
             draggable={false}
             onClick={(e) => handleDirectItemClick(e, item, idx)}
             className="relative z-10 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
-            style={{ touchAction: "none" }}
+            style={{
+              touchAction: "none",
+              opacity: isScrubbing && isSpotlight ? 0 : 1,
+            }}
           >
             <div
               className={`transition-all duration-100 transform-gpu ${
