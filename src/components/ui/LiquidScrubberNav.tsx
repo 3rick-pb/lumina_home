@@ -258,6 +258,13 @@ export function LiquidScrubberNav({
     return getTrackPath(w, h, lx, lw, pinch);
   });
 
+  // CSS clip-path string version — same path wrapped in path("...")
+  // Used to clip the frosted glass backdrop div to the deforming pill shape.
+  const trackClipPath = useTransform(() => {
+    const d = trackPathD.get();
+    return d ? `path("${d}")` : "none";
+  });
+
   // Actualizar posición de reposo cuando cambia activeIndex o tabsGeo
   useEffect(() => {
     if (!isScrubbingRef.current && tabsGeo[activeIndex]) {
@@ -629,37 +636,42 @@ export function LiquidScrubberNav({
       }}
     >
       {/* ================================================================= */}
-      {/* SVG TRACK — Dynamic concave deformation matching Deformes.png       */}
-      {/* The path morphs in real-time as the lens moves: top edge dips DOWN, */}
-      {/* bottom edge dips UP, creating the Apple iOS 26 pinch/notch effect.  */}
+      {/* DOCK BACKGROUND — Frosted glass pill that DEFORMS via clip-path     */}
+      {/* clip-path: path("...") clips the backdrop-filter div to the pinched */}
+      {/* capsule shape. Top edge dips DOWN, bottom dips UP at lens position. */}
+      {/* This gives a true physical deformation matching Deformes.png.       */}
       {/* ================================================================= */}
       {variant === "dock" && containerWidth > 0 && (
-        <svg
-          className="absolute inset-0 pointer-events-none overflow-visible"
-          style={{ zIndex: 0 }}
-          width={containerWidth}
-          height={containerHeight}
-          viewBox={`0 0 ${containerWidth} ${containerHeight}`}
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Frosted glass fill */}
-          <motion.path
-            d={trackPathD}
-            fill="rgba(255,255,255,0.50)"
-            stroke="rgba(255,255,255,0.85)"
-            strokeWidth="1"
-            style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.12))" }}
+        <>
+          {/* Frosted glass fill — clipped to deforming pill shape */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              clipPath: trackClipPath,
+              backdropFilter: "blur(16px) saturate(180%) brightness(1.05)",
+              WebkitBackdropFilter: "blur(16px) saturate(180%) brightness(1.05)",
+              background: "rgba(255, 255, 255, 0.52)",
+              zIndex: 0,
+            }}
           />
-          {/* Top specular highlight */}
-          <motion.path
-            d={trackPathD}
-            fill="none"
-            stroke="rgba(255,255,255,0.92)"
-            strokeWidth="1"
-            strokeLinecap="round"
-            opacity={0.7}
-          />
-        </svg>
+          {/* Border stroke + drop shadow — follows same deforming path */}
+          <svg
+            className="absolute inset-0 pointer-events-none overflow-visible"
+            style={{ zIndex: 1 }}
+            width={containerWidth}
+            height={containerHeight}
+            viewBox={`0 0 ${containerWidth} ${containerHeight}`}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <motion.path
+              d={trackPathD}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.85)"
+              strokeWidth="1.2"
+              style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
+            />
+          </svg>
+        </>
       )}
 
       {/* ================================================================= */}
@@ -677,7 +689,7 @@ export function LiquidScrubberNav({
           animate={{
             top: isScrubbing ? overhangingTop : restingTop,
             height: isScrubbing ? overhangingHeight : restingHeight,
-            zIndex: isScrubbing ? 30 : 0,
+            zIndex: isScrubbing ? 30 : 2,
           }}
           transition={{
             top: { type: "spring", stiffness: 450, damping: 30, mass: 0.6 },
@@ -685,11 +697,11 @@ export function LiquidScrubberNav({
           }}
         >
           {/* ------------------------------------------------------------- */}
-          {/* CAPA 1: SEPARADOR GRISÁCEO EN REPOSO (IDÉNTICO A "BIEN HECHO.PNG") */}
-          {/* Only show when NOT using SVG track (pill variant) or not scrubbing in dock */}
+          {/* CAPA 1: INDICADOR ACTIVO EN REPOSO (GRISÁCEO SIMÉTRICO)        */}
+          {/* Visible in resting for BOTH dock and pill variants              */}
           {/* ------------------------------------------------------------- */}
           <motion.div
-            animate={{ opacity: isScrubbing ? 0 : (variant === "dock" ? 0 : 1) }}
+            animate={{ opacity: isScrubbing ? 0 : 1 }}
             transition={{ duration: 0.12 }}
             className="absolute inset-0 rounded-full bg-[#d8d8de] dark:bg-[#2c2c2e] border border-white/70 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]"
           />
