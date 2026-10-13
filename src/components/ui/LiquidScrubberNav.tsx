@@ -23,35 +23,32 @@ function getTrackPath(
     return `M ${r},0 L ${w - r},0 A ${r},${r} 0 0,1 ${w},${r} A ${r},${r} 0 0,1 ${w - r},${h} L ${r},${h} A ${r},${r} 0 0,1 0,${r} A ${r},${r} 0 0,1 ${r},0 Z`;
   }
 
-  const p = Math.min(pinch, r - 6); // max dip depth
-  const blend = 16; // S-curve transition half-width
+  const p = Math.min(pinch, 5); // subtle inward deformation (reduced for Apple elegance)
+  const blend = 14;
 
-  // Notch horizontal bounds
-  const rawX0 = Math.max(0, lx);
-  const rawX1 = Math.min(w, lx + lw);
+  // Horizontal range of the dip centered at the active lens
+  const cx = lx + lw / 2;
+  const halfW = Math.max(16, lw / 2);
+  const x0 = Math.max(r * 0.75, cx - halfW);
+  const x1 = Math.min(w - r * 0.75, cx + halfW);
 
   // ── TOP EDGE (left → right, dips DOWN by p) ──────────────────────────────
-  let top = "";
-  if (rawX0 <= r) {
-    // Notch starts at/near the left rounded cap
-    const startY = Math.max(0, p * (1 - rawX0 / r));
-    top += `M ${Math.max(4, rawX0)},${startY} `;
-    top += `C ${rawX0 + blend * 0.5},${p} ${rawX0 + blend * 0.5},${p} ${rawX0 + blend},${p} `;
+  let top = `M ${r},0 `;
+  if (x0 - blend > r) {
+    top += `L ${x0 - blend},0 `;
+    top += `C ${x0},0 ${x0},${p} ${x0 + blend * 0.5},${p} `;
   } else {
-    top += `M ${r},0 L ${rawX0 - 4},0 `;
-    top += `C ${rawX0 + blend * 0.4},0 ${rawX0 + blend * 0.4},${p} ${rawX0 + blend},${p} `;
+    top += `C ${r},0 ${x0},${p} ${x0 + blend * 0.5},${p} `;
   }
 
-  const flatEnd = Math.max(rawX0 + blend, rawX1 - blend);
+  const flatEnd = Math.max(x0 + blend * 0.5, x1 - blend * 0.5);
   top += `L ${flatEnd},${p} `;
 
-  if (rawX1 >= w - r) {
-    // Notch ends at/near the right rounded cap
-    const endY = Math.max(0, p * (1 - (w - rawX1) / r));
-    top += `C ${rawX1 - blend * 0.5},${p} ${rawX1 - blend * 0.5},${endY} ${Math.min(w - 4, rawX1)},${endY} `;
-  } else {
-    top += `C ${rawX1 - blend * 0.4},${p} ${rawX1 - blend * 0.4},0 ${rawX1 + 4},0 `;
+  if (x1 + blend < w - r) {
+    top += `C ${x1},${p} ${x1},0 ${x1 + blend},0 `;
     top += `L ${w - r},0 `;
+  } else {
+    top += `C ${x1},${p} ${w - r},0 ${w - r},0 `;
   }
 
   // ── RIGHT ROUNDED CAP ─────────────────────────────────────────────────────
@@ -59,26 +56,23 @@ function getTrackPath(
 
   // ── BOTTOM EDGE (right → left, dips UP by p) ─────────────────────────────
   let bot = "";
-  if (rawX1 >= w - r) {
-    const endY = h - Math.max(0, p * (1 - (w - rawX1) / r));
-    bot += `L ${Math.min(w - 4, rawX1)},${endY} `;
-    bot += `C ${rawX1 - blend * 0.5},${h - p} ${rawX1 - blend * 0.5},${h - p} ${rawX1 - blend},${h - p} `;
+  if (x1 + blend < w - r) {
+    bot += `L ${x1 + blend},${h} `;
+    bot += `C ${x1},${h} ${x1},${h - p} ${x1 - blend * 0.5},${h - p} `;
   } else {
-    bot += `L ${rawX1 + 4},${h} `;
-    bot += `C ${rawX1 - blend * 0.4},${h} ${rawX1 - blend * 0.4},${h - p} ${rawX1 - blend},${h - p} `;
+    bot += `C ${w - r},${h} ${x1},${h - p} ${x1 - blend * 0.5},${h - p} `;
   }
 
-  bot += `L ${rawX0 + blend},${h - p} `;
+  bot += `L ${x0 + blend * 0.5},${h - p} `;
 
-  if (rawX0 <= r) {
-    const startY = h - Math.max(0, p * (1 - rawX0 / r));
-    bot += `C ${rawX0 + blend * 0.5},${h - p} ${rawX0 + blend * 0.5},${startY} ${Math.max(4, rawX0)},${startY} `;
-  } else {
-    bot += `C ${rawX0 + blend * 0.4},${h - p} ${rawX0 + blend * 0.4},${h} ${rawX0 - 4},${h} `;
+  if (x0 - blend > r) {
+    bot += `C ${x0},${h - p} ${x0},${h} ${x0 - blend},${h} `;
     bot += `L ${r},${h} `;
+  } else {
+    bot += `C ${x0},${h - p} ${r},${h} ${r},${h} `;
   }
 
-  // ── LEFT ROUNDED CAP (closes path) ───────────────────────────────────────
+  // ── LEFT ROUNDED CAP (closes path seamlessly at r,0) ─────────────────────
   const leftCap = `A ${r},${r} 0 0,1 0,${r} A ${r},${r} 0 0,1 ${r},0 Z`;
 
   return top + rightCap + bot + leftCap;
@@ -204,12 +198,11 @@ export function LiquidScrubberNav({
 
   // Dimensiones simétricas:
   // - En reposo: Ocupa el slot de forma concéntrica a 2px del borde exterior (dock h=56px, inner=52px)
-  // - Al mantener presionado: Salta y sobrepasa arriba, abajo y a los laterales con Liquid Glass puro
-  const restingTop = variant === "dock" ? 0 : 3;
-  const restingHeight = variant === "dock" ? (tabsGeo[0]?.height || 52) : 34;
-  // Mayor overhang para que el lente sobresalga más del cuerpo del menú y active la deformación en los bordes
-  const overhangingTop = variant === "dock" ? -14 : -9;
-  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 52) + 28) : 52;
+  // - Al mantener presionado: Agrandamiento sutil (reducido para elegancia Apple)
+  const restingTop = variant === "dock" ? 2 : 3;
+  const restingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 56) - 4) : 34;
+  const overhangingTop = variant === "dock" ? -3 : -3;
+  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 56) + 6) : 40;
 
   // Motion values para el seguidor de resorte físico Apple
   const lensTargetX = useMotionValue(0);
@@ -221,7 +214,7 @@ export function LiquidScrubberNav({
   const springWidth = useSpring(lensTargetWidth, { stiffness: 400, damping: 28, mass: 0.6 });
   const springScaleX = useSpring(lensTargetScaleX, { stiffness: 350, damping: 20, mass: 0.6 });
 
-  // Pinch spring: 0 = resting pill, 10 = max concave notch
+  // Pinch spring: 0 = reposo, 3.5 = deformación sutil hacia adentro (reducida)
   const pinchTarget = useMotionValue(0);
   const springPinch = useSpring(pinchTarget, { stiffness: 400, damping: 28, mass: 0.5 });
 
@@ -241,9 +234,9 @@ export function LiquidScrubberNav({
     return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
   }, []);
 
-  // Update pinch target whenever isScrubbing changes
+  // Update pinch target whenever isScrubbing changes (reducido a 3.5px)
   useEffect(() => {
-    pinchTarget.set(isScrubbing ? 10 : 0);
+    pinchTarget.set(isScrubbing ? 3.5 : 0);
   }, [isScrubbing, pinchTarget]);
 
   // Dynamic SVG path: recomputed whenever lens position / pinch changes
@@ -258,22 +251,16 @@ export function LiquidScrubberNav({
     return getTrackPath(w, h, lx, lw, pinch);
   });
 
-  // CSS clip-path string version — same path wrapped in path("...")
-  // Used to clip the frosted glass backdrop div to the deforming pill shape.
-  const trackClipPath = useTransform(() => {
-    const d = trackPathD.get();
-    return d ? `path("${d}")` : "none";
-  });
-
   // Actualizar posición de reposo cuando cambia activeIndex o tabsGeo
   useEffect(() => {
     if (!isScrubbingRef.current && tabsGeo[activeIndex]) {
       const current = tabsGeo[activeIndex];
-      lensTargetX.set(current.x);
-      lensTargetWidth.set(current.width);
+      const margin = variant === "dock" ? 2 : 0;
+      lensTargetX.set(current.x + margin);
+      lensTargetWidth.set(current.width - margin * 2);
       lensTargetScaleX.set(1.0);
     }
-  }, [activeIndex, tabsGeo, lensTargetX, lensTargetWidth, lensTargetScaleX]);
+  }, [activeIndex, tabsGeo, lensTargetX, lensTargetWidth, lensTargetScaleX, variant]);
 
   // Helper: Encontrar la pestaña más cercana a la coordenada X
   const getClosestIndex = useCallback(
@@ -309,7 +296,7 @@ export function LiquidScrubberNav({
 
       if (tabsGeo[idx] && containerRef.current) {
         const target = tabsGeo[idx];
-        const lateralExpand = variant === "dock" ? 14 : 8;
+        const lateralExpand = variant === "dock" ? 5 : 4;
         const activeWidth = target.width + lateralExpand * 2;
         lensTargetWidth.set(activeWidth);
         lensTargetScaleX.set(1.02);
@@ -391,7 +378,7 @@ export function LiquidScrubberNav({
     }
 
     // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 14 : 8;
+    const lateralExpand = variant === "dock" ? 5 : 4;
     const currentUnderIdx = getClosestIndex(relX);
     const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
     const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
@@ -431,8 +418,9 @@ export function LiquidScrubberNav({
     // Asentar en posición de reposo con rebote suave
     if (tabsGeo[selectedIdx]) {
       const target = tabsGeo[selectedIdx];
-      lensTargetX.set(target.x);
-      lensTargetWidth.set(target.width);
+      const margin = variant === "dock" ? 2 : 0;
+      lensTargetX.set(target.x + margin);
+      lensTargetWidth.set(target.width - margin * 2);
       lensTargetScaleX.set(1.0);
     }
 
@@ -510,7 +498,7 @@ export function LiquidScrubberNav({
     }
 
     // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 14 : 8;
+    const lateralExpand = variant === "dock" ? 5 : 4;
     const currentUnderIdx = getClosestIndex(relX);
     const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
     const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
@@ -554,8 +542,9 @@ export function LiquidScrubberNav({
 
     if (tabsGeo[selectedIdx]) {
       const target = tabsGeo[selectedIdx];
-      lensTargetX.set(target.x);
-      lensTargetWidth.set(target.width);
+      const margin = variant === "dock" ? 2 : 0;
+      lensTargetX.set(target.x + margin);
+      lensTargetWidth.set(target.width - margin * 2);
       lensTargetScaleX.set(1.0);
     }
 
@@ -582,8 +571,9 @@ export function LiquidScrubberNav({
 
     if (tabsGeo[activeIndex]) {
       const target = tabsGeo[activeIndex];
-      lensTargetX.set(target.x);
-      lensTargetWidth.set(target.width);
+      const margin = variant === "dock" ? 2 : 0;
+      lensTargetX.set(target.x + margin);
+      lensTargetWidth.set(target.width - margin * 2);
       lensTargetScaleX.set(1.0);
     }
   };
@@ -597,15 +587,15 @@ export function LiquidScrubberNav({
 
     if (tabsGeo[idx]) {
       const target = tabsGeo[idx];
-      lensTargetX.set(target.x);
-      lensTargetWidth.set(target.width);
+      const margin = variant === "dock" ? 2 : 0;
+      lensTargetX.set(target.x + margin);
+      lensTargetWidth.set(target.width - margin * 2);
       lensTargetScaleX.set(1.0);
     }
     onSelect(item.id, item);
   };
 
   const spotlightIndex = previewIndex !== null ? previewIndex : activeIndex;
-  const spotlightItem = items[spotlightIndex];
   const hasValidGeometry = !!tabsGeo[activeIndex];
 
   return (
@@ -636,42 +626,27 @@ export function LiquidScrubberNav({
       }}
     >
       {/* ================================================================= */}
-      {/* DOCK BACKGROUND — Frosted glass pill that DEFORMS via clip-path     */}
-      {/* clip-path: path("...") clips the backdrop-filter div to the pinched */}
-      {/* capsule shape. Top edge dips DOWN, bottom dips UP at lens position. */}
-      {/* This gives a true physical deformation matching Deformes.png.       */}
+      {/* ================================================================= */}
+      {/* BORDE DINÁMICO DEFORMABLE SVG: Deformación física Apple (Deformes.png) */}
       {/* ================================================================= */}
       {variant === "dock" && containerWidth > 0 && (
-        <>
-          {/* Frosted glass fill — clipped to deforming pill shape */}
-          <motion.div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              clipPath: trackClipPath,
-              backdropFilter: "blur(16px) saturate(180%) brightness(1.05)",
-              WebkitBackdropFilter: "blur(16px) saturate(180%) brightness(1.05)",
-              background: "rgba(255, 255, 255, 0.52)",
-              zIndex: 0,
-            }}
+        <svg
+          className="absolute inset-0 pointer-events-none overflow-visible w-full h-full"
+          style={{ zIndex: 6 }}
+          width={containerWidth}
+          height={containerHeight}
+          viewBox={`0 0 ${containerWidth} ${containerHeight}`}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <motion.path
+            d={trackPathD}
+            fill="none"
+            stroke="rgba(255, 255, 255, 0.85)"
+            className="dark:stroke-white/20"
+            strokeWidth="1.2"
+            style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.06))" }}
           />
-          {/* Border stroke + drop shadow — follows same deforming path */}
-          <svg
-            className="absolute inset-0 pointer-events-none overflow-visible"
-            style={{ zIndex: 1 }}
-            width={containerWidth}
-            height={containerHeight}
-            viewBox={`0 0 ${containerWidth} ${containerHeight}`}
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <motion.path
-              d={trackPathD}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.85)"
-              strokeWidth="1.2"
-              style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
-            />
-          </svg>
-        </>
+        </svg>
       )}
 
       {/* ================================================================= */}
@@ -689,7 +664,7 @@ export function LiquidScrubberNav({
           animate={{
             top: isScrubbing ? overhangingTop : restingTop,
             height: isScrubbing ? overhangingHeight : restingHeight,
-            zIndex: isScrubbing ? 30 : 2,
+            zIndex: 4,
           }}
           transition={{
             top: { type: "spring", stiffness: 450, damping: 30, mass: 0.6 },
@@ -698,7 +673,6 @@ export function LiquidScrubberNav({
         >
           {/* ------------------------------------------------------------- */}
           {/* CAPA 1: INDICADOR ACTIVO EN REPOSO (GRISÁCEO SIMÉTRICO)        */}
-          {/* Visible in resting for BOTH dock and pill variants              */}
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 0 : 1 }}
@@ -707,7 +681,7 @@ export function LiquidScrubberNav({
           />
 
           {/* ------------------------------------------------------------- */}
-          {/* CAPA 2: LIQUID GLASS ORIGINAL (CRISTAL PURO SIN PINTURA NI COLORES) */}
+          {/* CAPA 2: LIQUID GLASS ORIGINAL (CRISTAL PURO TRASLÚCIDO)       */}
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 1 : 0 }}
@@ -716,63 +690,25 @@ export function LiquidScrubberNav({
           >
             <LiquidGlass
               radius={9999}
-              depth={14}
-              strength={85}
+              depth={8}
+              strength={36}
               chromaticAberration={0}
               blur={1.5}
               overflow="visible"
-              className="w-full h-full rounded-full flex items-center justify-center relative"
+              className="w-full h-full rounded-full flex items-center justify-center relative pointer-events-none bg-white/40 dark:bg-white/15 border border-white/90 dark:border-white/30"
               style={{
-                /* Cristal Apple líquido puro y translúcido */
-                background: "rgba(255, 255, 255, 0.45)",
-                border: "1px solid rgba(255, 255, 255, 0.95)",
                 boxShadow: `
-                  /* Borde físico y reflejos especulares de cristal */
-                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.98),
-                  inset 0 -1.5px 2px 0 rgba(255, 255, 255, 0.70),
-                  inset 1.5px 0 2px 0 rgba(255, 255, 255, 0.60),
-                  inset -1.5px 0 2px 0 rgba(255, 255, 255, 0.60),
-                  /* Suave oclusión de lente suspendido */
-                  inset 0 0 12px 0 rgba(0, 0, 0, 0.04),
-                  /* Elevación 3D natural */
-                  0 12px 28px -4px rgba(0, 0, 0, 0.16),
-                  0 4px 10px -2px rgba(0, 0, 0, 0.08)
+                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95),
+                  inset 0 -1.5px 2px 0 rgba(255, 255, 255, 0.60),
+                  inset 1.5px 0 2px 0 rgba(255, 255, 255, 0.50),
+                  inset -1.5px 0 2px 0 rgba(255, 255, 255, 0.50),
+                  0 10px 24px -4px rgba(0, 0, 0, 0.16),
+                  0 4px 8px -2px rgba(0, 0, 0, 0.08)
                 `,
               }}
             >
               {/* Reflejo especular curvado superior fino */}
-              <div className="absolute inset-x-4 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/95 to-transparent pointer-events-none" />
-
-              {/* ÍTEM ACTIVO MONTADO DENTRO DE LA CÚPULA DE CRISTAL (NITIDEZ TOTAL) */}
-              {spotlightItem && (
-                <div
-                  className={`relative z-20 w-full h-full flex ${
-                    variant === "dock"
-                      ? "flex-col items-center justify-center py-0.5 px-1"
-                      : "items-center justify-center gap-2 px-5 py-2"
-                  } select-none pointer-events-none`}
-                >
-                  <div className="relative flex items-center justify-center scale-110 -translate-y-0.5 transition-transform duration-100">
-                    <div className="w-5 h-5 flex items-center justify-center text-black dark:text-white stroke-[2.8px]">
-                      {spotlightItem.icon}
-                    </div>
-                    {typeof spotlightItem.badgeCount === "number" && spotlightItem.badgeCount > 0 && (
-                      <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full text-[9px] font-black bg-[#fa2d48] text-white flex items-center justify-center ring-2 ring-white shadow-xs">
-                        {spotlightItem.badgeCount > 99 ? "99+" : spotlightItem.badgeCount}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className={`${
-                      variant === "dock"
-                        ? "text-[10px] tracking-tight mt-0.5 leading-none max-w-[95px] px-0.5 text-center"
-                        : "text-sm"
-                    } text-black dark:text-white font-black truncate`}
-                  >
-                    {spotlightItem.label}
-                  </span>
-                </div>
-              )}
+              <div className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/95 to-transparent pointer-events-none" />
             </LiquidGlass>
           </motion.div>
         </motion.div>
@@ -799,7 +735,7 @@ export function LiquidScrubberNav({
               className="relative z-10 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
               style={{
                 touchAction: "none",
-                opacity: isScrubbing && isSpotlight ? 0 : 1,
+                opacity: 1,
               }}
             >
               {/* Icono */}
@@ -856,7 +792,7 @@ export function LiquidScrubberNav({
             className="relative z-10 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
             style={{
               touchAction: "none",
-              opacity: isScrubbing && isSpotlight ? 0 : 1,
+              opacity: 1,
             }}
           >
             <div
