@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, useSpring, useMotionValue } from "framer-motion";
-import { getDisplacementFilter } from "./LiquidGlass";
 
 export interface LiquidScrubberItem {
   id: string;
@@ -64,7 +63,7 @@ export function LiquidScrubberNav({
     return idx >= 0 ? idx : 0;
   }, [items, activeId]);
 
-  // Chromium check for feDisplacementMap SVG filter
+  // Chromium check for in-document SVG backdrop filter
   const [hasChromiumSupport, setHasChromiumSupport] = useState(false);
   useEffect(() => {
     if (typeof navigator !== "undefined") {
@@ -80,52 +79,63 @@ export function LiquidScrubberNav({
     const containerRect = containerRef.current.getBoundingClientRect();
     if (containerRect.width === 0) return;
 
-    const newGeo: TabGeometry[] = [];
-    tabRefs.current.forEach((el) => {
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        newGeo.push({
-          x: rect.left - containerRect.left,
-          y: rect.top - containerRect.top,
-          width: rect.width,
-          height: rect.height,
-        });
-      }
-    });
-
-    if (newGeo.length === items.length) {
-      setTabsGeo(newGeo);
-    } else if (variant === "dock" && items.length > 0) {
-      // Precise mathematical fallback for grid dock
+    if (variant === "dock" && items.length > 0) {
+      // Mathematical grid for dock - always 100% exact and instantaneous
       const colWidth = containerRect.width / items.length;
-      const fallbackGeo: TabGeometry[] = items.map((_, i) => ({
+      const dockGeo: TabGeometry[] = items.map((_, i) => ({
         x: i * colWidth,
         y: 0,
         width: colWidth,
         height: containerRect.height || 52,
       }));
-      setTabsGeo(fallbackGeo);
+      setTabsGeo(dockGeo);
+      return;
+    }
+
+    // For pill (Header), measure each tab ref
+    const newGeo: TabGeometry[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const el = tabRefs.current[i];
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0) {
+          newGeo.push({
+            x: rect.left - containerRect.left,
+            y: rect.top - containerRect.top,
+            width: rect.width,
+            height: rect.height,
+          });
+        }
+      }
+    }
+
+    if (newGeo.length === items.length) {
+      setTabsGeo(newGeo);
     }
   }, [items, variant]);
 
   useEffect(() => {
     measureTabs();
-    const ro = new ResizeObserver(() => measureTabs());
-    if (containerRef.current) ro.observe(containerRef.current);
-    window.addEventListener("resize", measureTabs);
+    const handleResize = () => measureTabs();
+    window.addEventListener("resize", handleResize);
+
+    const t1 = setTimeout(measureTabs, 50);
+    const t2 = setTimeout(measureTabs, 150);
+
     return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measureTabs);
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [measureTabs]);
 
   // Dimensions configuration:
-  // - Resting: Fits inside the menu bar with concentric symmetric padding
-  // - Scrubbing/Holding: Salta y sobrepasa arriba y abajo del cuerpo del menú principal
-  const restingTop = variant === "dock" ? 3 : 2;
-  const restingHeight = variant === "dock" ? 46 : 36;
-  const overhangingTop = variant === "dock" ? -11 : -8;
-  const overhangingHeight = variant === "dock" ? 74 : 56;
+  // - Resting: Fits neatly inside the bar with concentric padding
+  // - Scrubbing/Holding: Salta y sobrepasa arriba y abajo del cuerpo del menú principal de forma elegante (~5px)
+  const restingTop = variant === "dock" ? 4 : 3;
+  const restingHeight = variant === "dock" ? 44 : 34;
+  const overhangingTop = variant === "dock" ? -5 : -5;
+  const overhangingHeight = variant === "dock" ? 62 : 50;
 
   // Motion values for physical spring follower
   const lensTargetX = useMotionValue(0);
@@ -135,34 +145,20 @@ export function LiquidScrubberNav({
   // Apple spring physics:
   // - Agile tracking during drag
   // - Settling fluid bounce on release
-  const springX = useSpring(lensTargetX, { stiffness: 460, damping: 32, mass: 0.6 });
-  const springWidth = useSpring(lensTargetWidth, { stiffness: 460, damping: 32, mass: 0.6 });
+  const springX = useSpring(lensTargetX, { stiffness: 450, damping: 30, mass: 0.6 });
+  const springWidth = useSpring(lensTargetWidth, { stiffness: 450, damping: 30, mass: 0.6 });
   const springScaleX = useSpring(lensTargetScaleX, { stiffness: 420, damping: 24, mass: 0.5 });
 
   // Update resting position whenever activeIndex or tabsGeo changes
   useEffect(() => {
     if (!isScrubbingRef.current && tabsGeo[activeIndex]) {
       const current = tabsGeo[activeIndex];
-      const insetX = variant === "dock" ? 3 : 2;
+      const insetX = variant === "dock" ? 4 : 3;
       lensTargetX.set(current.x + insetX);
       lensTargetWidth.set(Math.max(20, current.width - insetX * 2));
       lensTargetScaleX.set(1.0);
     }
   }, [activeIndex, tabsGeo, variant, lensTargetX, lensTargetWidth, lensTargetScaleX]);
-
-  // Optical SVG filter for the overhanging Liquid Glass lens
-  const currentLensWidth = (tabsGeo[activeIndex]?.width || 80) + 8;
-  const lensFilterUrl = useMemo(() => {
-    if (!hasChromiumSupport || currentLensWidth <= 0) return null;
-    return getDisplacementFilter({
-      width: Math.round(currentLensWidth),
-      height: Math.round(overhangingHeight),
-      radius: 9999,
-      depth: 6,
-      strength: 32,
-      chromaticAberration: 2.2,
-    });
-  }, [hasChromiumSupport, currentLensWidth, overhangingHeight]);
 
   // Tactile haptic tick when crossing tab boundaries
   const triggerHaptic = useCallback(() => {
@@ -206,15 +202,15 @@ export function LiquidScrubberNav({
       previewIndexRef.current = idx;
       triggerHaptic();
 
-      if (tabsGeo[idx]) {
+      if (tabsGeo[idx] && containerRef.current) {
         const target = tabsGeo[idx];
-        // Center the overhanging lens around the selected tab
-        lensTargetX.set(target.x - 4);
-        lensTargetWidth.set(target.width + 8);
-        lensTargetScaleX.set(1.08);
+        const insetX = variant === "dock" ? 4 : 3;
+        lensTargetX.set(target.x + insetX - 3);
+        lensTargetWidth.set(target.width - insetX * 2 + 6);
+        lensTargetScaleX.set(1.05);
       }
     },
-    [tabsGeo, triggerHaptic, lensTargetX, lensTargetWidth, lensTargetScaleX]
+    [tabsGeo, triggerHaptic, variant, lensTargetX, lensTargetWidth, lensTargetScaleX]
   );
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -253,7 +249,6 @@ export function LiquidScrubberNav({
 
     if (dx > 4 || dy > 4) {
       hasMovedRef.current = true;
-      // If moving, activate scrubbing immediately without waiting for the timer
       if (!isScrubbingRef.current) {
         if (holdTimerRef.current) {
           clearTimeout(holdTimerRef.current);
@@ -301,20 +296,26 @@ export function LiquidScrubberNav({
       triggerHaptic();
     }
 
-    // Follow pointer with magnetic tab attraction
+    // Follow pointer with magnetic tab attraction strictly bounded to menu bar
     const targetGeo = tabsGeo[closestIdx];
     if (targetGeo) {
       const tabCenterX = targetGeo.x + targetGeo.width / 2;
-      const fingerDelta = relX - tabCenterX;
-      // Magnetic pull keeps lens close to finger while feeling attached to the tabs
-      const dynamicX = targetGeo.x - 4 + fingerDelta * 0.45;
-      
-      lensTargetX.set(dynamicX);
-      lensTargetWidth.set(targetGeo.width + 8);
+      // Clamp fingerDelta to ±16px so the lens never flies off
+      const fingerDelta = Math.max(-16, Math.min(16, relX - tabCenterX));
+      const insetX = variant === "dock" ? 4 : 3;
+      const dynamicX = targetGeo.x + insetX + fingerDelta * 0.45;
 
-      // Velocity elongation (Apple fluid jelly stretch along X axis)
-      const stretchVelocity = Math.min(0.24, Math.abs(vx) * 0.12);
-      lensTargetScaleX.set(1.08 + stretchVelocity);
+      // Keep dynamicX strictly inside container bounds
+      const minX = 0;
+      const maxX = containerRect.width - (targetGeo.width - insetX * 2);
+      const boundedX = Math.max(minX, Math.min(maxX, dynamicX));
+
+      lensTargetX.set(boundedX);
+      lensTargetWidth.set(targetGeo.width - insetX * 2 + 6);
+
+      // Velocity elongation along X axis
+      const stretchVelocity = Math.min(0.2, Math.abs(vx) * 0.1);
+      lensTargetScaleX.set(1.05 + stretchVelocity);
     }
   };
 
@@ -342,7 +343,7 @@ export function LiquidScrubberNav({
     // Settle back to resting position with authentic Apple spring bounce
     if (tabsGeo[selectedIdx]) {
       const target = tabsGeo[selectedIdx];
-      const insetX = variant === "dock" ? 3 : 2;
+      const insetX = variant === "dock" ? 4 : 3;
       lensTargetX.set(target.x + insetX);
       lensTargetWidth.set(Math.max(20, target.width - insetX * 2));
       lensTargetScaleX.set(1.0);
@@ -373,7 +374,7 @@ export function LiquidScrubberNav({
     // Snap back to active tab resting position
     if (tabsGeo[activeIndex]) {
       const target = tabsGeo[activeIndex];
-      const insetX = variant === "dock" ? 3 : 2;
+      const insetX = variant === "dock" ? 4 : 3;
       lensTargetX.set(target.x + insetX);
       lensTargetWidth.set(Math.max(20, target.width - insetX * 2));
       lensTargetScaleX.set(1.0);
@@ -391,7 +392,7 @@ export function LiquidScrubberNav({
     triggerHaptic();
     if (tabsGeo[idx]) {
       const target = tabsGeo[idx];
-      const insetX = variant === "dock" ? 3 : 2;
+      const insetX = variant === "dock" ? 4 : 3;
       lensTargetX.set(target.x + insetX);
       lensTargetWidth.set(Math.max(20, target.width - insetX * 2));
       lensTargetScaleX.set(1.0);
@@ -401,6 +402,9 @@ export function LiquidScrubberNav({
 
   // The tab that is currently under the spotlight (magnified & highlighted)
   const spotlightIndex = previewIndex !== null ? previewIndex : activeIndex;
+
+  // Has valid geometry for active tab?
+  const hasValidGeometry = !!tabsGeo[activeIndex];
 
   return (
     <div
@@ -422,9 +426,22 @@ export function LiquidScrubberNav({
       }}
     >
       {/* ================================================================= */}
+      {/* IN-DOCUMENT SVG OPTICAL REFRACTION FILTER (APPLE VISIONOS ENGINE) */}
+      {/* ================================================================= */}
+      <svg className="absolute w-0 h-0 pointer-events-none opacity-0 overflow-hidden" aria-hidden="true">
+        <defs>
+          <filter id="apple-liquid-glass-refract" colorInterpolationFilters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04 0.04" numOctaves="1" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+            <feGaussianBlur stdDeviation="0.4" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* ================================================================= */}
       {/* SEPARADOR DINÁMICO: REPOSO (GRISÁCEO SIMÉTRICO) + ARRASTRE (LIQUID GLASS PURO) */}
       {/* ================================================================= */}
-      {tabsGeo.length > 0 && (
+      {hasValidGeometry && (
         <motion.div
           className="absolute pointer-events-none"
           style={{
@@ -448,8 +465,8 @@ export function LiquidScrubberNav({
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 0 : 1 }}
-            transition={{ duration: 0.16 }}
-            className="absolute inset-0 rounded-full bg-[#e2e2e7] dark:bg-[#2c2c2e] border border-white/80 dark:border-white/15 shadow-[0_1px_3px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]"
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 rounded-full bg-[#e3e3e8] dark:bg-[#2c2c2e] border border-white/70 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.05),inset_0_1px_1px_rgba(255,255,255,0.8)]"
           />
 
           {/* ------------------------------------------------------------- */}
@@ -457,36 +474,29 @@ export function LiquidScrubberNav({
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 1 : 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.15 }}
             className="absolute inset-0 rounded-full overflow-hidden"
             style={{
-              backdropFilter: lensFilterUrl
-                ? `blur(1.5px) url('${lensFilterUrl}') blur(2px) brightness(1.12) saturate(1.4)`
-                : "blur(16px) saturate(190%) brightness(1.1)",
-              WebkitBackdropFilter: lensFilterUrl
-                ? `blur(1.5px) url('${lensFilterUrl}') blur(2px) brightness(1.12) saturate(1.4)`
-                : "blur(16px) saturate(190%) brightness(1.1)",
-              background: "rgba(255, 255, 255, 0.45)",
+              backdropFilter: hasChromiumSupport
+                ? "url(#apple-liquid-glass-refract) blur(16px) saturate(190%) brightness(1.12)"
+                : "blur(18px) saturate(190%) brightness(1.12)",
+              WebkitBackdropFilter: "blur(18px) saturate(190%) brightness(1.12)",
+              background: "rgba(255, 255, 255, 0.18)",
+              border: "1px solid rgba(255, 255, 255, 0.8)",
               boxShadow: `
-                0 18px 38px -4px rgba(0, 0, 0, 0.28),
-                0 6px 16px -2px rgba(0, 0, 0, 0.14),
-                inset 0 1.5px 2px 0px rgba(255, 255, 255, 0.95),
-                inset 0 -1px 1.5px 0px rgba(255, 255, 255, 0.35)
+                inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
+                inset 0 -1.5px 2px rgba(255, 255, 255, 0.35),
+                inset 1.5px 0 2px rgba(255, 255, 255, 0.5),
+                inset -1.5px 0 2px rgba(255, 255, 255, 0.5),
+                -1px -1px 2px rgba(56, 189, 248, 0.35),
+                1px 1px 2px rgba(251, 146, 60, 0.3),
+                0 14px 30px -4px rgba(0, 0, 0, 0.24),
+                0 4px 10px -2px rgba(0, 0, 0, 0.12)
               `,
-              border: "1px solid rgba(255, 255, 255, 0.85)",
             }}
           >
-            {/* Borde con dispersión cromática (Arcoíris VisionOS sutil) */}
-            <div
-              className="absolute inset-0 rounded-full pointer-events-none opacity-50 mix-blend-overlay"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(56,189,248,0.5) 0%, rgba(168,85,247,0.4) 45%, rgba(251,146,60,0.5) 100%)",
-              }}
-            />
-
-            {/* Reflejo curvado especular en la parte superior */}
-            <div className="absolute inset-x-0 top-0 h-[48%] rounded-t-full bg-gradient-to-b from-white/90 via-white/25 to-transparent pointer-events-none" />
+            {/* Reflejo curvado especular en la parte superior (Gota física de cristal) */}
+            <div className="absolute inset-x-0 top-0 h-[50%] rounded-t-full bg-gradient-to-b from-white/50 via-white/10 to-transparent pointer-events-none" />
           </motion.div>
         </motion.div>
       )}
