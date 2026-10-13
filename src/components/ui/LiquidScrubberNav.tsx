@@ -126,8 +126,9 @@ export function LiquidScrubberNav({
   // - Al mantener presionado: Salta y sobrepasa arriba, abajo y a los laterales con Liquid Glass puro
   const restingTop = variant === "dock" ? 0 : 3;
   const restingHeight = variant === "dock" ? (tabsGeo[0]?.height || 52) : 34;
-  const overhangingTop = variant === "dock" ? -10 : -7;
-  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 52) + 20) : 48;
+  // Mayor overhang para que el lente sobresalga más del cuerpo del menú y active la deformación en los bordes
+  const overhangingTop = variant === "dock" ? -14 : -9;
+  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 52) + 28) : 52;
 
   // Motion values para el seguidor de resorte físico Apple
   const lensTargetX = useMotionValue(0);
@@ -183,7 +184,7 @@ export function LiquidScrubberNav({
 
       if (tabsGeo[idx] && containerRef.current) {
         const target = tabsGeo[idx];
-        const lateralExpand = variant === "dock" ? 10 : 8;
+        const lateralExpand = variant === "dock" ? 14 : 8;
         const activeWidth = target.width + lateralExpand * 2;
         lensTargetWidth.set(activeWidth);
         lensTargetScaleX.set(1.02);
@@ -549,36 +550,25 @@ export function LiquidScrubberNav({
           >
             <LiquidGlass
               radius={9999}
-              depth={6}
-              strength={42}
+              depth={5}
+              strength={40}
               chromaticAberration={0}
-              blur={2.2}
+              blur={1.6}
+              overflow="visible"
               className="w-full h-full rounded-full"
               style={{
-                /* Casi totalmente transparente: el vidrio solo dobla la luz */
-                background: "rgba(255, 255, 255, 0.06)",
-                /* Borde exterior: línea de cristal muy fina */
-                border: "1.5px solid rgba(255, 255, 255, 0.82)",
+                /* Vidrio traslúcido — se ve a través, pero con presencia física */
+                background: "rgba(255, 255, 255, 0.28)",
+                /* Borde fino de cristal */
+                border: "1px solid rgba(255, 255, 255, 0.88)",
                 boxShadow: `
-                  /* Arco de refracción oscuro — ARRIBA (menisco cóncavo) */
-                  inset 0 9px 16px -3px rgba(0, 0, 0, 0.70),
-                  /* Arco de refracción oscuro — ABAJO */
-                  inset 0 -9px 16px -3px rgba(0, 0, 0, 0.70),
-                  /* Arco de refracción oscuro — IZQUIERDA */
-                  inset 7px 0 12px -3px rgba(0, 0, 0, 0.45),
-                  /* Arco de refracción oscuro — DERECHA */
-                  inset -7px 0 12px -3px rgba(0, 0, 0, 0.45),
-                  /* Línea especular brillante en la cúpula superior (física del cristal) */
-                  inset 0 2px 1px 0 rgba(255, 255, 255, 0.90),
-                  /* Sombra exterior de elevación */
-                  0 16px 36px -4px rgba(0, 0, 0, 0.26),
-                  0 6px 14px -2px rgba(0, 0, 0, 0.14)
+                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.92),
+                  inset 0 -1px 1px 0 rgba(255, 255, 255, 0.30),
+                  0 10px 28px -4px rgba(0, 0, 0, 0.18),
+                  0 4px 10px -2px rgba(0, 0, 0, 0.10)
                 `,
               }}
-            >
-              {/* Línea especular delgada en el borde superior — como cristal físico */}
-              <div className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/85 to-transparent pointer-events-none" />
-            </LiquidGlass>
+            />
           </motion.div>
         </motion.div>
       )}
