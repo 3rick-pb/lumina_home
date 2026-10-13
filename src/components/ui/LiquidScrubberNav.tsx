@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, useSpring, useMotionValue } from "framer-motion";
-import { LiquidGlass } from "@/components/ui/LiquidGlass";
 
 export interface LiquidScrubberItem {
   id: string;
@@ -126,8 +125,8 @@ export function LiquidScrubberNav({
   // - Al mantener presionado: Salta y sobrepasa arriba, abajo y a los laterales con Liquid Glass puro
   const restingTop = variant === "dock" ? 0 : 3;
   const restingHeight = variant === "dock" ? (tabsGeo[0]?.height || 52) : 34;
-  const overhangingTop = variant === "dock" ? -9 : -6;
-  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 52) + 18) : 48;
+  const overhangingTop = variant === "dock" ? -10 : -7;
+  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 52) + 20) : 48;
 
   // Motion values para el seguidor de resorte físico Apple
   const lensTargetX = useMotionValue(0);
@@ -183,7 +182,7 @@ export function LiquidScrubberNav({
 
       if (tabsGeo[idx] && containerRef.current) {
         const target = tabsGeo[idx];
-        const lateralExpand = variant === "dock" ? 9 : 8;
+        const lateralExpand = variant === "dock" ? 10 : 8;
         const activeWidth = target.width + lateralExpand * 2;
         lensTargetWidth.set(activeWidth);
         lensTargetScaleX.set(1.02);
@@ -265,7 +264,7 @@ export function LiquidScrubberNav({
     }
 
     // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 9 : 8;
+    const lateralExpand = variant === "dock" ? 10 : 8;
     const currentUnderIdx = getClosestIndex(relX);
     const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
     const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
@@ -384,7 +383,7 @@ export function LiquidScrubberNav({
     }
 
     // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 9 : 8;
+    const lateralExpand = variant === "dock" ? 10 : 8;
     const currentUnderIdx = getClosestIndex(relX);
     const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
     const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
@@ -540,39 +539,84 @@ export function LiquidScrubberNav({
           />
 
           {/* ------------------------------------------------------------- */}
-          {/* CAPA 2: LIQUID GLASS ORIGINAL (SRDAVO / GITHUB SVG DISPLACEMENT ENGINE) */}
+          {/* CAPA 2: LIQUID GLASS APPLE ORIGINAL (DEFORMACIÓN ÓPTICA, MENISCO Y DISPERSIÓN) */}
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 1 : 0 }}
             transition={{ duration: 0.12 }}
             className="absolute inset-0 rounded-full pointer-events-none"
           >
-            <LiquidGlass
-              radius={9999}
-              depth={4}
-              strength={30}
-              chromaticAberration={0}
-              blur={1.6}
-              className="w-full h-full rounded-full"
+            {/* Sombra de relieve 3D proyectada por la lente física que sobrepasa el menú */}
+            <div className="absolute inset-0 rounded-full shadow-[0_16px_36px_-4px_rgba(0,0,0,0.36),0_6px_16px_-2px_rgba(0,0,0,0.22)] pointer-events-none" />
+
+            {/* Contenedor principal de la lente de vidrio líquido */}
+            <div
+              className="relative w-full h-full rounded-full overflow-hidden"
               style={{
-                background: "rgba(255, 255, 255, 0.22)",
-                border: "1.5px solid rgba(255, 255, 255, 0.85)",
+                /* Base de cristal puro transparente (Cero blancura lechosa, pura transparencia vítrea) */
+                background: "rgba(255, 255, 255, 0.04)",
+                backdropFilter: "blur(6px) saturate(180%) brightness(1.05)",
+                WebkitBackdropFilter: "blur(6px) saturate(180%) brightness(1.05)",
+                border: "1.2px solid rgba(255, 255, 255, 0.85)",
                 boxShadow: `
-                  inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
-                  inset 0 -1.5px 2px rgba(255, 255, 255, 0.35),
-                  inset 1.5px 0 2px rgba(255, 255, 255, 0.5),
-                  inset -1.5px 0 2px rgba(255, 255, 255, 0.5),
-                  0 18px 38px -4px rgba(0, 0, 0, 0.25),
-                  0 6px 14px -2px rgba(0, 0, 0, 0.12)
+                  /* Bisel refractivo perimetral oscuro que deforma el espacio exterior (Menisco de Apple.png) */
+                  inset 0 5.5px 8px -1px rgba(0, 0, 0, 0.78),
+                  inset 0 -5.5px 8px -1px rgba(0, 0, 0, 0.78),
+                  inset 5px 0 7px -1px rgba(0, 0, 0, 0.45),
+                  inset -5px 0 7px -1px rgba(0, 0, 0, 0.45),
+                  /* Reflejos de borde interior */
+                  inset 0 1.2px 1.5px 0 rgba(255, 255, 255, 0.95),
+                  inset 0 -1.2px 1.5px 0 rgba(255, 255, 255, 0.4)
                 `,
               }}
             >
-              {/* Reflejo curvado especular superior (Cúpula física de cristal Apple) */}
-              <div className="absolute inset-x-0 top-0 h-[52%] rounded-t-full bg-gradient-to-b from-white/70 via-white/15 to-transparent pointer-events-none" />
+              {/* DEFORMACIÓN ARRIBA Y ABAJO: Menisco Refractivo Oscuro Curvado */}
+              <div
+                className="absolute inset-x-2 top-0 h-[10px] rounded-t-full pointer-events-none opacity-95"
+                style={{
+                  background: "radial-gradient(ellipse 90% 100% at 50% 0%, rgba(0, 0, 0, 0.9) 0%, rgba(10, 15, 25, 0.7) 60%, transparent 100%)",
+                }}
+              />
+              <div
+                className="absolute inset-x-2 bottom-0 h-[10px] rounded-b-full pointer-events-none opacity-95"
+                style={{
+                  background: "radial-gradient(ellipse 90% 100% at 50% 100%, rgba(0, 0, 0, 0.9) 0%, rgba(10, 15, 25, 0.7) 60%, transparent 100%)",
+                }}
+              />
 
-              {/* Reflejo especular inferior sutil */}
-              <div className="absolute inset-x-0 bottom-0 h-[25%] rounded-b-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
-            </LiquidGlass>
+              {/* ANILLO DE DISPERSIÓN PRISMÁTICA (Aberración Cromática y Cáusticas de Apple.png) */}
+              <div
+                className="absolute inset-0 rounded-full pointer-events-none opacity-90"
+                style={{
+                  background: `
+                    /* Espectro superior: Cyan -> Amarillo/Dorado -> Magenta */
+                    radial-gradient(ellipse 92% 50% at 50% 0%, rgba(0, 240, 255, 0.65) 0%, rgba(255, 220, 0, 0.48) 38%, rgba(255, 30, 110, 0.4) 68%, transparent 100%),
+                    /* Espectro inferior: Cyan -> Amarillo/Dorado -> Violeta */
+                    radial-gradient(ellipse 92% 50% at 50% 100%, rgba(0, 240, 255, 0.65) 0%, rgba(255, 220, 0, 0.48) 38%, rgba(255, 30, 110, 0.4) 68%, transparent 100%),
+                    /* Curvatura lateral izquierda */
+                    radial-gradient(ellipse 42% 90% at 0% 50%, rgba(0, 255, 210, 0.5) 0%, rgba(255, 150, 0, 0.35) 65%, transparent 100%),
+                    /* Curvatura lateral derecha */
+                    radial-gradient(ellipse 42% 90% at 100% 50%, rgba(255, 40, 160, 0.5) 0%, rgba(0, 220, 255, 0.35) 65%, transparent 100%)
+                  `,
+                  mixBlendMode: "screen",
+                }}
+              />
+
+              {/* HAZ CÁUSTICO DIAGONAL (Firma óptica Apple: destello transversal de refracción) */}
+              <div
+                className="absolute inset-0 rounded-full pointer-events-none opacity-80"
+                style={{
+                  background: "linear-gradient(116deg, transparent 16%, rgba(255, 255, 255, 0.5) 28%, rgba(0, 240, 255, 0.4) 36%, rgba(255, 230, 0, 0.35) 44%, rgba(255, 50, 130, 0.3) 52%, transparent 68%)",
+                  mixBlendMode: "screen",
+                }}
+              />
+
+              {/* LÍNEA DE REFLEJO ESPECULAR SUPERIOR (Filo de cristal nítido) */}
+              <div className="absolute inset-x-3 top-0 h-[1.5px] rounded-full bg-gradient-to-r from-transparent via-white/95 to-transparent pointer-events-none" />
+
+              {/* LÍNEA DE REFLEJO ESPECULAR INFERIOR */}
+              <div className="absolute inset-x-4 bottom-0 h-[1px] rounded-full bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+            </div>
           </motion.div>
         </motion.div>
       )}
@@ -595,7 +639,7 @@ export function LiquidScrubberNav({
               aria-selected={isSpotlight}
               draggable={false}
               onClick={(e) => handleDirectItemClick(e, item, idx)}
-              className="relative z-10 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
+              className="relative z-40 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
               style={{ touchAction: "none" }}
             >
               {/* Icono */}
@@ -609,7 +653,7 @@ export function LiquidScrubberNav({
                 <div
                   className={`w-5 h-5 flex items-center justify-center transition-colors duration-100 ${
                     isSpotlight
-                      ? "text-black dark:text-white stroke-[2.4px]"
+                      ? "text-black dark:text-white stroke-[2.6px]"
                       : "text-[#8e8e93] dark:text-[#98989d]"
                   }`}
                 >
@@ -628,7 +672,7 @@ export function LiquidScrubberNav({
               <span
                 className={`text-[10px] tracking-tight mt-0.5 leading-none truncate max-w-[95px] px-0.5 text-center transition-colors duration-100 ${
                   isSpotlight
-                    ? "text-black dark:text-white font-bold"
+                    ? "text-black dark:text-white font-black"
                     : "text-[#8e8e93] dark:text-[#98989d] font-medium"
                 }`}
               >
@@ -649,13 +693,13 @@ export function LiquidScrubberNav({
             aria-selected={isSpotlight}
             draggable={false}
             onClick={(e) => handleDirectItemClick(e, item, idx)}
-            className="relative z-10 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
+            className="relative z-40 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
             style={{ touchAction: "none" }}
           >
             <div
               className={`transition-all duration-100 transform-gpu ${
                 isSpotlight
-                  ? "scale-110 text-black dark:text-white stroke-[2.2px]"
+                  ? "scale-110 text-black dark:text-white stroke-[2.4px]"
                   : "scale-100 text-[#8e8e93] dark:text-[#98989d]"
               }`}
             >
@@ -665,7 +709,7 @@ export function LiquidScrubberNav({
             <span
               className={`transition-colors duration-100 ${
                 isSpotlight
-                  ? "text-black dark:text-white font-bold"
+                  ? "text-black dark:text-white font-black"
                   : "text-[#8e8e93] dark:text-[#98989d] font-medium"
               }`}
             >
