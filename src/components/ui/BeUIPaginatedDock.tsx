@@ -54,7 +54,7 @@ const pageVariants = {
  */
 export function BeUIPaginatedDock({
   items,
-  itemsPerPage = 4,
+  itemsPerPage = 3,
   className = "",
   isVisible = true,
   onSearchClick,
@@ -168,7 +168,7 @@ export function BeUIPaginatedDock({
           chromaticAberration={1.8}
           blur={1.5}
           overflow="visible"
-          className="flex-1 min-w-0 h-[64px] px-2 py-1.5 rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center relative"
+          className="flex-1 min-w-0 h-[58px] p-1 rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center relative"
         >
           {/* Contenedor animado de pestañas por página */}
           <div className="relative w-full h-full overflow-visible flex items-center">
@@ -184,7 +184,7 @@ export function BeUIPaginatedDock({
                   x: { type: "spring", stiffness: 420, damping: 36, mass: 0.8 },
                   opacity: { duration: 0.16, ease: "easeOut" },
                 }}
-                className="w-full h-full flex items-center justify-center px-1 overflow-visible"
+                className="w-full h-full flex items-center justify-center overflow-visible"
               >
                 <LiquidScrubberNav
                   items={currentItems}
@@ -221,7 +221,7 @@ export function BeUIPaginatedDock({
             blur={1.5}
             title="Buscar pedidos, marcas o piezas..."
             aria-label="Abrir buscador"
-            className={`relative w-[64px] h-[64px] rounded-full shrink-0 flex items-center justify-center border border-white/80 dark:border-white/25 shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition-all duration-300 active:scale-90 group ${
+            className={`relative w-[58px] h-[58px] rounded-full shrink-0 flex items-center justify-center border border-white/80 dark:border-white/25 shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition-all duration-300 active:scale-90 group ${
               isSearchActive
                 ? "bg-[#e07a3f] text-white border-2 border-white/90 shadow-[0_0_24px_rgba(224,122,63,0.6)]"
                 : "bg-white/55 dark:bg-[#16161a]/65 text-stone-900 dark:text-stone-100"

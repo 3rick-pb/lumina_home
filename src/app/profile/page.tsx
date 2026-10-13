@@ -2386,7 +2386,7 @@ const handleConfirmDeleteNiche = async () => {
               title: "Volver a la Tienda",
             },
           ]}
-          itemsPerPage={4}
+          itemsPerPage={3}
         />
       </div>
 
