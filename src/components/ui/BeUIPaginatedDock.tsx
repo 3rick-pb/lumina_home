@@ -167,11 +167,11 @@ export function BeUIPaginatedDock({
           strength={28}
           chromaticAberration={1.8}
           blur={1.5}
-          overflow="hidden"
-          className="flex-1 min-w-0 h-[64px] px-2 py-1.5 rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center"
+          overflow="visible"
+          className="flex-1 min-w-0 h-[64px] px-2 py-1.5 rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center relative"
         >
           {/* Contenedor animado de pestañas por página */}
-          <div className="relative w-full h-full overflow-hidden flex items-center">
+          <div className="relative w-full h-full overflow-visible flex items-center">
             <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div
                 key={safePage}
@@ -184,7 +184,7 @@ export function BeUIPaginatedDock({
                   x: { type: "spring", stiffness: 420, damping: 36, mass: 0.8 },
                   opacity: { duration: 0.16, ease: "easeOut" },
                 }}
-                className="w-full h-full flex items-center justify-center px-1"
+                className="w-full h-full flex items-center justify-center px-1 overflow-visible"
               >
                 <LiquidScrubberNav
                   items={currentItems}

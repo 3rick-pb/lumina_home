@@ -218,7 +218,7 @@ export function Header() {
           </Link>
 
           {/* Liquid Glass Navigation (Apple Fluid Hold & Slide + Direct Tap Scrubber) */}
-          <nav className="hidden md:flex items-center relative">
+          <nav className="hidden md:flex items-center relative overflow-visible">
             <LiquidScrubberNav
               items={navTabs.map((tab) => ({
                 id: tab.id,
