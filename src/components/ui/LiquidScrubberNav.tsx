@@ -55,7 +55,7 @@ export function LiquidScrubberNav({
   const pointerStartRef = useRef<{ x: number; y: number; time: number; pointerId: number } | null>(null);
   const lastMoveRef = useRef<{ x: number; time: number; vx: number }>({ x: 0, time: 0, vx: 0 });
   const hasMovedRef = useRef(false);
-  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const justCommittedRef = useRef(false);
 
   // Active index
   const activeIndex = useMemo(() => {
@@ -135,8 +135,8 @@ export function LiquidScrubberNav({
   // - Al mantener presionado: Salta y sobrepasa arriba y abajo ~5px de forma calibrada
   const restingTop = variant === "dock" ? 0 : 3;
   const restingHeight = variant === "dock" ? (tabsGeo[0]?.height || 50) : 34;
-  const overhangingTop = variant === "dock" ? -6 : -5;
-  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 50) + 12) : 48;
+  const overhangingTop = variant === "dock" ? -12 : -6;
+  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 50) + 24) : 48;
 
   // Motion values para el seguidor de resorte físico Apple
   const lensTargetX = useMotionValue(0);
@@ -192,12 +192,13 @@ export function LiquidScrubberNav({
 
       if (tabsGeo[idx] && containerRef.current) {
         const target = tabsGeo[idx];
-        lensTargetX.set(target.x);
-        lensTargetWidth.set(target.width);
-        lensTargetScaleX.set(1.04);
+        const lateralExpand = variant === "dock" ? 12 : 8;
+        lensTargetX.set(target.x - lateralExpand);
+        lensTargetWidth.set(target.width + lateralExpand * 2);
+        lensTargetScaleX.set(1.02);
       }
     },
-    [tabsGeo, lensTargetX, lensTargetWidth, lensTargetScaleX]
+    [tabsGeo, variant, lensTargetX, lensTargetWidth, lensTargetScaleX]
   );
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -220,12 +221,8 @@ export function LiquidScrubberNav({
     lastMoveRef.current = { x: e.clientX, time: performance.now(), vx: 0 };
     hasMovedRef.current = false;
 
-    // Temporizador de pulsación mantenida:
-    // Si se mantiene > 75ms sin levantar, el separador SALTA y activa Liquid Glass
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-    holdTimerRef.current = setTimeout(() => {
-      activateScrubbing(initialIdx);
-    }, 75);
+    // Activar Liquid Glass de inmediato al pulsar (sin retardo)
+    activateScrubbing(initialIdx);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -236,19 +233,13 @@ export function LiquidScrubberNav({
 
     if (dx > 4 || dy > 4) {
       hasMovedRef.current = true;
-      // Si se mueve, activar arrastre de inmediato
-      if (!isScrubbingRef.current) {
-        if (holdTimerRef.current) {
-          clearTimeout(holdTimerRef.current);
-          holdTimerRef.current = null;
-        }
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const relX = e.clientX - containerRect.left;
-        activateScrubbing(getClosestIndex(relX));
-      }
     }
 
-    if (!isScrubbingRef.current) return;
+    if (!isScrubbingRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const relX = e.clientX - containerRect.left;
+      activateScrubbing(getClosestIndex(relX));
+    }
 
     const now = performance.now();
     const dt = Math.max(1, now - lastMoveRef.current.time);
@@ -258,18 +249,16 @@ export function LiquidScrubberNav({
     const containerRect = containerRef.current.getBoundingClientRect();
     const relX = e.clientX - containerRect.left;
 
-    // Deslizamiento de cambio de página en dock (> 40px fuera de bordes)
+    // Deslizamiento de cambio de página en dock (> 45px fuera de bordes)
     if (onSwipePage) {
-      if (relX < -40) {
+      if (relX < -45) {
         onSwipePage(-1);
-        if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
         isScrubbingRef.current = false;
         setIsScrubbing(false);
         return;
       }
-      if (relX > containerRect.width + 40) {
+      if (relX > containerRect.width + 45) {
         onSwipePage(1);
-        if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
         isScrubbingRef.current = false;
         setIsScrubbing(false);
         return;
@@ -283,39 +272,33 @@ export function LiquidScrubberNav({
       setPreviewIndex(closestIdx);
     }
 
-    // Seguidor magnético estrictamente acotado a la barra
+    // Seguidor magnético permitiendo el overhang simétrico en los laterales
     const targetGeo = tabsGeo[closestIdx];
     if (targetGeo) {
       const tabCenterX = targetGeo.x + targetGeo.width / 2;
-      // Tensión elástica limitada a +-14px
-      const fingerDelta = Math.max(-14, Math.min(14, relX - tabCenterX));
+      const fingerDelta = Math.max(-18, Math.min(18, relX - tabCenterX));
+      const lateralExpand = variant === "dock" ? 12 : 8;
       const dynamicX = targetGeo.x + fingerDelta * 0.45;
 
-      // Límites estrictos dentro del contenedor
-      const minX = 0;
-      const maxX = containerRect.width - targetGeo.width;
-      const boundedX = Math.max(minX, Math.min(maxX, dynamicX));
+      // Límites permitiendo salir 12px fuera en los laterales (8px fuera del dock real)
+      const minX = -lateralExpand;
+      const maxX = containerRect.width - targetGeo.width - lateralExpand;
+      const boundedX = Math.max(minX, Math.min(maxX, dynamicX - lateralExpand));
 
       lensTargetX.set(boundedX);
-      lensTargetWidth.set(targetGeo.width);
+      lensTargetWidth.set(targetGeo.width + lateralExpand * 2);
 
       // Estiramiento sutil por velocidad
-      const stretchVelocity = Math.min(0.15, Math.abs(vx) * 0.08);
-      lensTargetScaleX.set(1.03 + stretchVelocity);
+      const stretchVelocity = Math.min(0.12, Math.abs(vx) * 0.06);
+      lensTargetScaleX.set(1.02 + stretchVelocity);
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
 
-    const wasScrubbing = isScrubbingRef.current;
     const selectedIdx = previewIndexRef.current !== null ? previewIndexRef.current : activeIndex;
     const selectedItem = items[selectedIdx];
 
@@ -334,18 +317,17 @@ export function LiquidScrubberNav({
       lensTargetScaleX.set(1.0);
     }
 
-    // Confirmar selección si se soltó desde arrastre
-    if (wasScrubbing && selectedItem) {
+    // Confirmar selección
+    if (selectedItem) {
+      justCommittedRef.current = true;
       onSelect(selectedItem.id, selectedItem);
+      setTimeout(() => {
+        justCommittedRef.current = false;
+      }, 120);
     }
   };
 
   const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
@@ -356,7 +338,7 @@ export function LiquidScrubberNav({
     previewIndexRef.current = null;
     pointerStartRef.current = null;
 
-    // Volver a la pestaña activa
+    // Volver a la pestaña activa en reposo
     if (tabsGeo[activeIndex]) {
       const target = tabsGeo[activeIndex];
       lensTargetX.set(target.x);
@@ -367,7 +349,7 @@ export function LiquidScrubberNav({
 
   // Clic/Tap directo inmediato sin lag
   const handleDirectItemClick = (e: React.MouseEvent, item: LiquidScrubberItem, idx: number) => {
-    if (hasMovedRef.current) {
+    if (justCommittedRef.current || hasMovedRef.current) {
       e.preventDefault();
       return;
     }
@@ -400,6 +382,10 @@ export function LiquidScrubberNav({
       } ${className}`}
       style={{
         WebkitTapHighlightColor: "transparent",
+        WebkitTouchCallout: "none",
+        WebkitUserSelect: "none",
+        userSelect: "none",
+        touchAction: "none",
         gridTemplateColumns: variant === "dock" ? `repeat(${gridCols}, minmax(0, 1fr))` : undefined,
       }}
     >
@@ -410,7 +396,7 @@ export function LiquidScrubberNav({
         <defs>
           <filter id="apple-liquid-glass-refract" colorInterpolationFilters="sRGB">
             <feTurbulence type="fractalNoise" baseFrequency="0.04 0.04" numOctaves="1" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G" />
             <feGaussianBlur stdDeviation="0.4" />
           </filter>
         </defs>
@@ -448,31 +434,48 @@ export function LiquidScrubberNav({
           />
 
           {/* ------------------------------------------------------------- */}
-          {/* CAPA 2: LIQUID GLASS PURO FLOTANTE (AL MANTENER PULSADO / SLIDE) */}
+          {/* CAPA 2: LIQUID GLASS REAL (APPLE VISIONOS & IOS 26) */}
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 1 : 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.12 }}
             className="absolute inset-0 rounded-full overflow-hidden"
             style={{
               backdropFilter: hasChromiumSupport
-                ? "url(#apple-liquid-glass-refract) blur(16px) saturate(190%) brightness(1.12)"
-                : "blur(18px) saturate(190%) brightness(1.12)",
-              WebkitBackdropFilter: "blur(18px) saturate(190%) brightness(1.12)",
-              background: "rgba(255, 255, 255, 0.18)",
-              border: "1px solid rgba(255, 255, 255, 0.85)",
+                ? "url(#apple-liquid-glass-refract) blur(20px) saturate(210%) brightness(1.15)"
+                : "blur(20px) saturate(210%) brightness(1.15)",
+              WebkitBackdropFilter: "blur(20px) saturate(210%) brightness(1.15)",
+              background: "rgba(255, 255, 255, 0.12)",
               boxShadow: `
                 inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
-                inset 0 -1.5px 2px rgba(255, 255, 255, 0.35),
-                inset 1.5px 0 2px rgba(255, 255, 255, 0.5),
-                inset -1.5px 0 2px rgba(255, 255, 255, 0.5),
-                0 14px 30px -4px rgba(0, 0, 0, 0.24),
-                0 4px 10px -2px rgba(0, 0, 0, 0.12)
+                inset 0 -1.5px 2px rgba(255, 255, 255, 0.45),
+                inset 0 3px 8px -1px rgba(56, 189, 248, 0.5),
+                inset 0 -3px 8px -1px rgba(99, 102, 241, 0.5),
+                inset 0 0 14px 2px rgba(0, 0, 0, 0.22),
+                0 20px 42px -4px rgba(0, 0, 0, 0.38),
+                0 8px 18px -2px rgba(0, 0, 0, 0.22)
               `,
             }}
           >
-            {/* Reflejo curvado especular en la parte superior (Gota física de cristal) */}
-            <div className="absolute inset-x-0 top-0 h-[50%] rounded-t-full bg-gradient-to-b from-white/50 via-white/10 to-transparent pointer-events-none" />
+            {/* Borde perimetral con dispersión cromática (Arcoíris cáustico Apple: Cyan / Verde / Ámbar / Índigo) */}
+            <div
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{
+                padding: "1.5px",
+                background:
+                  "linear-gradient(135deg, rgba(56, 189, 248, 0.95) 0%, rgba(52, 211, 153, 0.85) 25%, rgba(251, 191, 36, 0.9) 50%, rgba(244, 63, 94, 0.85) 75%, rgba(99, 102, 241, 0.95) 100%)",
+                WebkitMask:
+                  "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                WebkitMaskComposite: "xor",
+                maskComposite: "exclude",
+              }}
+            />
+
+            {/* Reflejo curvado especular superior (Cúpula física de cristal Apple) */}
+            <div className="absolute inset-x-0 top-0 h-[52%] rounded-t-full bg-gradient-to-b from-white/75 via-white/20 to-transparent pointer-events-none" />
+
+            {/* Reflejo especular inferior sutil */}
+            <div className="absolute inset-x-0 bottom-0 h-[28%] rounded-b-full bg-gradient-to-t from-white/35 to-transparent pointer-events-none" />
           </motion.div>
         </motion.div>
       )}
