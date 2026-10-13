@@ -106,7 +106,7 @@ export function BeUIPaginatedDock({
           radius={9999}
           depth={3}
           strength={16}
-          chromaticAberration={1.0}
+          chromaticAberration={0}
           blur={1.2}
           overflow="hidden"
           className="flex items-center justify-center gap-1.5 mb-1.5 pointer-events-auto select-none px-3 py-0.5 rounded-full bg-white/40 dark:bg-black/40 border border-white/40 dark:border-white/10 shadow-xs"
@@ -165,7 +165,7 @@ export function BeUIPaginatedDock({
           radius={9999}
           depth={5}
           strength={28}
-          chromaticAberration={1.8}
+          chromaticAberration={0}
           blur={1.5}
           overflow="visible"
           className="flex-1 min-w-0 h-[56px] p-[2px] rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center relative"
@@ -217,7 +217,7 @@ export function BeUIPaginatedDock({
             radius={9999}
             depth={5}
             strength={28}
-            chromaticAberration={1.8}
+            chromaticAberration={0}
             blur={1.5}
             title="Buscar pedidos, marcas o piezas..."
             aria-label="Abrir buscador"

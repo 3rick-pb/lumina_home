@@ -85,7 +85,24 @@ export function getDisplacementFilter({
 
   const displacementMapUrl = getDisplacementMap({ height, width, radius, depth });
 
-  const svg = `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+  const svg =
+    chromaticAberration <= 0
+      ? `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="displace" color-interpolation-filters="sRGB">
+        <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
+        <feDisplacementMap
+          transform-origin="center"
+          in="SourceGraphic"
+          in2="displacementMap"
+          scale="${strength}"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        />
+      </filter>
+    </defs>
+  </svg>`
+      : `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <filter id="displace" color-interpolation-filters="sRGB">
         <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
@@ -174,7 +191,7 @@ export function LiquidGlass({
   useEffect(() => {
     if (typeof navigator !== "undefined") {
       const ua = navigator.userAgent.toLowerCase();
-      const isChromium = /chrome|chromium|crios|edg/.test(ua) && !/firefox|fxios/.test(ua);
+      const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
       setHasSvgFilterSupport(isChromium);
     }
   }, []);
@@ -220,31 +237,33 @@ export function LiquidGlass({
   const baseBorderRadius = radius >= 9999 ? "9999px" : `${radius}px`;
 
   const dynamicGlassStyle: CSSProperties = useMemo(() => {
-    if (hasSvgFilterSupport && filterUrl) {
-      return {
-        ...style,
-        borderRadius: baseBorderRadius,
-        backdropFilter: `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`,
-        WebkitBackdropFilter: `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`,
-        boxShadow: `
+    const defaultShadow = hasSvgFilterSupport && filterUrl
+      ? `
           inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.82),
           inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
           inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
           0 10px 30px -4px rgba(0, 0, 0, 0.12)
-        `,
-      };
-    }
+        `
+      : `
+          inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.8),
+          inset -1px -1px 1px 0px rgba(255, 255, 255, 0.25),
+          0 8px 25px -4px rgba(0, 0, 0, 0.1)
+        `;
+
+    const baseStyle: CSSProperties = {
+      borderRadius: baseBorderRadius,
+      backdropFilter: hasSvgFilterSupport && filterUrl
+        ? `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`
+        : `blur(${blur * 12}px) saturate(190%) brightness(1.12)`,
+      WebkitBackdropFilter: hasSvgFilterSupport && filterUrl
+        ? `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`
+        : `blur(${blur * 12}px) saturate(190%) brightness(1.12)`,
+      boxShadow: defaultShadow,
+    };
 
     return {
+      ...baseStyle,
       ...style,
-      borderRadius: baseBorderRadius,
-      backdropFilter: `blur(${blur * 10}px) saturate(190%)`,
-      WebkitBackdropFilter: `blur(${blur * 10}px) saturate(190%)`,
-      boxShadow: `
-        inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.8),
-        inset -1px -1px 1px 0px rgba(255, 255, 255, 0.25),
-        0 8px 25px -4px rgba(0, 0, 0, 0.1)
-      `,
     };
   }, [style, baseBorderRadius, hasSvgFilterSupport, filterUrl, blur]);
 
@@ -306,7 +325,7 @@ export const LiquidGlassButton = React.forwardRef<HTMLButtonElement, LiquidGlass
     useEffect(() => {
       if (typeof navigator !== "undefined") {
         const ua = navigator.userAgent.toLowerCase();
-        const isChromium = /chrome|chromium|crios|edg/.test(ua) && !/firefox|fxios/.test(ua);
+        const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
         setHasSvgFilterSupport(isChromium);
       }
     }, []);
@@ -352,31 +371,33 @@ export const LiquidGlassButton = React.forwardRef<HTMLButtonElement, LiquidGlass
     const baseBorderRadius = radius >= 9999 ? "9999px" : `${radius}px`;
 
     const dynamicGlassStyle: CSSProperties = useMemo(() => {
-      if (hasSvgFilterSupport && filterUrl) {
-        return {
-          ...style,
-          borderRadius: baseBorderRadius,
-          backdropFilter: `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`,
-          WebkitBackdropFilter: `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`,
-          boxShadow: `
+      const defaultShadow = hasSvgFilterSupport && filterUrl
+        ? `
             inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.82),
             inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
             inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
             0 10px 30px -4px rgba(0, 0, 0, 0.12)
-          `,
-        };
-      }
+          `
+        : `
+            inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.8),
+            inset -1px -1px 1px 0px rgba(255, 255, 255, 0.25),
+            0 8px 25px -4px rgba(0, 0, 0, 0.1)
+          `;
+
+      const baseStyle: CSSProperties = {
+        borderRadius: baseBorderRadius,
+        backdropFilter: hasSvgFilterSupport && filterUrl
+          ? `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`
+          : `blur(${blur * 12}px) saturate(190%) brightness(1.12)`,
+        WebkitBackdropFilter: hasSvgFilterSupport && filterUrl
+          ? `blur(${blur / 2}px) url('${filterUrl}') blur(${blur}px) brightness(1.08) saturate(1.4)`
+          : `blur(${blur * 12}px) saturate(190%) brightness(1.12)`,
+        boxShadow: defaultShadow,
+      };
 
       return {
+        ...baseStyle,
         ...style,
-        borderRadius: baseBorderRadius,
-        backdropFilter: `blur(${blur * 10}px) saturate(190%)`,
-        WebkitBackdropFilter: `blur(${blur * 10}px) saturate(190%)`,
-        boxShadow: `
-          inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.8),
-          inset -1px -1px 1px 0px rgba(255, 255, 255, 0.25),
-          0 8px 25px -4px rgba(0, 0, 0, 0.1)
-        `,
       };
     }, [style, baseBorderRadius, hasSvgFilterSupport, filterUrl, blur]);
 

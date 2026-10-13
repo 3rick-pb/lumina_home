@@ -204,7 +204,7 @@ export function Header() {
           radius={9999}
           depth={6}
           strength={30}
-          chromaticAberration={2.0}
+          chromaticAberration={0}
           blur={1.5}
           overflow="visible"
           className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full border border-white/75 dark:border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.08)] bg-white/40 dark:bg-[#18181b]/50 relative transform-gpu max-w-full"

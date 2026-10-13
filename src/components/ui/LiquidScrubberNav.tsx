@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, useSpring, useMotionValue } from "framer-motion";
+import { LiquidGlass } from "@/components/ui/LiquidGlass";
 
 export interface LiquidScrubberItem {
   id: string;
@@ -133,10 +134,10 @@ export function LiquidScrubberNav({
   const lensTargetWidth = useMotionValue(0);
   const lensTargetScaleX = useMotionValue(1);
 
-  // Física de resortes Apple con rebote suave al soltar (Apple Fluid Physics)
-  const springX = useSpring(lensTargetX, { stiffness: 350, damping: 21, mass: 0.7 });
-  const springWidth = useSpring(lensTargetWidth, { stiffness: 350, damping: 21, mass: 0.7 });
-  const springScaleX = useSpring(lensTargetScaleX, { stiffness: 340, damping: 18, mass: 0.6 });
+  // Física de resortes Apple ultra-reactiva: sin retardo al arrastrar, rebote elástico al soltar
+  const springX = useSpring(lensTargetX, { stiffness: 450, damping: 30, mass: 0.6 });
+  const springWidth = useSpring(lensTargetWidth, { stiffness: 400, damping: 28, mass: 0.6 });
+  const springScaleX = useSpring(lensTargetScaleX, { stiffness: 350, damping: 20, mass: 0.6 });
 
   // Actualizar posición de reposo cuando cambia activeIndex o tabsGeo
   useEffect(() => {
@@ -174,7 +175,7 @@ export function LiquidScrubberNav({
   // =========================================================================
 
   const activateScrubbing = useCallback(
-    (idx: number) => {
+    (idx: number, initialRelX?: number) => {
       isScrubbingRef.current = true;
       setIsScrubbing(true);
       setPreviewIndex(idx);
@@ -183,9 +184,19 @@ export function LiquidScrubberNav({
       if (tabsGeo[idx] && containerRef.current) {
         const target = tabsGeo[idx];
         const lateralExpand = variant === "dock" ? 9 : 8;
-        lensTargetX.set(target.x - lateralExpand);
-        lensTargetWidth.set(target.width + lateralExpand * 2);
+        const activeWidth = target.width + lateralExpand * 2;
+        lensTargetWidth.set(activeWidth);
         lensTargetScaleX.set(1.02);
+
+        if (typeof initialRelX === "number") {
+          const minX = (tabsGeo[0]?.x ?? 0) - lateralExpand;
+          const lastGeo = tabsGeo[tabsGeo.length - 1];
+          const maxX = lastGeo ? (lastGeo.x - lateralExpand) : 0;
+          const boundedX = Math.max(minX, Math.min(maxX, initialRelX - activeWidth / 2));
+          lensTargetX.set(boundedX);
+        } else {
+          lensTargetX.set(target.x - lateralExpand);
+        }
       }
     },
     [tabsGeo, variant, lensTargetX, lensTargetWidth, lensTargetScaleX]
@@ -210,7 +221,7 @@ export function LiquidScrubberNav({
     lastMoveRef.current = { x: touch.clientX, time: performance.now(), vx: 0 };
     hasMovedRef.current = false;
 
-    activateScrubbing(initialIdx);
+    activateScrubbing(initialIdx, relX);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -223,12 +234,6 @@ export function LiquidScrubberNav({
 
     if (dx > 3 || dy > 3) {
       hasMovedRef.current = true;
-    }
-
-    if (!isScrubbingRef.current) {
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const relX = touch.clientX - containerRect.left;
-      activateScrubbing(getClosestIndex(relX));
     }
 
     const now = performance.now();
@@ -255,30 +260,35 @@ export function LiquidScrubberNav({
       }
     }
 
-    const closestIdx = getClosestIndex(relX);
-
-    if (closestIdx !== previewIndexRef.current) {
-      previewIndexRef.current = closestIdx;
-      setPreviewIndex(closestIdx);
+    if (!isScrubbingRef.current) {
+      activateScrubbing(getClosestIndex(relX), relX);
     }
 
-    // Seguidor magnético en tiempo real
-    const targetGeo = tabsGeo[closestIdx];
-    if (targetGeo) {
-      const tabCenterX = targetGeo.x + targetGeo.width / 2;
-      const fingerDelta = Math.max(-18, Math.min(18, relX - tabCenterX));
-      const lateralExpand = variant === "dock" ? 9 : 8;
-      const dynamicX = targetGeo.x + fingerDelta * 0.45;
+    // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
+    const lateralExpand = variant === "dock" ? 9 : 8;
+    const currentUnderIdx = getClosestIndex(relX);
+    const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
+    const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
 
-      const minX = -lateralExpand;
-      const maxX = containerRect.width - targetGeo.width - lateralExpand;
-      const boundedX = Math.max(minX, Math.min(maxX, dynamicX - lateralExpand));
+    const minX = (tabsGeo[0]?.x ?? 0) - lateralExpand;
+    const lastGeo = tabsGeo[tabsGeo.length - 1];
+    const maxX = lastGeo ? (lastGeo.x - lateralExpand) : (containerRect.width - activeWidth);
 
-      lensTargetX.set(boundedX);
-      lensTargetWidth.set(targetGeo.width + lateralExpand * 2);
+    const rawX = relX - activeWidth / 2;
+    const boundedX = Math.max(minX, Math.min(maxX, rawX));
 
-      const stretchVelocity = Math.min(0.12, Math.abs(vx) * 0.06);
-      lensTargetScaleX.set(1.02 + stretchVelocity);
+    lensTargetX.set(boundedX);
+    lensTargetWidth.set(activeWidth);
+
+    const stretchVelocity = Math.min(0.08, Math.abs(vx) * 0.04);
+    lensTargetScaleX.set(1.02 + stretchVelocity);
+
+    // Actualización de color en tiempo real según la posición del centro de la lente
+    const lensCenterX = boundedX + activeWidth / 2;
+    const activeIdxUnderLens = getClosestIndex(lensCenterX);
+    if (activeIdxUnderLens !== previewIndexRef.current) {
+      previewIndexRef.current = activeIdxUnderLens;
+      setPreviewIndex(activeIdxUnderLens);
     }
   };
 
@@ -332,7 +342,7 @@ export function LiquidScrubberNav({
     lastMoveRef.current = { x: e.clientX, time: performance.now(), vx: 0 };
     hasMovedRef.current = false;
 
-    activateScrubbing(initialIdx);
+    activateScrubbing(initialIdx, relX);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -344,12 +354,6 @@ export function LiquidScrubberNav({
 
     if (dx > 4 || dy > 4) {
       hasMovedRef.current = true;
-    }
-
-    if (!isScrubbingRef.current) {
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const relX = e.clientX - containerRect.left;
-      activateScrubbing(getClosestIndex(relX));
     }
 
     const now = performance.now();
@@ -375,29 +379,35 @@ export function LiquidScrubberNav({
       }
     }
 
-    const closestIdx = getClosestIndex(relX);
-
-    if (closestIdx !== previewIndexRef.current) {
-      previewIndexRef.current = closestIdx;
-      setPreviewIndex(closestIdx);
+    if (!isScrubbingRef.current) {
+      activateScrubbing(getClosestIndex(relX), relX);
     }
 
-    const targetGeo = tabsGeo[closestIdx];
-    if (targetGeo) {
-      const tabCenterX = targetGeo.x + targetGeo.width / 2;
-      const fingerDelta = Math.max(-18, Math.min(18, relX - tabCenterX));
-      const lateralExpand = variant === "dock" ? 9 : 8;
-      const dynamicX = targetGeo.x + fingerDelta * 0.45;
+    // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
+    const lateralExpand = variant === "dock" ? 9 : 8;
+    const currentUnderIdx = getClosestIndex(relX);
+    const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
+    const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
 
-      const minX = -lateralExpand;
-      const maxX = containerRect.width - targetGeo.width - lateralExpand;
-      const boundedX = Math.max(minX, Math.min(maxX, dynamicX - lateralExpand));
+    const minX = (tabsGeo[0]?.x ?? 0) - lateralExpand;
+    const lastGeo = tabsGeo[tabsGeo.length - 1];
+    const maxX = lastGeo ? (lastGeo.x - lateralExpand) : (containerRect.width - activeWidth);
 
-      lensTargetX.set(boundedX);
-      lensTargetWidth.set(targetGeo.width + lateralExpand * 2);
+    const rawX = relX - activeWidth / 2;
+    const boundedX = Math.max(minX, Math.min(maxX, rawX));
 
-      const stretchVelocity = Math.min(0.12, Math.abs(vx) * 0.06);
-      lensTargetScaleX.set(1.02 + stretchVelocity);
+    lensTargetX.set(boundedX);
+    lensTargetWidth.set(activeWidth);
+
+    const stretchVelocity = Math.min(0.08, Math.abs(vx) * 0.04);
+    lensTargetScaleX.set(1.02 + stretchVelocity);
+
+    // Actualización de color en tiempo real según la posición del centro de la lente
+    const lensCenterX = boundedX + activeWidth / 2;
+    const activeIdxUnderLens = getClosestIndex(lensCenterX);
+    if (activeIdxUnderLens !== previewIndexRef.current) {
+      previewIndexRef.current = activeIdxUnderLens;
+      setPreviewIndex(activeIdxUnderLens);
     }
   };
 
@@ -516,8 +526,8 @@ export function LiquidScrubberNav({
             zIndex: isScrubbing ? 30 : 0,
           }}
           transition={{
-            top: { type: "spring", stiffness: 350, damping: 21, mass: 0.7 },
-            height: { type: "spring", stiffness: 350, damping: 21, mass: 0.7 },
+            top: { type: "spring", stiffness: 450, damping: 30, mass: 0.6 },
+            height: { type: "spring", stiffness: 450, damping: 30, mass: 0.6 },
           }}
         >
           {/* ------------------------------------------------------------- */}
@@ -530,32 +540,39 @@ export function LiquidScrubberNav({
           />
 
           {/* ------------------------------------------------------------- */}
-          {/* CAPA 2: LIQUID GLASS PURO CRISTALINO (SIN COLORES, CRISTAL FÍSICO APPLE) */}
+          {/* CAPA 2: LIQUID GLASS ORIGINAL (SRDAVO / GITHUB SVG DISPLACEMENT ENGINE) */}
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 1 : 0 }}
             transition={{ duration: 0.12 }}
-            className="absolute inset-0 rounded-full overflow-hidden"
-            style={{
-              backdropFilter: "blur(24px) saturate(190%) brightness(1.12)",
-              WebkitBackdropFilter: "blur(24px) saturate(190%) brightness(1.12)",
-              background: "rgba(255, 255, 255, 0.2)",
-              border: "1.5px solid rgba(255, 255, 255, 0.85)",
-              boxShadow: `
-                inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
-                inset 0 -1.5px 2px rgba(255, 255, 255, 0.35),
-                inset 1.5px 0 2px rgba(255, 255, 255, 0.5),
-                inset -1.5px 0 2px rgba(255, 255, 255, 0.5),
-                0 18px 38px -4px rgba(0, 0, 0, 0.25),
-                0 6px 14px -2px rgba(0, 0, 0, 0.12)
-              `,
-            }}
+            className="absolute inset-0 rounded-full pointer-events-none"
           >
-            {/* Reflejo curvado especular superior (Cúpula física de cristal Apple) */}
-            <div className="absolute inset-x-0 top-0 h-[52%] rounded-t-full bg-gradient-to-b from-white/70 via-white/15 to-transparent pointer-events-none" />
+            <LiquidGlass
+              radius={9999}
+              depth={4}
+              strength={30}
+              chromaticAberration={0}
+              blur={1.6}
+              className="w-full h-full rounded-full"
+              style={{
+                background: "rgba(255, 255, 255, 0.22)",
+                border: "1.5px solid rgba(255, 255, 255, 0.85)",
+                boxShadow: `
+                  inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
+                  inset 0 -1.5px 2px rgba(255, 255, 255, 0.35),
+                  inset 1.5px 0 2px rgba(255, 255, 255, 0.5),
+                  inset -1.5px 0 2px rgba(255, 255, 255, 0.5),
+                  0 18px 38px -4px rgba(0, 0, 0, 0.25),
+                  0 6px 14px -2px rgba(0, 0, 0, 0.12)
+                `,
+              }}
+            >
+              {/* Reflejo curvado especular superior (Cúpula física de cristal Apple) */}
+              <div className="absolute inset-x-0 top-0 h-[52%] rounded-t-full bg-gradient-to-b from-white/70 via-white/15 to-transparent pointer-events-none" />
 
-            {/* Reflejo especular inferior sutil */}
-            <div className="absolute inset-x-0 bottom-0 h-[25%] rounded-b-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
+              {/* Reflejo especular inferior sutil */}
+              <div className="absolute inset-x-0 bottom-0 h-[25%] rounded-b-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
+            </LiquidGlass>
           </motion.div>
         </motion.div>
       )}
