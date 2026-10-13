@@ -168,7 +168,7 @@ export function BeUIPaginatedDock({
           chromaticAberration={1.8}
           blur={1.5}
           overflow="visible"
-          className="flex-1 min-w-0 h-[58px] p-1 rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center relative"
+          className="flex-1 min-w-0 h-[56px] p-[2px] rounded-full border border-white/80 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/50 dark:bg-[#16161a]/60 flex items-center justify-center relative"
         >
           {/* Contenedor animado de pestañas por página */}
           <div className="relative w-full h-full overflow-visible flex items-center">
@@ -191,7 +191,7 @@ export function BeUIPaginatedDock({
                   activeId={activeItemId || ""}
                   variant="dock"
                   className="w-full h-full"
-                  activeColor="text-[#c25e1a] dark:text-[#f59e0b]"
+                  activeColor="text-black dark:text-white"
                   gridCols={itemsPerPage}
                   onSwipePage={(dir) => {
                     if (dir === 1 && safePage < totalPages - 1) {
@@ -221,7 +221,7 @@ export function BeUIPaginatedDock({
             blur={1.5}
             title="Buscar pedidos, marcas o piezas..."
             aria-label="Abrir buscador"
-            className={`relative w-[58px] h-[58px] rounded-full shrink-0 flex items-center justify-center border border-white/80 dark:border-white/25 shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition-all duration-300 active:scale-90 group ${
+            className={`relative w-[56px] h-[56px] rounded-full shrink-0 flex items-center justify-center border border-white/80 dark:border-white/25 shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition-all duration-300 active:scale-90 group ${
               isSearchActive
                 ? "bg-[#e07a3f] text-white border-2 border-white/90 shadow-[0_0_24px_rgba(224,122,63,0.6)]"
                 : "bg-white/55 dark:bg-[#16161a]/65 text-stone-900 dark:text-stone-100"

@@ -37,7 +37,7 @@ export function LiquidScrubberNav({
   onSelect,
   variant = "pill",
   className = "",
-  activeColor,
+  activeColor: _activeColor,
   gridCols = 3,
   onSwipePage,
 }: LiquidScrubberNavProps) {
@@ -62,16 +62,6 @@ export function LiquidScrubberNav({
     const idx = items.findIndex((it) => it.id === activeId);
     return idx >= 0 ? idx : 0;
   }, [items, activeId]);
-
-  // Chromium check for in-document SVG backdrop filter
-  const [hasChromiumSupport, setHasChromiumSupport] = useState(false);
-  useEffect(() => {
-    if (typeof navigator !== "undefined") {
-      const ua = navigator.userAgent.toLowerCase();
-      const isChromium = /chrome|chromium|crios|edg/.test(ua) && !/firefox|fxios/.test(ua);
-      setHasChromiumSupport(isChromium);
-    }
-  }, []);
 
   // Measure tab geometries
   const measureTabs = useCallback(() => {
@@ -131,22 +121,22 @@ export function LiquidScrubberNav({
   }, [measureTabs]);
 
   // Dimensiones simétricas:
-  // - En reposo: Ocupa el slot de forma concéntrica y elegante (sin pegarse al texto)
-  // - Al mantener presionado: Salta y sobrepasa arriba y abajo ~5px de forma calibrada
+  // - En reposo: Ocupa el slot de forma concéntrica a 2px del borde exterior (dock h=56px, inner=52px)
+  // - Al mantener presionado: Salta y sobrepasa arriba, abajo y a los laterales con Liquid Glass puro
   const restingTop = variant === "dock" ? 0 : 3;
-  const restingHeight = variant === "dock" ? (tabsGeo[0]?.height || 50) : 34;
-  const overhangingTop = variant === "dock" ? -12 : -6;
-  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 50) + 24) : 48;
+  const restingHeight = variant === "dock" ? (tabsGeo[0]?.height || 52) : 34;
+  const overhangingTop = variant === "dock" ? -9 : -6;
+  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 52) + 18) : 48;
 
   // Motion values para el seguidor de resorte físico Apple
   const lensTargetX = useMotionValue(0);
   const lensTargetWidth = useMotionValue(0);
   const lensTargetScaleX = useMotionValue(1);
 
-  // Física de resortes Apple
-  const springX = useSpring(lensTargetX, { stiffness: 450, damping: 32, mass: 0.6 });
-  const springWidth = useSpring(lensTargetWidth, { stiffness: 450, damping: 32, mass: 0.6 });
-  const springScaleX = useSpring(lensTargetScaleX, { stiffness: 420, damping: 24, mass: 0.5 });
+  // Física de resortes Apple con rebote suave al soltar (Apple Fluid Physics)
+  const springX = useSpring(lensTargetX, { stiffness: 350, damping: 21, mass: 0.7 });
+  const springWidth = useSpring(lensTargetWidth, { stiffness: 350, damping: 21, mass: 0.7 });
+  const springScaleX = useSpring(lensTargetScaleX, { stiffness: 340, damping: 18, mass: 0.6 });
 
   // Actualizar posición de reposo cuando cambia activeIndex o tabsGeo
   useEffect(() => {
@@ -180,7 +170,7 @@ export function LiquidScrubberNav({
   );
 
   // =========================================================================
-  // GESTORES DE GESTOS (TOUCH + MOUSE + TRACKPAD)
+  // GESTORES DE GESTOS (TOUCH + MOUSE + TRACKPAD) SIN LATENCIA (0MS)
   // =========================================================================
 
   const activateScrubbing = useCallback(
@@ -192,7 +182,7 @@ export function LiquidScrubberNav({
 
       if (tabsGeo[idx] && containerRef.current) {
         const target = tabsGeo[idx];
-        const lateralExpand = variant === "dock" ? 12 : 8;
+        const lateralExpand = variant === "dock" ? 9 : 8;
         lensTargetX.set(target.x - lateralExpand);
         lensTargetWidth.set(target.width + lateralExpand * 2);
         lensTargetScaleX.set(1.02);
@@ -201,53 +191,53 @@ export function LiquidScrubberNav({
     [tabsGeo, variant, lensTargetX, lensTargetWidth, lensTargetScaleX]
   );
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  // Touch directo en móvil (0ms de latencia, elimina los 500ms de retardo del navegador)
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (tabsGeo.length === 0 || !containerRef.current) return;
-
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    const touch = e.touches[0];
+    if (!touch) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
-    const relX = e.clientX - containerRect.left;
+    const relX = touch.clientX - containerRect.left;
     const initialIdx = getClosestIndex(relX);
 
     pointerStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
+      x: touch.clientX,
+      y: touch.clientY,
       time: performance.now(),
-      pointerId: e.pointerId,
+      pointerId: 0,
     };
-    lastMoveRef.current = { x: e.clientX, time: performance.now(), vx: 0 };
+    lastMoveRef.current = { x: touch.clientX, time: performance.now(), vx: 0 };
     hasMovedRef.current = false;
 
-    // Activar Liquid Glass de inmediato al pulsar (sin retardo)
     activateScrubbing(initialIdx);
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!pointerStartRef.current || !containerRef.current) return;
+    const touch = e.touches[0];
+    if (!touch) return;
 
-    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
-    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+    const dx = Math.abs(touch.clientX - pointerStartRef.current.x);
+    const dy = Math.abs(touch.clientY - pointerStartRef.current.y);
 
-    if (dx > 4 || dy > 4) {
+    if (dx > 3 || dy > 3) {
       hasMovedRef.current = true;
     }
 
     if (!isScrubbingRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
-      const relX = e.clientX - containerRect.left;
+      const relX = touch.clientX - containerRect.left;
       activateScrubbing(getClosestIndex(relX));
     }
 
     const now = performance.now();
     const dt = Math.max(1, now - lastMoveRef.current.time);
-    const vx = (e.clientX - lastMoveRef.current.x) / dt;
-    lastMoveRef.current = { x: e.clientX, time: now, vx };
+    const vx = (touch.clientX - lastMoveRef.current.x) / dt;
+    lastMoveRef.current = { x: touch.clientX, time: now, vx };
 
     const containerRect = containerRef.current.getBoundingClientRect();
-    const relX = e.clientX - containerRect.left;
+    const relX = touch.clientX - containerRect.left;
 
     // Deslizamiento de cambio de página en dock (> 45px fuera de bordes)
     if (onSwipePage) {
@@ -272,15 +262,14 @@ export function LiquidScrubberNav({
       setPreviewIndex(closestIdx);
     }
 
-    // Seguidor magnético permitiendo el overhang simétrico en los laterales
+    // Seguidor magnético en tiempo real
     const targetGeo = tabsGeo[closestIdx];
     if (targetGeo) {
       const tabCenterX = targetGeo.x + targetGeo.width / 2;
       const fingerDelta = Math.max(-18, Math.min(18, relX - tabCenterX));
-      const lateralExpand = variant === "dock" ? 12 : 8;
+      const lateralExpand = variant === "dock" ? 9 : 8;
       const dynamicX = targetGeo.x + fingerDelta * 0.45;
 
-      // Límites permitiendo salir 12px fuera en los laterales (8px fuera del dock real)
       const minX = -lateralExpand;
       const maxX = containerRect.width - targetGeo.width - lateralExpand;
       const boundedX = Math.max(minX, Math.min(maxX, dynamicX - lateralExpand));
@@ -288,28 +277,22 @@ export function LiquidScrubberNav({
       lensTargetX.set(boundedX);
       lensTargetWidth.set(targetGeo.width + lateralExpand * 2);
 
-      // Estiramiento sutil por velocidad
       const stretchVelocity = Math.min(0.12, Math.abs(vx) * 0.06);
       lensTargetScaleX.set(1.02 + stretchVelocity);
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
-
+  const handleTouchEnd = () => {
     const selectedIdx = previewIndexRef.current !== null ? previewIndexRef.current : activeIndex;
     const selectedItem = items[selectedIdx];
 
-    // Restablecer estados
     isScrubbingRef.current = false;
     setIsScrubbing(false);
     setPreviewIndex(null);
     previewIndexRef.current = null;
     pointerStartRef.current = null;
 
-    // Asentar en posición de reposo simétrica
+    // Asentar en posición de reposo con rebote suave
     if (tabsGeo[selectedIdx]) {
       const target = tabsGeo[selectedIdx];
       lensTargetX.set(target.x);
@@ -327,7 +310,130 @@ export function LiquidScrubberNav({
     }
   };
 
+  // Pointer events para Desktop (mouse / trackpad)
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return; // Manejado por touch events
+    if (tabsGeo.length === 0 || !containerRef.current) return;
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const relX = e.clientX - containerRect.left;
+    const initialIdx = getClosestIndex(relX);
+
+    pointerStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      time: performance.now(),
+      pointerId: e.pointerId,
+    };
+    lastMoveRef.current = { x: e.clientX, time: performance.now(), vx: 0 };
+    hasMovedRef.current = false;
+
+    activateScrubbing(initialIdx);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
+    if (!pointerStartRef.current || !containerRef.current) return;
+
+    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+
+    if (dx > 4 || dy > 4) {
+      hasMovedRef.current = true;
+    }
+
+    if (!isScrubbingRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const relX = e.clientX - containerRect.left;
+      activateScrubbing(getClosestIndex(relX));
+    }
+
+    const now = performance.now();
+    const dt = Math.max(1, now - lastMoveRef.current.time);
+    const vx = (e.clientX - lastMoveRef.current.x) / dt;
+    lastMoveRef.current = { x: e.clientX, time: now, vx };
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const relX = e.clientX - containerRect.left;
+
+    if (onSwipePage) {
+      if (relX < -45) {
+        onSwipePage(-1);
+        isScrubbingRef.current = false;
+        setIsScrubbing(false);
+        return;
+      }
+      if (relX > containerRect.width + 45) {
+        onSwipePage(1);
+        isScrubbingRef.current = false;
+        setIsScrubbing(false);
+        return;
+      }
+    }
+
+    const closestIdx = getClosestIndex(relX);
+
+    if (closestIdx !== previewIndexRef.current) {
+      previewIndexRef.current = closestIdx;
+      setPreviewIndex(closestIdx);
+    }
+
+    const targetGeo = tabsGeo[closestIdx];
+    if (targetGeo) {
+      const tabCenterX = targetGeo.x + targetGeo.width / 2;
+      const fingerDelta = Math.max(-18, Math.min(18, relX - tabCenterX));
+      const lateralExpand = variant === "dock" ? 9 : 8;
+      const dynamicX = targetGeo.x + fingerDelta * 0.45;
+
+      const minX = -lateralExpand;
+      const maxX = containerRect.width - targetGeo.width - lateralExpand;
+      const boundedX = Math.max(minX, Math.min(maxX, dynamicX - lateralExpand));
+
+      lensTargetX.set(boundedX);
+      lensTargetWidth.set(targetGeo.width + lateralExpand * 2);
+
+      const stretchVelocity = Math.min(0.12, Math.abs(vx) * 0.06);
+      lensTargetScaleX.set(1.02 + stretchVelocity);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+
+    const selectedIdx = previewIndexRef.current !== null ? previewIndexRef.current : activeIndex;
+    const selectedItem = items[selectedIdx];
+
+    isScrubbingRef.current = false;
+    setIsScrubbing(false);
+    setPreviewIndex(null);
+    previewIndexRef.current = null;
+    pointerStartRef.current = null;
+
+    if (tabsGeo[selectedIdx]) {
+      const target = tabsGeo[selectedIdx];
+      lensTargetX.set(target.x);
+      lensTargetWidth.set(target.width);
+      lensTargetScaleX.set(1.0);
+    }
+
+    if (selectedItem) {
+      justCommittedRef.current = true;
+      onSelect(selectedItem.id, selectedItem);
+      setTimeout(() => {
+        justCommittedRef.current = false;
+      }, 120);
+    }
+  };
+
   const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
@@ -338,7 +444,6 @@ export function LiquidScrubberNav({
     previewIndexRef.current = null;
     pointerStartRef.current = null;
 
-    // Volver a la pestaña activa en reposo
     if (tabsGeo[activeIndex]) {
       const target = tabsGeo[activeIndex];
       lensTargetX.set(target.x);
@@ -371,6 +476,10 @@ export function LiquidScrubberNav({
       ref={containerRef}
       role="tablist"
       aria-orientation="horizontal"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -390,19 +499,6 @@ export function LiquidScrubberNav({
       }}
     >
       {/* ================================================================= */}
-      {/* FILTRO DE REFRACCIÓN ÓPTICA EN EL DOM (PARA CHROMIUM) */}
-      {/* ================================================================= */}
-      <svg className="absolute w-0 h-0 pointer-events-none opacity-0 overflow-hidden" aria-hidden="true">
-        <defs>
-          <filter id="apple-liquid-glass-refract" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.04 0.04" numOctaves="1" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G" />
-            <feGaussianBlur stdDeviation="0.4" />
-          </filter>
-        </defs>
-      </svg>
-
-      {/* ================================================================= */}
       {/* SEPARADOR DINÁMICO: REPOSO (GRISÁCEO SIMÉTRICO) + ARRASTRE (LIQUID GLASS PURO) */}
       {/* ================================================================= */}
       {hasValidGeometry && (
@@ -420,8 +516,8 @@ export function LiquidScrubberNav({
             zIndex: isScrubbing ? 30 : 0,
           }}
           transition={{
-            top: { type: "spring", stiffness: 450, damping: 28, mass: 0.6 },
-            height: { type: "spring", stiffness: 450, damping: 28, mass: 0.6 },
+            top: { type: "spring", stiffness: 350, damping: 21, mass: 0.7 },
+            height: { type: "spring", stiffness: 350, damping: 21, mass: 0.7 },
           }}
         >
           {/* ------------------------------------------------------------- */}
@@ -429,59 +525,43 @@ export function LiquidScrubberNav({
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 0 : 1 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.12 }}
             className="absolute inset-0 rounded-full bg-[#d8d8de] dark:bg-[#2c2c2e] border border-white/70 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]"
           />
 
           {/* ------------------------------------------------------------- */}
-          {/* CAPA 2: LIQUID GLASS REAL (APPLE VISIONOS & IOS 26) */}
+          {/* CAPA 2: LIQUID GLASS PURO CRISTALINO (SIN COLORES, CRISTAL FÍSICO APPLE) */}
           {/* ------------------------------------------------------------- */}
           <motion.div
             animate={{ opacity: isScrubbing ? 1 : 0 }}
             transition={{ duration: 0.12 }}
             className="absolute inset-0 rounded-full overflow-hidden"
             style={{
-              backdropFilter: hasChromiumSupport
-                ? "url(#apple-liquid-glass-refract) blur(20px) saturate(210%) brightness(1.15)"
-                : "blur(20px) saturate(210%) brightness(1.15)",
-              WebkitBackdropFilter: "blur(20px) saturate(210%) brightness(1.15)",
-              background: "rgba(255, 255, 255, 0.12)",
+              backdropFilter: "blur(24px) saturate(190%) brightness(1.12)",
+              WebkitBackdropFilter: "blur(24px) saturate(190%) brightness(1.12)",
+              background: "rgba(255, 255, 255, 0.2)",
+              border: "1.5px solid rgba(255, 255, 255, 0.85)",
               boxShadow: `
                 inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
-                inset 0 -1.5px 2px rgba(255, 255, 255, 0.45),
-                inset 0 3px 8px -1px rgba(56, 189, 248, 0.5),
-                inset 0 -3px 8px -1px rgba(99, 102, 241, 0.5),
-                inset 0 0 14px 2px rgba(0, 0, 0, 0.22),
-                0 20px 42px -4px rgba(0, 0, 0, 0.38),
-                0 8px 18px -2px rgba(0, 0, 0, 0.22)
+                inset 0 -1.5px 2px rgba(255, 255, 255, 0.35),
+                inset 1.5px 0 2px rgba(255, 255, 255, 0.5),
+                inset -1.5px 0 2px rgba(255, 255, 255, 0.5),
+                0 18px 38px -4px rgba(0, 0, 0, 0.25),
+                0 6px 14px -2px rgba(0, 0, 0, 0.12)
               `,
             }}
           >
-            {/* Borde perimetral con dispersión cromática (Arcoíris cáustico Apple: Cyan / Verde / Ámbar / Índigo) */}
-            <div
-              className="absolute inset-0 rounded-full pointer-events-none"
-              style={{
-                padding: "1.5px",
-                background:
-                  "linear-gradient(135deg, rgba(56, 189, 248, 0.95) 0%, rgba(52, 211, 153, 0.85) 25%, rgba(251, 191, 36, 0.9) 50%, rgba(244, 63, 94, 0.85) 75%, rgba(99, 102, 241, 0.95) 100%)",
-                WebkitMask:
-                  "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-              }}
-            />
-
             {/* Reflejo curvado especular superior (Cúpula física de cristal Apple) */}
-            <div className="absolute inset-x-0 top-0 h-[52%] rounded-t-full bg-gradient-to-b from-white/75 via-white/20 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-[52%] rounded-t-full bg-gradient-to-b from-white/70 via-white/15 to-transparent pointer-events-none" />
 
             {/* Reflejo especular inferior sutil */}
-            <div className="absolute inset-x-0 bottom-0 h-[28%] rounded-b-full bg-gradient-to-t from-white/35 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-[25%] rounded-b-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
           </motion.div>
         </motion.div>
       )}
 
       {/* ================================================================= */}
-      {/* FILA DE ELEMENTOS / PESTAÑAS */}
+      {/* FILA DE ELEMENTOS / PESTAÑAS (COLOR EN TIEMPO REAL: NEGRO / GRIS) */}
       {/* ================================================================= */}
       {items.map((item, idx) => {
         const isSpotlight = idx === spotlightIndex;
@@ -498,21 +578,22 @@ export function LiquidScrubberNav({
               aria-selected={isSpotlight}
               draggable={false}
               onClick={(e) => handleDirectItemClick(e, item, idx)}
-              className="relative z-10 w-full h-full flex flex-col items-center justify-center py-1 px-1 rounded-full select-none cursor-pointer focus:outline-none"
+              className="relative z-10 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
+              style={{ touchAction: "none" }}
             >
               {/* Icono */}
               <div
-                className={`relative flex items-center justify-center transition-all duration-200 transform-gpu ${
+                className={`relative flex items-center justify-center transition-all duration-100 transform-gpu ${
                   isSpotlight
                     ? "scale-105 -translate-y-0.5"
-                    : "scale-100 translate-y-0 opacity-85"
+                    : "scale-100 translate-y-0 opacity-80"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 flex items-center justify-center transition-colors duration-200 ${
+                  className={`w-5 h-5 flex items-center justify-center transition-colors duration-100 ${
                     isSpotlight
-                      ? activeColor || "text-[#c25e1a] dark:text-[#f59e0b] stroke-[2.4px]"
-                      : "text-stone-900 dark:text-stone-100 font-bold"
+                      ? "text-black dark:text-white stroke-[2.4px]"
+                      : "text-[#8e8e93] dark:text-[#98989d]"
                   }`}
                 >
                   {item.icon}
@@ -528,10 +609,10 @@ export function LiquidScrubberNav({
 
               {/* Etiqueta nítida de alto contraste */}
               <span
-                className={`text-[10px] tracking-tight mt-0.5 leading-none truncate max-w-[95px] px-0.5 text-center transition-all duration-200 ${
+                className={`text-[10px] tracking-tight mt-0.5 leading-none truncate max-w-[95px] px-0.5 text-center transition-colors duration-100 ${
                   isSpotlight
-                    ? `${activeColor || "text-[#c25e1a] dark:text-[#f59e0b]"} font-black`
-                    : "text-stone-900 dark:text-stone-200 font-bold"
+                    ? "text-black dark:text-white font-bold"
+                    : "text-[#8e8e93] dark:text-[#98989d] font-medium"
                 }`}
               >
                 {item.label}
@@ -552,22 +633,23 @@ export function LiquidScrubberNav({
             draggable={false}
             onClick={(e) => handleDirectItemClick(e, item, idx)}
             className="relative z-10 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
+            style={{ touchAction: "none" }}
           >
             <div
-              className={`transition-all duration-200 transform-gpu ${
+              className={`transition-all duration-100 transform-gpu ${
                 isSpotlight
-                  ? "scale-115 text-[#8c9276] dark:text-[#a3a98d]"
-                  : "scale-100 text-stone-700 dark:text-stone-300"
+                  ? "scale-110 text-black dark:text-white stroke-[2.2px]"
+                  : "scale-100 text-[#8e8e93] dark:text-[#98989d]"
               }`}
             >
               {item.icon}
             </div>
 
             <span
-              className={`transition-colors duration-200 ${
+              className={`transition-colors duration-100 ${
                 isSpotlight
-                  ? "text-stone-950 dark:text-white font-bold"
-                  : "text-stone-700 dark:text-stone-300 font-medium"
+                  ? "text-black dark:text-white font-bold"
+                  : "text-[#8e8e93] dark:text-[#98989d] font-medium"
               }`}
             >
               {item.label}
