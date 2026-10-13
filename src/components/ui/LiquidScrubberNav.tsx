@@ -1,8 +1,89 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { motion, useSpring, useMotionValue } from "framer-motion";
+import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
 import { LiquidGlass } from "@/components/ui/LiquidGlass";
+
+// ============================================================================
+// TRACK PATH — Dynamic concave dock deformation (Deformes.png reference)
+// When the lens is dragged, the top border dips DOWN and bottom border dips UP
+// at the lens location, creating a genuine physical pinch/notch like Apple iOS 26.
+// ============================================================================
+function getTrackPath(
+  w: number,
+  h: number,
+  lx: number,
+  lw: number,
+  pinch: number
+): string {
+  const r = h / 2; // capsule radius = 28 when h = 56
+
+  if (pinch <= 0.05 || w <= 0 || h <= 0) {
+    // Plain capsule pill
+    return `M ${r},0 L ${w - r},0 A ${r},${r} 0 0,1 ${w},${r} A ${r},${r} 0 0,1 ${w - r},${h} L ${r},${h} A ${r},${r} 0 0,1 0,${r} A ${r},${r} 0 0,1 ${r},0 Z`;
+  }
+
+  const p = Math.min(pinch, r - 6); // max dip depth
+  const blend = 16; // S-curve transition half-width
+
+  // Notch horizontal bounds
+  const rawX0 = Math.max(0, lx);
+  const rawX1 = Math.min(w, lx + lw);
+
+  // ── TOP EDGE (left → right, dips DOWN by p) ──────────────────────────────
+  let top = "";
+  if (rawX0 <= r) {
+    // Notch starts at/near the left rounded cap
+    const startY = Math.max(0, p * (1 - rawX0 / r));
+    top += `M ${Math.max(4, rawX0)},${startY} `;
+    top += `C ${rawX0 + blend * 0.5},${p} ${rawX0 + blend * 0.5},${p} ${rawX0 + blend},${p} `;
+  } else {
+    top += `M ${r},0 L ${rawX0 - 4},0 `;
+    top += `C ${rawX0 + blend * 0.4},0 ${rawX0 + blend * 0.4},${p} ${rawX0 + blend},${p} `;
+  }
+
+  const flatEnd = Math.max(rawX0 + blend, rawX1 - blend);
+  top += `L ${flatEnd},${p} `;
+
+  if (rawX1 >= w - r) {
+    // Notch ends at/near the right rounded cap
+    const endY = Math.max(0, p * (1 - (w - rawX1) / r));
+    top += `C ${rawX1 - blend * 0.5},${p} ${rawX1 - blend * 0.5},${endY} ${Math.min(w - 4, rawX1)},${endY} `;
+  } else {
+    top += `C ${rawX1 - blend * 0.4},${p} ${rawX1 - blend * 0.4},0 ${rawX1 + 4},0 `;
+    top += `L ${w - r},0 `;
+  }
+
+  // ── RIGHT ROUNDED CAP ─────────────────────────────────────────────────────
+  const rightCap = `A ${r},${r} 0 0,1 ${w},${r} A ${r},${r} 0 0,1 ${w - r},${h} `;
+
+  // ── BOTTOM EDGE (right → left, dips UP by p) ─────────────────────────────
+  let bot = "";
+  if (rawX1 >= w - r) {
+    const endY = h - Math.max(0, p * (1 - (w - rawX1) / r));
+    bot += `L ${Math.min(w - 4, rawX1)},${endY} `;
+    bot += `C ${rawX1 - blend * 0.5},${h - p} ${rawX1 - blend * 0.5},${h - p} ${rawX1 - blend},${h - p} `;
+  } else {
+    bot += `L ${rawX1 + 4},${h} `;
+    bot += `C ${rawX1 - blend * 0.4},${h} ${rawX1 - blend * 0.4},${h - p} ${rawX1 - blend},${h - p} `;
+  }
+
+  bot += `L ${rawX0 + blend},${h - p} `;
+
+  if (rawX0 <= r) {
+    const startY = h - Math.max(0, p * (1 - rawX0 / r));
+    bot += `C ${rawX0 + blend * 0.5},${h - p} ${rawX0 + blend * 0.5},${startY} ${Math.max(4, rawX0)},${startY} `;
+  } else {
+    bot += `C ${rawX0 + blend * 0.4},${h - p} ${rawX0 + blend * 0.4},${h} ${rawX0 - 4},${h} `;
+    bot += `L ${r},${h} `;
+  }
+
+  // ── LEFT ROUNDED CAP (closes path) ───────────────────────────────────────
+  const leftCap = `A ${r},${r} 0 0,1 0,${r} A ${r},${r} 0 0,1 ${r},0 Z`;
+
+  return top + rightCap + bot + leftCap;
+}
+
 
 export interface LiquidScrubberItem {
   id: string;
@@ -139,6 +220,43 @@ export function LiquidScrubberNav({
   const springX = useSpring(lensTargetX, { stiffness: 450, damping: 30, mass: 0.6 });
   const springWidth = useSpring(lensTargetWidth, { stiffness: 400, damping: 28, mass: 0.6 });
   const springScaleX = useSpring(lensTargetScaleX, { stiffness: 350, damping: 20, mass: 0.6 });
+
+  // Pinch spring: 0 = resting pill, 10 = max concave notch
+  const pinchTarget = useMotionValue(0);
+  const springPinch = useSpring(pinchTarget, { stiffness: 400, damping: 28, mass: 0.5 });
+
+  // Container width in pixels (measured from DOM, updated on resize)
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(56);
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      if (rect.width > 0) setContainerWidth(Math.round(rect.width));
+      if (rect.height > 0) setContainerHeight(Math.round(rect.height));
+    };
+    measure();
+    const t = setTimeout(measure, 60);
+    window.addEventListener("resize", measure);
+    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
+  }, []);
+
+  // Update pinch target whenever isScrubbing changes
+  useEffect(() => {
+    pinchTarget.set(isScrubbing ? 10 : 0);
+  }, [isScrubbing, pinchTarget]);
+
+  // Dynamic SVG path: recomputed whenever lens position / pinch changes
+  // Framer Motion v13: use getter function form — fires every frame with no lag.
+  const trackPathD = useTransform(() => {
+    const lx = springX.get();
+    const lw = springWidth.get();
+    const pinch = springPinch.get();
+    const w = containerWidth;
+    const h = variant === "dock" ? containerHeight : 40;
+    if (w <= 0) return "";
+    return getTrackPath(w, h, lx, lw, pinch);
+  });
 
   // Actualizar posición de reposo cuando cambia activeIndex o tabsGeo
   useEffect(() => {
@@ -511,6 +629,40 @@ export function LiquidScrubberNav({
       }}
     >
       {/* ================================================================= */}
+      {/* SVG TRACK — Dynamic concave deformation matching Deformes.png       */}
+      {/* The path morphs in real-time as the lens moves: top edge dips DOWN, */}
+      {/* bottom edge dips UP, creating the Apple iOS 26 pinch/notch effect.  */}
+      {/* ================================================================= */}
+      {variant === "dock" && containerWidth > 0 && (
+        <svg
+          className="absolute inset-0 pointer-events-none overflow-visible"
+          style={{ zIndex: 0 }}
+          width={containerWidth}
+          height={containerHeight}
+          viewBox={`0 0 ${containerWidth} ${containerHeight}`}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Frosted glass fill */}
+          <motion.path
+            d={trackPathD}
+            fill="rgba(255,255,255,0.50)"
+            stroke="rgba(255,255,255,0.85)"
+            strokeWidth="1"
+            style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.12))" }}
+          />
+          {/* Top specular highlight */}
+          <motion.path
+            d={trackPathD}
+            fill="none"
+            stroke="rgba(255,255,255,0.92)"
+            strokeWidth="1"
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+        </svg>
+      )}
+
+      {/* ================================================================= */}
       {/* SEPARADOR DINÁMICO: REPOSO (GRISÁCEO SIMÉTRICO) + ARRASTRE (LIQUID GLASS PURO) */}
       {/* ================================================================= */}
       {hasValidGeometry && (
@@ -534,9 +686,10 @@ export function LiquidScrubberNav({
         >
           {/* ------------------------------------------------------------- */}
           {/* CAPA 1: SEPARADOR GRISÁCEO EN REPOSO (IDÉNTICO A "BIEN HECHO.PNG") */}
+          {/* Only show when NOT using SVG track (pill variant) or not scrubbing in dock */}
           {/* ------------------------------------------------------------- */}
           <motion.div
-            animate={{ opacity: isScrubbing ? 0 : 1 }}
+            animate={{ opacity: isScrubbing ? 0 : (variant === "dock" ? 0 : 1) }}
             transition={{ duration: 0.12 }}
             className="absolute inset-0 rounded-full bg-[#d8d8de] dark:bg-[#2c2c2e] border border-white/70 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]"
           />
