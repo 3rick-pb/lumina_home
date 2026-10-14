@@ -5,9 +5,9 @@ import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
 import { LiquidGlass } from "@/components/ui/LiquidGlass";
 
 // ============================================================================
-// TRACK PATH — Dynamic concave dock deformation (Deformes.png reference)
-// When the lens is dragged, the top border dips DOWN and bottom border dips UP
-// at the lens location, creating a genuine physical pinch/notch like Apple iOS 26.
+// TRACK PATH — Concave dock deformation (Deformes.png reference)
+// When dragging, the top border dips DOWN and bottom border dips UP at the lens
+// location, creating an organic physical notch like Apple iOS fluid surfaces.
 // ============================================================================
 function getTrackPath(
   w: number,
@@ -16,14 +16,14 @@ function getTrackPath(
   lw: number,
   pinch: number
 ): string {
-  const r = h / 2; // capsule radius = 28 when h = 56
+  const r = h / 2; // capsule radius (e.g. 28 when h = 56)
 
   if (pinch <= 0.05 || w <= 0 || h <= 0) {
     // Plain capsule pill
     return `M ${r},0 L ${w - r},0 A ${r},${r} 0 0,1 ${w},${r} A ${r},${r} 0 0,1 ${w - r},${h} L ${r},${h} A ${r},${r} 0 0,1 0,${r} A ${r},${r} 0 0,1 ${r},0 Z`;
   }
 
-  const p = Math.min(pinch, 5); // subtle inward deformation (reduced for Apple elegance)
+  const p = Math.min(pinch, 5); // subtle inward deformation
   const blend = 14;
 
   // Horizontal range of the dip centered at the active lens
@@ -78,7 +78,6 @@ function getTrackPath(
   return top + rightCap + bot + leftCap;
 }
 
-
 export interface LiquidScrubberItem {
   id: string;
   label: string;
@@ -95,7 +94,7 @@ export interface LiquidScrubberNavProps {
   onSelect: (id: string, item: LiquidScrubberItem) => void;
   variant?: "pill" | "dock";
   className?: string;
-  activeColor?: string; // Tailwind color class e.g. "text-[#c25e1a] dark:text-[#f59e0b]"
+  activeColor?: string;
   gridCols?: number;
   onSwipePage?: (direction: 1 | -1) => void;
 }
@@ -118,48 +117,74 @@ export function LiquidScrubberNav({
   onSwipePage,
 }: LiquidScrubberNavProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLElement | null)[]>([]);
   const [tabsGeo, setTabsGeo] = useState<TabGeometry[]>([]);
 
-  // Track scrubbing state
-  const [isScrubbing, setIsScrubbing] = useState(false);
-  const isScrubbingRef = useRef(false);
+  // Máquina de estados: Press, Hold & Scrub
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const previewIndexRef = useRef<number | null>(null);
 
-  // Gesture physics tracking
-  const pointerStartRef = useRef<{ x: number; y: number; time: number; pointerId: number } | null>(null);
-  const lastMoveRef = useRef<{ x: number; time: number; vx: number }>({ x: 0, time: 0, vx: 0 });
+  // Coordenadas y física de deformación
+  const lastXRef = useRef(0);
+  const startXRef = useRef(0);
+  const currentXRef = useRef(0);
   const hasMovedRef = useRef(false);
   const justCommittedRef = useRef(false);
 
-  // Active index
+  // Active index derivado de activeId
   const activeIndex = useMemo(() => {
     const idx = items.findIndex((it) => it.id === activeId);
     return idx >= 0 ? idx : 0;
   }, [items, activeId]);
 
-  // Measure tab geometries
+  // Motion value para el SVG de deformación física
+  const motionX = useMotionValue(0);
+  const pinchTarget = useMotionValue(0);
+  const springPinch = useSpring(pinchTarget, { stiffness: 400, damping: 28, mass: 0.5 });
+
+  // Dimensiones del contenedor (actualizadas en resize)
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(56);
+
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      if (rect.width > 0) setContainerWidth(Math.round(rect.width));
+      if (rect.height > 0) setContainerHeight(Math.round(rect.height));
+    };
+    measure();
+    const t = setTimeout(measure, 60);
+    window.addEventListener("resize", measure);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  // Medición matemática de tabs
   const measureTabs = useCallback(() => {
     if (!containerRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     if (containerRect.width === 0) return;
 
     if (variant === "dock" && items.length > 0) {
-      // Rejilla matemática simétrica exacta: cada slot ocupa 1 / gridCols
       const cols = gridCols || items.length;
       const colWidth = containerRect.width / cols;
       const dockGeo: TabGeometry[] = items.map((_, i) => ({
         x: i * colWidth,
         y: 0,
         width: colWidth,
-        height: containerRect.height || 50,
+        height: containerRect.height || 56,
       }));
       setTabsGeo(dockGeo);
       return;
     }
 
-    // Para pill (Header), medir cada pestaña
+    // Para variante pill
     const newGeo: TabGeometry[] = [];
     for (let i = 0; i < items.length; i++) {
       const el = tabRefs.current[i];
@@ -175,7 +200,6 @@ export function LiquidScrubberNav({
         }
       }
     }
-
     if (newGeo.length === items.length) {
       setTabsGeo(newGeo);
     }
@@ -185,10 +209,8 @@ export function LiquidScrubberNav({
     measureTabs();
     const handleResize = () => measureTabs();
     window.addEventListener("resize", handleResize);
-
     const t1 = setTimeout(measureTabs, 50);
     const t2 = setTimeout(measureTabs, 150);
-
     return () => {
       window.removeEventListener("resize", handleResize);
       clearTimeout(t1);
@@ -196,82 +218,16 @@ export function LiquidScrubberNav({
     };
   }, [measureTabs]);
 
-  // Dimensiones simétricas:
-  // - En reposo: Ocupa el slot de forma concéntrica a 2px del borde exterior (dock h=56px, inner=52px)
-  // - Al mantener presionado: Agrandamiento sutil (reducido para elegancia Apple)
-  const restingTop = variant === "dock" ? 2 : 3;
-  const restingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 56) - 4) : 34;
-  const overhangingTop = variant === "dock" ? -3 : -3;
-  const overhangingHeight = variant === "dock" ? ((tabsGeo[0]?.height || 56) + 6) : 40;
-
-  // Motion values para el seguidor de resorte físico Apple
-  const lensTargetX = useMotionValue(0);
-  const lensTargetWidth = useMotionValue(0);
-  const lensTargetScaleX = useMotionValue(1);
-
-  // Física de resortes Apple ultra-reactiva: sin retardo al arrastrar, rebote elástico al soltar
-  const springX = useSpring(lensTargetX, { stiffness: 450, damping: 30, mass: 0.6 });
-  const springWidth = useSpring(lensTargetWidth, { stiffness: 400, damping: 28, mass: 0.6 });
-  const springScaleX = useSpring(lensTargetScaleX, { stiffness: 350, damping: 20, mass: 0.6 });
-
-  // Pinch spring: 0 = reposo, 3.5 = deformación sutil hacia adentro (reducida)
-  const pinchTarget = useMotionValue(0);
-  const springPinch = useSpring(pinchTarget, { stiffness: 400, damping: 28, mass: 0.5 });
-
-  // Container width in pixels (measured from DOM, updated on resize)
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(56);
-  useEffect(() => {
-    const measure = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      if (rect.width > 0) setContainerWidth(Math.round(rect.width));
-      if (rect.height > 0) setContainerHeight(Math.round(rect.height));
-    };
-    measure();
-    const t = setTimeout(measure, 60);
-    window.addEventListener("resize", measure);
-    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
-  }, []);
-
-  // Update pinch target whenever isScrubbing changes (reducido a 3.5px)
-  useEffect(() => {
-    pinchTarget.set(isScrubbing ? 3.5 : 0);
-  }, [isScrubbing, pinchTarget]);
-
-  // Dynamic SVG path: recomputed whenever lens position / pinch changes
-  // Framer Motion v13: use getter function form — fires every frame with no lag.
-  const trackPathD = useTransform(() => {
-    const lx = springX.get();
-    const lw = springWidth.get();
-    const pinch = springPinch.get();
-    const w = containerWidth;
-    const h = variant === "dock" ? containerHeight : 40;
-    if (w <= 0) return "";
-    return getTrackPath(w, h, lx, lw, pinch);
-  });
-
-  // Actualizar posición de reposo cuando cambia activeIndex o tabsGeo
-  useEffect(() => {
-    if (!isScrubbingRef.current && tabsGeo[activeIndex]) {
-      const current = tabsGeo[activeIndex];
-      const margin = variant === "dock" ? 2 : 0;
-      lensTargetX.set(current.x + margin);
-      lensTargetWidth.set(current.width - margin * 2);
-      lensTargetScaleX.set(1.0);
-    }
-  }, [activeIndex, tabsGeo, lensTargetX, lensTargetWidth, lensTargetScaleX, variant]);
-
-  // Helper: Encontrar la pestaña más cercana a la coordenada X
+  // Helper: Encontrar la pestaña más cercana al centro X de la píldora
   const getClosestIndex = useCallback(
-    (relX: number) => {
+    (targetCenterX: number) => {
       if (tabsGeo.length === 0) return 0;
       let closestIdx = 0;
       let minDistance = Infinity;
 
       tabsGeo.forEach((geo, idx) => {
         const tabCenterX = geo.x + geo.width / 2;
-        const dist = Math.abs(relX - tabCenterX);
+        const dist = Math.abs(targetCenterX - tabCenterX);
         if (dist < minDistance) {
           minDistance = dist;
           closestIdx = idx;
@@ -283,330 +239,236 @@ export function LiquidScrubberNav({
     [tabsGeo]
   );
 
+  // Dynamic SVG path de deformación física
+  const trackPathD = useTransform(() => {
+    const lx = motionX.get();
+    const lw = tabsGeo[0]?.width || 80;
+    const pinch = springPinch.get();
+    const w = containerWidth;
+    const h = variant === "dock" ? containerHeight : 40;
+    if (w <= 0) return "";
+    return getTrackPath(w, h, lx, lw, pinch);
+  });
+
+  // Dimensiones de la píldora según variante
+  const margin = variant === "dock" ? 2 : 0;
+  const currentTab = tabsGeo[activeIndex] || tabsGeo[0];
+  const pillWidth = currentTab ? Math.max(30, currentTab.width - margin * 2) : 80;
+  const pillHeight = variant === "dock" ? 52 : 34;
+
+  // Actualizar posición en reposo cuando cambia activeIndex o tabsGeo
+  useEffect(() => {
+    if (!isDraggingRef.current && tabsGeo[activeIndex] && pillRef.current) {
+      const settleX = tabsGeo[activeIndex].x + margin;
+      currentXRef.current = settleX;
+      motionX.set(settleX);
+      pillRef.current.style.transition = "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+      pillRef.current.style.transform = `translate3d(${settleX}px, 0, 0) scale(1, 1)`;
+    }
+  }, [activeIndex, tabsGeo, variant, margin, motionX]);
+
   // =========================================================================
-  // GESTORES DE GESTOS (TOUCH + MOUSE + TRACKPAD) SIN LATENCIA (0MS)
+  // MÁQUINA DE ESTADOS CON POINTER EVENTS (Press, Hold & Scrub)
   // =========================================================================
 
-  const activateScrubbing = useCallback(
-    (idx: number, initialRelX?: number) => {
-      isScrubbingRef.current = true;
-      setIsScrubbing(true);
-      setPreviewIndex(idx);
-      previewIndexRef.current = idx;
-
-      if (tabsGeo[idx] && containerRef.current) {
-        const target = tabsGeo[idx];
-        const lateralExpand = variant === "dock" ? 5 : 4;
-        const activeWidth = target.width + lateralExpand * 2;
-        lensTargetWidth.set(activeWidth);
-        lensTargetScaleX.set(1.02);
-
-        if (typeof initialRelX === "number") {
-          const minX = (tabsGeo[0]?.x ?? 0) - lateralExpand;
-          const lastGeo = tabsGeo[tabsGeo.length - 1];
-          const maxX = lastGeo ? (lastGeo.x - lateralExpand) : 0;
-          const boundedX = Math.max(minX, Math.min(maxX, initialRelX - activeWidth / 2));
-          lensTargetX.set(boundedX);
-        } else {
-          lensTargetX.set(target.x - lateralExpand);
-        }
-      }
-    },
-    [tabsGeo, variant, lensTargetX, lensTargetWidth, lensTargetScaleX]
-  );
-
-  // Touch directo en móvil (0ms de latencia, elimina los 500ms de retardo del navegador)
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (tabsGeo.length === 0 || !containerRef.current) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const relX = touch.clientX - containerRect.left;
-    const initialIdx = getClosestIndex(relX);
-
-    pointerStartRef.current = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: performance.now(),
-      pointerId: 0,
-    };
-    lastMoveRef.current = { x: touch.clientX, time: performance.now(), vx: 0 };
-    hasMovedRef.current = false;
-
-    activateScrubbing(initialIdx, relX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!pointerStartRef.current || !containerRef.current) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-
-    const dx = Math.abs(touch.clientX - pointerStartRef.current.x);
-    const dy = Math.abs(touch.clientY - pointerStartRef.current.y);
-
-    if (dx > 3 || dy > 3) {
-      hasMovedRef.current = true;
-    }
-
-    const now = performance.now();
-    const dt = Math.max(1, now - lastMoveRef.current.time);
-    const vx = (touch.clientX - lastMoveRef.current.x) / dt;
-    lastMoveRef.current = { x: touch.clientX, time: now, vx };
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const relX = touch.clientX - containerRect.left;
-
-    // Deslizamiento de cambio de página en dock (> 45px fuera de bordes)
-    if (onSwipePage) {
-      if (relX < -45) {
-        onSwipePage(-1);
-        isScrubbingRef.current = false;
-        setIsScrubbing(false);
-        return;
-      }
-      if (relX > containerRect.width + 45) {
-        onSwipePage(1);
-        isScrubbingRef.current = false;
-        setIsScrubbing(false);
-        return;
-      }
-    }
-
-    if (!isScrubbingRef.current) {
-      activateScrubbing(getClosestIndex(relX), relX);
-    }
-
-    // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 5 : 4;
-    const currentUnderIdx = getClosestIndex(relX);
-    const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
-    const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
-
-    const minX = (tabsGeo[0]?.x ?? 0) - lateralExpand;
-    const lastGeo = tabsGeo[tabsGeo.length - 1];
-    const maxX = lastGeo ? (lastGeo.x - lateralExpand) : (containerRect.width - activeWidth);
-
-    const rawX = relX - activeWidth / 2;
-    const boundedX = Math.max(minX, Math.min(maxX, rawX));
-
-    lensTargetX.set(boundedX);
-    lensTargetWidth.set(activeWidth);
-
-    const stretchVelocity = Math.min(0.08, Math.abs(vx) * 0.04);
-    lensTargetScaleX.set(1.02 + stretchVelocity);
-
-    // Actualización de color en tiempo real según la posición del centro de la lente
-    const lensCenterX = boundedX + activeWidth / 2;
-    const activeIdxUnderLens = getClosestIndex(lensCenterX);
-    if (activeIdxUnderLens !== previewIndexRef.current) {
-      previewIndexRef.current = activeIdxUnderLens;
-      setPreviewIndex(activeIdxUnderLens);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    const selectedIdx = previewIndexRef.current !== null ? previewIndexRef.current : activeIndex;
-    const selectedItem = items[selectedIdx];
-
-    isScrubbingRef.current = false;
-    setIsScrubbing(false);
-    setPreviewIndex(null);
-    previewIndexRef.current = null;
-    pointerStartRef.current = null;
-
-    // Asentar en posición de reposo con rebote suave
-    if (tabsGeo[selectedIdx]) {
-      const target = tabsGeo[selectedIdx];
-      const margin = variant === "dock" ? 2 : 0;
-      lensTargetX.set(target.x + margin);
-      lensTargetWidth.set(target.width - margin * 2);
-      lensTargetScaleX.set(1.0);
-    }
-
-    // Confirmar selección
-    if (selectedItem) {
-      justCommittedRef.current = true;
-      onSelect(selectedItem.id, selectedItem);
-      setTimeout(() => {
-        justCommittedRef.current = false;
-      }, 120);
-    }
-  };
-
-  // Pointer events para Desktop (mouse / trackpad)
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return; // Manejado por touch events
     if (tabsGeo.length === 0 || !containerRef.current) return;
 
+    // a) Captura del puntero para no perder el rastro aunque el dedo salga verticalmente
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
 
+    // b) Activar estado isDragging
+    isDraggingRef.current = true;
+    setIsDragging(true);
+
+    lastXRef.current = e.clientX;
+    startXRef.current = e.clientX;
+    hasMovedRef.current = false;
+
     const containerRect = containerRef.current.getBoundingClientRect();
     const relX = e.clientX - containerRect.left;
     const initialIdx = getClosestIndex(relX);
+    previewIndexRef.current = initialIdx;
+    setPreviewIndex(initialIdx);
 
-    pointerStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      time: performance.now(),
-      pointerId: e.pointerId,
-    };
-    lastMoveRef.current = { x: e.clientX, time: performance.now(), vx: 0 };
-    hasMovedRef.current = false;
+    // c) Desactivar transición CSS para respuesta 1:1 inmediata y aplicar expansión líquida inicial scale(1.12)
+    if (pillRef.current && tabsGeo[initialIdx]) {
+      const minX = tabsGeo[0].x + margin;
+      const maxX = tabsGeo[tabsGeo.length - 1].x + margin;
+      const targetX = relX - pillWidth / 2;
+      const clampedX = Math.max(minX, Math.min(maxX, targetX));
 
-    activateScrubbing(initialIdx, relX);
+      currentXRef.current = clampedX;
+      motionX.set(clampedX);
+
+      pillRef.current.style.transition = "none";
+      pillRef.current.style.transform = `translate3d(${clampedX}px, 0, 0) scale(1.12, 1.12)`;
+    }
+
+    // Activar sutil deformación cóncava en bordes
+    pinchTarget.set(3.5);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return;
-    if (!pointerStartRef.current || !containerRef.current) return;
+    if (!isDraggingRef.current || !containerRef.current || tabsGeo.length === 0) return;
 
-    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
-    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
-
-    if (dx > 4 || dy > 4) {
+    const dx = Math.abs(e.clientX - startXRef.current);
+    if (dx > 3) {
       hasMovedRef.current = true;
     }
-
-    const now = performance.now();
-    const dt = Math.max(1, now - lastMoveRef.current.time);
-    const vx = (e.clientX - lastMoveRef.current.x) / dt;
-    lastMoveRef.current = { x: e.clientX, time: now, vx };
 
     const containerRect = containerRef.current.getBoundingClientRect();
     const relX = e.clientX - containerRect.left;
 
+    // Swipe de página lateral si sobrepasa los márgenes
     if (onSwipePage) {
-      if (relX < -45) {
+      if (relX < -50) {
         onSwipePage(-1);
-        isScrubbingRef.current = false;
-        setIsScrubbing(false);
+        isDraggingRef.current = false;
+        setIsDragging(false);
+        pinchTarget.set(0);
         return;
       }
-      if (relX > containerRect.width + 45) {
+      if (relX > containerRect.width + 50) {
         onSwipePage(1);
-        isScrubbingRef.current = false;
-        setIsScrubbing(false);
+        isDraggingRef.current = false;
+        setIsDragging(false);
+        pinchTarget.set(0);
         return;
       }
     }
 
-    if (!isScrubbingRef.current) {
-      activateScrubbing(getClosestIndex(relX), relX);
+    // a) Calcular nueva posición X centrada en e.clientX relativa al contenedor,
+    // clamped entre el borde izquierdo del primer ítem y el borde derecho del último ítem
+    const minX = tabsGeo[0].x + margin;
+    const maxX = tabsGeo[tabsGeo.length - 1].x + margin;
+    const targetX = relX - pillWidth / 2;
+    const clampedX = Math.max(minX, Math.min(maxX, targetX));
+
+    currentXRef.current = clampedX;
+    motionX.set(clampedX);
+
+    // b) Calcular velocidad horizontal y deformación elástica:
+    // Estirar scaleX (hasta 1.25 max) y comprimir scaleY (hasta 0.90 min) según Math.abs(deltaX)
+    const deltaX = e.clientX - lastXRef.current;
+    lastXRef.current = e.clientX;
+
+    const speed = Math.min(1, Math.abs(deltaX) / 18);
+    const scaleX = 1.12 + speed * (1.25 - 1.12);
+    const scaleY = 1.0 - speed * (1.0 - 0.90);
+
+    // Movimiento 1:1 a 60fps/120fps sin lag
+    if (pillRef.current) {
+      pillRef.current.style.transition = "none";
+      pillRef.current.style.transform = `translate3d(${clampedX}px, 0, 0) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
     }
 
-    // Desplazamiento 100% fluido y continuo (sin efecto imán 1:1)
-    const lateralExpand = variant === "dock" ? 5 : 4;
-    const currentUnderIdx = getClosestIndex(relX);
-    const currentTabGeo = tabsGeo[currentUnderIdx] || tabsGeo[0];
-    const activeWidth = (currentTabGeo ? currentTabGeo.width : 80) + lateralExpand * 2;
-
-    const minX = (tabsGeo[0]?.x ?? 0) - lateralExpand;
-    const lastGeo = tabsGeo[tabsGeo.length - 1];
-    const maxX = lastGeo ? (lastGeo.x - lateralExpand) : (containerRect.width - activeWidth);
-
-    const rawX = relX - activeWidth / 2;
-    const boundedX = Math.max(minX, Math.min(maxX, rawX));
-
-    lensTargetX.set(boundedX);
-    lensTargetWidth.set(activeWidth);
-
-    const stretchVelocity = Math.min(0.08, Math.abs(vx) * 0.04);
-    lensTargetScaleX.set(1.02 + stretchVelocity);
-
-    // Actualización de color en tiempo real según la posición del centro de la lente
-    const lensCenterX = boundedX + activeWidth / 2;
-    const activeIdxUnderLens = getClosestIndex(lensCenterX);
-    if (activeIdxUnderLens !== previewIndexRef.current) {
-      previewIndexRef.current = activeIdxUnderLens;
-      setPreviewIndex(activeIdxUnderLens);
+    // c) Detectar en tiempo real qué ítem está debajo del centro de la píldora para iluminar su ícono
+    const pillCenterX = clampedX + pillWidth / 2;
+    const closestIdx = getClosestIndex(pillCenterX);
+    if (closestIdx !== previewIndexRef.current) {
+      previewIndexRef.current = closestIdx;
+      setPreviewIndex(closestIdx);
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return;
+    // a) Liberar pointer capture y poner isDragging = false
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
 
-    const selectedIdx = previewIndexRef.current !== null ? previewIndexRef.current : activeIndex;
-    const selectedItem = items[selectedIdx];
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    pinchTarget.set(0);
 
-    isScrubbingRef.current = false;
-    setIsScrubbing(false);
-    setPreviewIndex(null);
-    previewIndexRef.current = null;
-    pointerStartRef.current = null;
+    const containerRect = containerRef.current?.getBoundingClientRect();
 
-    if (tabsGeo[selectedIdx]) {
-      const target = tabsGeo[selectedIdx];
-      const margin = variant === "dock" ? 2 : 0;
-      lensTargetX.set(target.x + margin);
-      lensTargetWidth.set(target.width - margin * 2);
-      lensTargetScaleX.set(1.0);
+    // b) Calcular cuál es el ítem cuyo centro está más cerca
+    let selectedIdx = previewIndexRef.current !== null ? previewIndexRef.current : activeIndex;
+    if (containerRect) {
+      const relX = e.clientX - containerRect.left;
+      selectedIdx = getClosestIndex(relX);
     }
 
+    const selectedItem = items[selectedIdx];
+
+    // c) Reactivar transición CSS con resorte: transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    // devolver escala a scale(1, 1) y posicionar la píldora en el centro del ítem seleccionado
+    if (pillRef.current && tabsGeo[selectedIdx]) {
+      const settleX = tabsGeo[selectedIdx].x + margin;
+      currentXRef.current = settleX;
+      motionX.set(settleX);
+
+      pillRef.current.style.transition = "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+      pillRef.current.style.transform = `translate3d(${settleX}px, 0, 0) scale(1, 1)`;
+    }
+
+    setPreviewIndex(null);
+    previewIndexRef.current = null;
+
+    // Disparar cambio de pestaña
     if (selectedItem) {
       justCommittedRef.current = true;
       onSelect(selectedItem.id, selectedItem);
       setTimeout(() => {
         justCommittedRef.current = false;
-      }, 120);
+      }, 150);
     }
   };
 
   const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
 
-    isScrubbingRef.current = false;
-    setIsScrubbing(false);
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    pinchTarget.set(0);
+
     setPreviewIndex(null);
     previewIndexRef.current = null;
-    pointerStartRef.current = null;
 
-    if (tabsGeo[activeIndex]) {
-      const target = tabsGeo[activeIndex];
-      const margin = variant === "dock" ? 2 : 0;
-      lensTargetX.set(target.x + margin);
-      lensTargetWidth.set(target.width - margin * 2);
-      lensTargetScaleX.set(1.0);
+    if (pillRef.current && tabsGeo[activeIndex]) {
+      const settleX = tabsGeo[activeIndex].x + margin;
+      currentXRef.current = settleX;
+      motionX.set(settleX);
+
+      pillRef.current.style.transition = "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+      pillRef.current.style.transform = `translate3d(${settleX}px, 0, 0) scale(1, 1)`;
     }
   };
 
-  // Clic/Tap directo inmediato sin lag
+  // Clic/Tap directo inmediato
   const handleDirectItemClick = (e: React.MouseEvent, item: LiquidScrubberItem, idx: number) => {
     if (justCommittedRef.current || hasMovedRef.current) {
       e.preventDefault();
       return;
     }
 
-    if (tabsGeo[idx]) {
-      const target = tabsGeo[idx];
-      const margin = variant === "dock" ? 2 : 0;
-      lensTargetX.set(target.x + margin);
-      lensTargetWidth.set(target.width - margin * 2);
-      lensTargetScaleX.set(1.0);
+    if (pillRef.current && tabsGeo[idx]) {
+      const settleX = tabsGeo[idx].x + margin;
+      currentXRef.current = settleX;
+      motionX.set(settleX);
+
+      pillRef.current.style.transition = "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+      pillRef.current.style.transform = `translate3d(${settleX}px, 0, 0) scale(1, 1)`;
     }
     onSelect(item.id, item);
   };
 
-  const spotlightIndex = previewIndex !== null ? previewIndex : activeIndex;
-  const hasValidGeometry = !!tabsGeo[activeIndex];
+  const initialX = tabsGeo[activeIndex] ? tabsGeo[activeIndex].x + margin : 0;
+  const hasValidGeometry = tabsGeo.length > 0;
 
   return (
+    // 2. BLOQUEO DE GESTOS NATIVOS (CSS): touch-action: none, user-select: none, -webkit-user-select: none
     <div
       ref={containerRef}
       role="tablist"
       aria-orientation="horizontal"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -626,13 +488,12 @@ export function LiquidScrubberNav({
       }}
     >
       {/* ================================================================= */}
-      {/* ================================================================= */}
-      {/* BORDE DINÁMICO DEFORMABLE SVG: Deformación física Apple (Deformes.png) */}
+      {/* BORDE DINÁMICO DEFORMABLE SVG: Deformación física Apple           */}
       {/* ================================================================= */}
       {variant === "dock" && containerWidth > 0 && (
         <svg
           className="absolute inset-0 pointer-events-none overflow-visible w-full h-full"
-          style={{ zIndex: 6 }}
+          style={{ zIndex: 1 }}
           width={containerWidth}
           height={containerHeight}
           viewBox={`0 0 ${containerWidth} ${containerHeight}`}
@@ -650,43 +511,37 @@ export function LiquidScrubberNav({
       )}
 
       {/* ================================================================= */}
-      {/* SEPARADOR DINÁMICO: REPOSO (GRISÁCEO SIMÉTRICO) + ARRASTRE (LIQUID GLASS PURO) */}
+      {/* 1. ESTRUCTURA DE CAPAS:                                           */}
+      {/* Píldora flotante de Liquid Glass (.liquid-pill): elemento absoluto */}
+      {/* independiente posicionado con transform: translate3d(x, 0, 0)     */}
       {/* ================================================================= */}
       {hasValidGeometry && (
-        <motion.div
-          className="absolute pointer-events-none"
+        <div
+          ref={pillRef}
+          className="liquid-pill absolute pointer-events-none will-change-transform"
           style={{
-            x: springX,
-            width: springWidth,
-            scaleX: springScaleX,
+            zIndex: 1,
+            top: variant === "dock" ? 2 : 3,
+            left: 0,
+            width: pillWidth,
+            height: pillHeight,
             transformOrigin: "center center",
-          }}
-          animate={{
-            top: isScrubbing ? overhangingTop : restingTop,
-            height: isScrubbing ? overhangingHeight : restingHeight,
-            zIndex: 4,
-          }}
-          transition={{
-            top: { type: "spring", stiffness: 450, damping: 30, mass: 0.6 },
-            height: { type: "spring", stiffness: 450, damping: 30, mass: 0.6 },
+            transform: `translate3d(${initialX}px, 0, 0) scale(1, 1)`,
+            transition: isDragging ? "none" : "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
-          {/* ------------------------------------------------------------- */}
-          {/* CAPA 1: INDICADOR ACTIVO EN REPOSO (GRISÁCEO SIMÉTRICO)        */}
-          {/* ------------------------------------------------------------- */}
-          <motion.div
-            animate={{ opacity: isScrubbing ? 0 : 1 }}
-            transition={{ duration: 0.12 }}
-            className="absolute inset-0 rounded-full bg-[#d8d8de] dark:bg-[#2c2c2e] border border-white/70 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]"
+          {/* Capa en reposo: indicador concéntrico sutil */}
+          <div
+            className={`absolute inset-0 rounded-full transition-opacity duration-150 ${
+              isDragging ? "opacity-0" : "opacity-100"
+            } bg-[#d8d8de] dark:bg-[#2c2c2e] border border-white/70 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]`}
           />
 
-          {/* ------------------------------------------------------------- */}
-          {/* CAPA 2: LIQUID GLASS ORIGINAL (CRISTAL PURO TRASLÚCIDO)       */}
-          {/* ------------------------------------------------------------- */}
-          <motion.div
-            animate={{ opacity: isScrubbing ? 1 : 0 }}
-            transition={{ duration: 0.12 }}
-            className="absolute inset-0 rounded-full pointer-events-none"
+          {/* Capa activa: Liquid Glass auténtico (filtro SVG displacement map + refracción óptica) */}
+          <div
+            className={`absolute inset-0 rounded-full pointer-events-none transition-opacity duration-150 ${
+              isDragging ? "opacity-100" : "opacity-0"
+            }`}
           >
             <LiquidGlass
               radius={9999}
@@ -695,30 +550,31 @@ export function LiquidScrubberNav({
               chromaticAberration={0}
               blur={1.5}
               overflow="visible"
-              className="w-full h-full rounded-full flex items-center justify-center relative pointer-events-none bg-white/40 dark:bg-white/15 border border-white/90 dark:border-white/30"
+              className="w-full h-full rounded-full flex items-center justify-center relative pointer-events-none bg-white/45 dark:bg-white/15 border border-white/95 dark:border-white/30"
               style={{
                 boxShadow: `
-                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95),
-                  inset 0 -1.5px 2px 0 rgba(255, 255, 255, 0.60),
-                  inset 1.5px 0 2px 0 rgba(255, 255, 255, 0.50),
-                  inset -1.5px 0 2px 0 rgba(255, 255, 255, 0.50),
-                  0 10px 24px -4px rgba(0, 0, 0, 0.16),
-                  0 4px 8px -2px rgba(0, 0, 0, 0.08)
+                  inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.98),
+                  inset 0 -1.5px 2px 0 rgba(255, 255, 255, 0.65),
+                  inset 1.5px 0 2px 0 rgba(255, 255, 255, 0.55),
+                  inset -1.5px 0 2px 0 rgba(255, 255, 255, 0.55),
+                  0 12px 28px -4px rgba(0, 0, 0, 0.18),
+                  0 4px 10px -2px rgba(0, 0, 0, 0.10)
                 `,
               }}
             >
               {/* Reflejo especular curvado superior fino */}
               <div className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/95 to-transparent pointer-events-none" />
             </LiquidGlass>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
 
       {/* ================================================================= */}
-      {/* FILA DE ELEMENTOS / PESTAÑAS (COLOR EN TIEMPO REAL: NEGRO / GRIS) */}
+      {/* 1. ESTRUCTURA DE CAPAS:                                           */}
+      {/* Botones/íconos del menú con position: relative y z-index: 2       */}
       {/* ================================================================= */}
       {items.map((item, idx) => {
-        const isSpotlight = idx === spotlightIndex;
+        const isSpotlight = idx === (previewIndex !== null ? previewIndex : activeIndex);
 
         if (variant === "dock") {
           // Mobile Profile Dock: vertical stack (icono arriba, texto abajo)
@@ -732,22 +588,25 @@ export function LiquidScrubberNav({
               aria-selected={isSpotlight}
               draggable={false}
               onClick={(e) => handleDirectItemClick(e, item, idx)}
-              className="relative z-10 w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
+              className="relative z-[2] w-full h-full flex flex-col items-center justify-center py-0.5 px-1 rounded-full select-none cursor-pointer focus:outline-none"
               style={{
+                position: "relative",
+                zIndex: 2,
                 touchAction: "none",
-                opacity: 1,
+                userSelect: "none",
+                WebkitUserSelect: "none",
               }}
             >
-              {/* Icono */}
+              {/* Icono iluminado en tiempo real al pasar la píldora */}
               <div
-                className={`relative flex items-center justify-center transition-all duration-100 transform-gpu ${
+                className={`relative flex items-center justify-center transition-all duration-150 transform-gpu ${
                   isSpotlight
                     ? "scale-105 -translate-y-0.5"
                     : "scale-100 translate-y-0 opacity-80"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 flex items-center justify-center transition-colors duration-100 ${
+                  className={`w-5 h-5 flex items-center justify-center transition-colors duration-150 ${
                     isSpotlight
                       ? "text-black dark:text-white stroke-[2.6px]"
                       : "text-[#8e8e93] dark:text-[#98989d]"
@@ -764,9 +623,9 @@ export function LiquidScrubberNav({
                 )}
               </div>
 
-              {/* Etiqueta nítida de alto contraste */}
+              {/* Etiqueta con realce dinámico */}
               <span
-                className={`text-[10px] tracking-tight mt-0.5 leading-none truncate max-w-[95px] px-0.5 text-center transition-colors duration-100 ${
+                className={`text-[10px] tracking-tight mt-0.5 leading-none truncate max-w-[95px] px-0.5 text-center transition-colors duration-150 ${
                   isSpotlight
                     ? "text-black dark:text-white font-black"
                     : "text-[#8e8e93] dark:text-[#98989d] font-medium"
@@ -778,7 +637,7 @@ export function LiquidScrubberNav({
           );
         }
 
-        // Horizontal pill for Header (icono al lado de etiqueta)
+        // Horizontal pill for Header
         return (
           <div
             key={item.id}
@@ -789,14 +648,17 @@ export function LiquidScrubberNav({
             aria-selected={isSpotlight}
             draggable={false}
             onClick={(e) => handleDirectItemClick(e, item, idx)}
-            className="relative z-10 flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
+            className="relative z-[2] flex items-center gap-2 px-5 py-2 rounded-full text-sm select-none cursor-pointer focus:outline-none"
             style={{
+              position: "relative",
+              zIndex: 2,
               touchAction: "none",
-              opacity: 1,
+              userSelect: "none",
+              WebkitUserSelect: "none",
             }}
           >
             <div
-              className={`transition-all duration-100 transform-gpu ${
+              className={`transition-all duration-150 transform-gpu ${
                 isSpotlight
                   ? "scale-110 text-black dark:text-white stroke-[2.4px]"
                   : "scale-100 text-[#8e8e93] dark:text-[#98989d]"
@@ -806,7 +668,7 @@ export function LiquidScrubberNav({
             </div>
 
             <span
-              className={`transition-colors duration-100 ${
+              className={`transition-colors duration-150 ${
                 isSpotlight
                   ? "text-black dark:text-white font-black"
                   : "text-[#8e8e93] dark:text-[#98989d] font-medium"
