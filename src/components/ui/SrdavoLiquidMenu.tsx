@@ -146,7 +146,9 @@ export function SrdavoLiquidMenu({
   const bgDisplacementRef = useRef<SVGFEDisplacementMapElement>(null);
 
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const edgeTimer = useRef<number>(0);
+  const edgeEnteredTime = useRef<number>(0);
+  const currentEdge = useRef<"left" | "right" | null>(null);
+  const lastFrameTime = useRef<number>(0);
 
   const state = useRef({
     slotWidth: 100,
@@ -288,22 +290,56 @@ export function SrdavoLiquidMenu({
 
   useEffect(() => {
     let rafId: number;
+    lastFrameTime.current = 0;
 
     const animate = (now: number) => {
       const s = state.current;
       const scrubbing = s.mode === "scrubbing";
 
-      // Auto-scroll en los bordes al mantener arrastrada la gota
-      if (scrubbing && now - edgeTimer.current > 400) {
-        const edge = s.slotWidth * 0.24;
+      if (!lastFrameTime.current) lastFrameTime.current = now;
+      const dt = Math.min(0.04, Math.max(0.001, (now - lastFrameTime.current) / 1000));
+      lastFrameTime.current = now;
+
+      // Auto-scroll controlado en los bordes al mantener arrastrada la gota:
+      // 1. Debe mantenerse en el borde continuamente durante 1.5s (1500ms) antes de iniciar el desplazamiento.
+      // 2. Transcurridos los 1.5s, se desplaza a una velocidad constante y suave (~75 px/s) para leer con total claridad los íconos.
+      if (scrubbing) {
+        const edgeMargin = Math.min(12, s.slotWidth * 0.12);
         const maxScroll = Math.max(0, (items.length - visibleCount) * s.slotWidth);
-        if (s.targetPillX > s.trackWidth - s.slotWidth - edge && s.targetScrollX < maxScroll) {
-          s.targetScrollX = Math.min(maxScroll, s.targetScrollX + s.slotWidth * visibleCount);
-          edgeTimer.current = now;
-        } else if (s.targetPillX < edge && s.targetScrollX > 0) {
-          s.targetScrollX = Math.max(0, s.targetScrollX - s.slotWidth * visibleCount);
-          edgeTimer.current = now;
+        let activeEdge: "left" | "right" | null = null;
+
+        if (s.targetPillX >= s.trackWidth - s.slotWidth - edgeMargin && s.targetScrollX < maxScroll - 0.5) {
+          activeEdge = "right";
+        } else if (s.targetPillX <= edgeMargin && s.targetScrollX > 0.5) {
+          activeEdge = "left";
         }
+
+        if (activeEdge !== null) {
+          if (currentEdge.current !== activeEdge) {
+            currentEdge.current = activeEdge;
+            edgeEnteredTime.current = now;
+          } else {
+            const dwellTime = now - edgeEnteredTime.current;
+            if (dwellTime >= 1500) {
+              const scrollSpeed = 75; // px/segundo constante y suave para poder leer y ver los íconos
+              const delta = scrollSpeed * dt;
+
+              if (activeEdge === "right") {
+                s.targetScrollX = Math.min(maxScroll, s.targetScrollX + delta);
+              } else {
+                s.targetScrollX = Math.max(0, s.targetScrollX - delta);
+              }
+              s.scrollX = s.targetScrollX;
+              s.velScrollX = 0;
+            }
+          }
+        } else {
+          currentEdge.current = null;
+          edgeEnteredTime.current = 0;
+        }
+      } else {
+        currentEdge.current = null;
+        edgeEnteredTime.current = 0;
       }
 
       // 1. Física de Doble Resorte Asimétrico (Oruga Líquida):
@@ -465,6 +501,8 @@ export function SrdavoLiquidMenu({
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
     if (holdTimer.current) clearTimeout(holdTimer.current);
+    edgeEnteredTime.current = 0;
+    currentEdge.current = null;
 
     const s = state.current;
     s.startX = e.clientX;
@@ -504,6 +542,8 @@ export function SrdavoLiquidMenu({
       if (holdTimer.current) clearTimeout(holdTimer.current);
       s.mode = "scrolling";
       s.elevated = false;
+      edgeEnteredTime.current = 0;
+      currentEdge.current = null;
     }
 
     if (s.mode === "scrubbing") {
@@ -516,6 +556,8 @@ export function SrdavoLiquidMenu({
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (holdTimer.current) clearTimeout(holdTimer.current);
+    edgeEnteredTime.current = 0;
+    currentEdge.current = null;
     try {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -547,8 +589,18 @@ export function SrdavoLiquidMenu({
         Math.min(items.length - 1, Math.floor(absTargetX / s.slotWidth))
       );
 
-      // Fijamos el nuevo destino del resorte ANTES de notificar a React
-      s.targetPillX = nextIdx * s.slotWidth - s.targetScrollX;
+      // Snap de la cuadrícula al terminar el arrastre
+      let nextScrollX = Math.round(s.targetScrollX / s.slotWidth) * s.slotWidth;
+      const activeAbsX = nextIdx * s.slotWidth;
+      if (activeAbsX < nextScrollX) {
+        nextScrollX = activeAbsX;
+      } else if (activeAbsX >= nextScrollX + visibleCount * s.slotWidth) {
+        nextScrollX = activeAbsX - (visibleCount - 1) * s.slotWidth;
+      }
+      nextScrollX = Math.max(0, Math.min(maxScroll, nextScrollX));
+
+      s.targetScrollX = nextScrollX;
+      s.targetPillX = activeAbsX - nextScrollX;
 
       // Damos un impulso inicial al borde delantero en toques directos para que el estiramiento sea inmediato
       if (s.mode === "pending" && nextIdx !== activeIndex) {
