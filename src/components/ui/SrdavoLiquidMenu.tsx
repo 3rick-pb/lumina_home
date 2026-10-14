@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { getDisplacementFilter } from "./LiquidGlass";
 
 export interface LiquidTabItem {
   id: string;
@@ -123,6 +124,71 @@ export function SrdavoLiquidMenu({
     bar: string;
     orb: string;
   }>({ fg: "", bg: "", bar: "", orb: "" });
+
+  const [trackDims, setTrackDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState<boolean>(true);
+
+  // Detectar soporte para filtros SVG en backdrop-filter
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
+      setHasSvgFilterSupport(isChromium);
+    }
+  }, []);
+
+  // Medir dimensiones del track para alimentar el filtro oficial de srdavo/liquid-glass
+  useEffect(() => {
+    if (!trackRef.current) return;
+    const el = trackRef.current;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.ceil(rect.width);
+      const h = Math.ceil(rect.height);
+      if (w > 0 && h > 0) {
+        setTrackDims((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Filtro Liquid Glass para el cuerpo del menú (con aberración cromática)
+  const barFilterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport || trackDims.width === 0 || trackDims.height === 0) return null;
+    return getDisplacementFilter({
+      width: trackDims.width,
+      height: trackDims.height,
+      radius: 9999,
+      depth: 4,
+      strength: 28,
+      chromaticAberration: 1.6,
+    });
+  }, [hasSvgFilterSupport, trackDims.width, trackDims.height]);
+
+  // Filtro Liquid Glass para la lupa de búsqueda
+  const orbFilterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport) return null;
+    return getDisplacementFilter({
+      width: 58,
+      height: 58,
+      radius: 9999,
+      depth: 4,
+      strength: isSearchPressed ? 36 : 28,
+      chromaticAberration: 1.6,
+    });
+  }, [hasSvgFilterSupport, isSearchPressed]);
+
+  useEffect(() => {
+    setMaps({
+      fg: createSrdavoDisplacementMap("pill-fg"),
+      bg: createSrdavoDisplacementMap("pill-bg"),
+      bar: createSrdavoDisplacementMap("bar"),
+      orb: createSrdavoDisplacementMap("orb"),
+    });
+  }, []);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const grayWindowRef = useRef<HTMLDivElement>(null);
@@ -661,16 +727,21 @@ export function SrdavoLiquidMenu({
             WebkitUserSelect: "none",
             userSelect: "none",
             WebkitTouchCallout: "none",
-            backdropFilter: "url(#srdavo-bar-glass) blur(8px) saturate(180%)",
-            WebkitBackdropFilter: "url(#srdavo-bar-glass) blur(8px) saturate(180%)",
+            backdropFilter: hasSvgFilterSupport && barFilterUrl
+              ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+              : "blur(18px) saturate(190%) brightness(1.10)",
+            WebkitBackdropFilter: hasSvgFilterSupport && barFilterUrl
+              ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+              : "blur(18px) saturate(190%) brightness(1.10)",
             background:
-              "linear-gradient(180deg, rgba(245,245,250,0.42) 0%, rgba(225,225,232,0.26) 100%)",
+              "linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(240,240,248,0.24) 100%)",
             boxShadow: `
-              inset 0 1.5px 3px rgba(255, 255, 255, 0.9),
-              inset 0 -1.5px 3px rgba(255, 255, 255, 0.55),
+              inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.88),
+              inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
+              inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
               0 10px 30px rgba(0, 0, 0, 0.10)
             `,
-            border: "1px solid rgba(255, 255, 255, 0.7)",
+            border: "1px solid rgba(255, 255, 255, 0.72)",
           }}
           className="relative flex-1 min-w-0 w-full overflow-visible flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer"
         >
@@ -721,22 +792,25 @@ export function SrdavoLiquidMenu({
               left: 0,
               willChange: "transform, width, height, opacity",
               backdropFilter: isElevated
-                ? "url(#srdavo-pill-bg) blur(1px) saturate(190%)"
-                : "blur(6px)",
+                ? "blur(14px) saturate(210%) brightness(1.12)"
+                : "blur(12px) saturate(190%) brightness(1.08)",
               WebkitBackdropFilter: isElevated
-                ? "url(#srdavo-pill-bg) blur(1px) saturate(190%)"
-                : "blur(6px)",
+                ? "blur(14px) saturate(210%) brightness(1.12)"
+                : "blur(12px) saturate(190%) brightness(1.08)",
               background: isElevated
-                ? "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.18) 100%)"
-                : "rgba(255, 255, 255, 0.72)",
+                ? "linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.22) 100%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.18) 100%)",
             }}
-            className="absolute z-20 rounded-full overflow-hidden pointer-events-none transition-[background] duration-150"
+            className="absolute z-20 rounded-full overflow-hidden pointer-events-none transition-[background,border,box-shadow] duration-150"
           >
+            {/* Reflejo especular superior continuo en la píldora */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-55 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full z-0" />
+
             <div
               style={{
                 filter: "url(#srdavo-pill-fg)",
               }}
-              className="relative w-full h-full overflow-hidden rounded-full"
+              className="relative w-full h-full overflow-hidden rounded-full z-10"
             >
               <div
                 ref={blackStripRef}
@@ -782,11 +856,15 @@ export function SrdavoLiquidMenu({
                     inset 0 3.5px 7px rgba(255, 255, 255, 0.98),
                     inset 0 -3.5px 7px rgba(255, 255, 255, 0.88),
                     inset 0 0 12px rgba(255, 255, 255, 0.35),
-                    0 12px 28px rgba(0, 0, 0, 0.15)
+                    0 12px 28px rgba(0, 0, 0, 0.16)
                   `
-                  : "inset 0 1px 2px rgba(255, 255, 255, 0.92), 0 2px 6px rgba(0, 0, 0, 0.05)",
+                  : `
+                    inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
+                    inset 0 -1px 2px rgba(255, 255, 255, 0.5),
+                    0 4px 14px rgba(0, 0, 0, 0.08)
+                  `,
               }}
-              className="absolute inset-0 rounded-full pointer-events-none transition-[border,box-shadow] duration-150"
+              className="absolute inset-0 rounded-full pointer-events-none transition-[border,box-shadow] duration-150 z-20"
             />
           </div>
         </div>
@@ -800,13 +878,21 @@ export function SrdavoLiquidMenu({
             onPointerUp={() => setIsSearchPressed(false)}
             onPointerLeave={() => setIsSearchPressed(false)}
             style={{
-              backdropFilter: "url(#srdavo-lupa-glass) blur(6px) saturate(180%)",
-              WebkitBackdropFilter: "url(#srdavo-lupa-glass) blur(6px) saturate(180%)",
+              backdropFilter: isSearchActive
+                ? "blur(12px)"
+                : hasSvgFilterSupport && orbFilterUrl
+                ? `blur(0.8px) url('${orbFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(16px) saturate(190%) brightness(1.10)",
+              WebkitBackdropFilter: isSearchActive
+                ? "blur(12px)"
+                : hasSvgFilterSupport && orbFilterUrl
+                ? `blur(0.8px) url('${orbFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(16px) saturate(190%) brightness(1.10)",
               background: isSearchActive
                 ? "rgba(224, 122, 63, 0.95)"
                 : isSearchPressed
-                ? "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.32) 100%)"
-                : "linear-gradient(180deg, rgba(250,250,255,0.46) 0%, rgba(230,230,238,0.28) 100%)",
+                ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(240,240,248,0.36) 100%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(240,240,248,0.25) 100%)",
               boxShadow: isSearchActive
                 ? "0 0 24px rgba(224,122,63,0.6), inset 0 2px 4px rgba(255,255,255,0.8)"
                 : isSearchPressed
@@ -816,13 +902,13 @@ export function SrdavoLiquidMenu({
                   0 10px 24px rgba(0, 0, 0, 0.16)
                 `
                 : `
-                  inset 0 1.5px 3px rgba(255, 255, 255, 0.92),
-                  inset 0 -1.5px 3px rgba(255, 255, 255, 0.6),
+                  inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.90),
+                  inset -1px -1px 1px 0px rgba(255, 255, 255, 0.40),
                   0 10px 26px rgba(0, 0, 0, 0.10)
                 `,
               border: isSearchActive
                 ? "2px solid rgba(255, 255, 255, 0.9)"
-                : "1px solid rgba(255, 255, 255, 0.78)",
+                : "1px solid rgba(255, 255, 255, 0.76)",
               transform: isSearchPressed ? "scale(1.08)" : "scale(1)",
             }}
             className={`relative flex items-center justify-center w-[58px] h-[58px] rounded-full transition-all duration-200 select-none shrink-0 cursor-pointer ${
