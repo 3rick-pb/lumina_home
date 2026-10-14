@@ -499,42 +499,60 @@ export function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.96 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="pointer-events-auto absolute top-full mt-3 inset-x-3 sm:inset-x-4 max-w-sm mx-auto bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-4 z-50 md:hidden space-y-2.5"
+              className="pointer-events-auto absolute top-full mt-3 inset-x-3 sm:inset-x-4 max-w-sm mx-auto z-50 md:hidden"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                <span>Navegación {brand.shortName}</span>
-                <button 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-gray-400 hover:text-gray-700 text-xs font-semibold"
-                >
-                  Cerrar
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                {navTabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <Link
-                      key={tab.id}
-                      href={tab.href}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer",
-                        isActive
-                          ? "bg-gray-900 text-white shadow-sm"
-                          : "bg-gray-50/90 hover:bg-gray-100 text-gray-700"
-                      )}
-                    >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{tab.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
+              <LiquidGlass
+                radius={26}
+                depth={4}
+                strength={26}
+                chromaticAberration={1.5}
+                className="p-4 space-y-2.5 overflow-hidden rounded-[26px] border border-white/85 dark:border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.16)] text-gray-900 dark:text-white dark:[--mobile-drawer-bg:linear-gradient(180deg,rgba(30,30,35,0.75)_0%,rgba(20,20,25,0.65)_100%)]"
+                style={{
+                  background:
+                    "var(--mobile-drawer-bg, linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,245,250,0.52) 100%))",
+                  border: "1px solid rgba(255, 255, 255, 0.85)",
+                  boxShadow: `
+                    inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.95),
+                    inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
+                    0 20px 60px rgba(0, 0, 0, 0.16)
+                  `,
+                }}
+              >
+                <div className="flex items-center justify-between pb-2 border-b border-black/[0.08] dark:border-white/[0.08] text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider">
+                  <span>MÁS CATEGORÍAS</span>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-gray-400 hover:text-gray-700 dark:hover:text-white text-xs font-semibold cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {navTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <Link
+                        key={tab.id}
+                        href={tab.href}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer",
+                          isActive
+                            ? "bg-gray-900 text-white shadow-sm dark:bg-white dark:text-gray-900"
+                            : "bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 border border-white/60 dark:border-white/10 shadow-xs"
+                        )}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{tab.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </LiquidGlass>
             </motion.div>
           )}
         </AnimatePresence>

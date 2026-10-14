@@ -56,7 +56,7 @@ export function LiquidScrubberNav({
   activeId,
   onSelect,
   className = "",
-  activeColor = "text-gray-950 dark:text-white",
+  activeColor = "text-black dark:text-white",
 }: LiquidScrubberNavProps) {
   const [bezelMapUrl, setBezelMapUrl] = useState<string>("");
   const [trackDims, setTrackDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -509,7 +509,7 @@ export function LiquidScrubberNav({
                 ref={(el) => {
                   tabRefs.current[idx] = el;
                 }}
-                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-black/55 dark:text-white/55 whitespace-nowrap"
+                className="flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-black/45 dark:text-white/45 whitespace-nowrap"
               >
                 {tab.icon}
                 <span>{tab.label}</span>
@@ -549,24 +549,19 @@ export function LiquidScrubberNav({
               }}
               className="absolute flex items-center will-change-transform"
             >
-              {items.map((tab, idx) => {
-                const isCurrent = idx === activeIndex;
-                return (
-                  <div
-                    key={tab.id}
-                    style={{
-                      width: tabsGeo[idx] ? `${tabsGeo[idx].width}px` : "auto",
-                      left: tabsGeo[idx] ? `${tabsGeo[idx].x}px` : "auto",
-                    }}
-                    className={`absolute flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-bold whitespace-nowrap ${
-                      isCurrent ? activeColor : "text-black/50 dark:text-white/50"
-                    }`}
-                  >
-                    {tab.icon}
-                    <span>{tab.label}</span>
-                  </div>
-                );
-              })}
+              {items.map((tab, idx) => (
+                <div
+                  key={`active-${tab.id}`}
+                  style={{
+                    width: tabsGeo[idx] ? `${tabsGeo[idx].width}px` : "auto",
+                    left: tabsGeo[idx] ? `${tabsGeo[idx].x}px` : "auto",
+                  }}
+                  className={`absolute flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-bold whitespace-nowrap ${activeColor}`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </div>
+              ))}
             </div>
           </div>
 
