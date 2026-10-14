@@ -160,15 +160,15 @@ export function BeUIPaginatedDock({
 
       {/* Contenedor Flotante iOS: Menú de Pestañas + Lupa Circular Externa */}
       <div className="flex items-center justify-center gap-2.5 sm:gap-3 w-[calc(100%-1.25rem)] max-w-[420px] pointer-events-auto">
-        {/* Cápsula Flotante de las Pestañas (Material Liquid Glass iOS del repositorio) */}
+        {/* Cápsula Flotante de las Pestañas (Material Liquid Glass WebGPU/WebGL) */}
         <LiquidGlass
           radius={9999}
           depth={5}
           strength={28}
-          chromaticAberration={0}
+          chromaticAberration={0.02}
           blur={1.5}
           overflow="visible"
-          className="flex-1 min-w-0 h-[56px] rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/55 dark:bg-[#16161a]/65 flex items-center justify-center relative"
+          className="flex-1 min-w-0 h-[56px] rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.15)] bg-white/20 dark:bg-[#16161a]/35 border border-white/60 dark:border-white/15 flex items-center justify-center relative"
         >
           {/* Contenedor animado de pestañas por página */}
           <div className="relative w-full h-full overflow-visible flex items-center">
@@ -217,14 +217,14 @@ export function BeUIPaginatedDock({
             radius={9999}
             depth={5}
             strength={28}
-            chromaticAberration={0}
+            chromaticAberration={0.02}
             blur={1.5}
             title="Buscar pedidos, marcas o piezas..."
             aria-label="Abrir buscador"
-            className={`relative w-[56px] h-[56px] rounded-full shrink-0 flex items-center justify-center border border-white/80 dark:border-white/25 shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition-all duration-300 active:scale-90 group ${
+            className={`relative w-[56px] h-[56px] rounded-full shrink-0 flex items-center justify-center border border-white/70 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition-all duration-300 active:scale-90 group ${
               isSearchActive
                 ? "bg-[#e07a3f] text-white border-2 border-white/90 shadow-[0_0_24px_rgba(224,122,63,0.6)]"
-                : "bg-white/55 dark:bg-[#16161a]/65 text-stone-900 dark:text-stone-100"
+                : "bg-white/20 dark:bg-[#16161a]/35 text-stone-900 dark:text-stone-100"
             }`}
           >
             <Search
