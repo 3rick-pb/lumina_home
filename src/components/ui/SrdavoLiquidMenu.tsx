@@ -20,14 +20,16 @@ export interface SrdavoLiquidMenuProps {
 }
 
 /**
- * Mapa óptico de cápsula (srdavo/liquid-glass):
- * - Centro amplio 100% plano (rgb(128,128,128)) para que el ícono, badge y texto nunca se aplasten ni dupliquen.
- * - Bisel concentrado en los arcos laterales izquierdo/derecho con inversión en el labio exterior.
+ * Mapa óptico de cápsula con bordes laterales más gruesos y menisco inverso arriba/abajo:
+ * - Centro limpio para el ícono activo.
+ * - Fase 1 (profile > 0): curva hacia adentro el borde recto del cuerpo del menú (elimina el corte recto).
+ * - Fase 2 (profile < 0 en el labio exterior): invierte el muestreo hacia adentro, creando el reflejo
+ *   líquido inverso tanto en los laterales (sobre el ícono vecino) como arriba/abajo (sobre el cuerpo del menú).
  */
 function createCapsuleInverseBezelMap(): string {
   if (typeof document === "undefined") return "";
   const W = 256;
-  const H = 128;
+  const H = 160;
   const R = H / 2;
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -45,38 +47,42 @@ function createCapsuleInverseBezelMap(): string {
       const dx = x - cx;
       const dy = y - cy;
       const dist = Math.hypot(dx, dy);
-      const r = dist / R; // 0 en la espina central, 1 en el borde exacto
 
       let rChan = 128;
       let gChan = 128;
 
-      // Dejamos el 68% interior completamente plano para dar máximo aire al ícono y texto
-      if (r > 0.68 && r <= 1.04 && dist > 0.001) {
+      if (dist > 0.001) {
         const nx = dx / dist;
         const ny = dy / dist;
-        const t = Math.min(1, (r - 0.68) / 0.32);
+        const r = dist / R; // 0 en el centro, 1 en el borde exterior de la cápsula
 
-        // Perfil de lente con inversión en el borde exterior
-        let profile = 0;
-        if (t < 0.62) {
-          const u = t / 0.62;
-          profile = -Math.sin(u * Math.PI) * 0.72;
-        } else {
-          const v = (t - 0.62) / 0.38;
-          profile = Math.pow(Math.sin(v * Math.PI * 0.5), 1.4) * 1.0;
+        // Bordes laterales más gruesos (empiezan en r = 0.40) y bordes superior/inferior desde r = 0.48
+        const innerStart = 0.48 - 0.08 * Math.abs(nx);
+
+        if (r > innerStart && r <= 1.02) {
+          const t = Math.min(1, (r - innerStart) / (1.0 - innerStart));
+
+          let profile = 0;
+          if (t < 0.46) {
+            // Fase 1: empuja el borde recto de la barra hacia adentro en curva cóncava limpia
+            const u = t / 0.46;
+            profile = Math.sin(u * Math.PI) * 0.58;
+          } else {
+            // Fase 2 (Borde exterior más grueso): pendiente negativa pronunciada -> inversión óptica real
+            const v = (t - 0.46) / 0.54;
+            profile = -Math.pow(Math.sin(v * Math.PI * 0.5), 1.15) * 1.0;
+          }
+
+          // Potencia completa tanto en X (laterales) como en Y (arriba y abajo para el cuerpo del menú)
+          rChan = Math.max(
+            0,
+            Math.min(255, Math.round(128 + nx * profile * 127))
+          );
+          gChan = Math.max(
+            0,
+            Math.min(255, Math.round(128 + ny * profile * 122))
+          );
         }
-
-        // Priorizamos la refracción en los bordes laterales (nx) y suavizamos la vertical (ny)
-        // para que nunca duplique el texto inferior verticalmente
-        const lateralWeight = 0.35 + 0.65 * Math.abs(nx);
-        rChan = Math.max(
-          0,
-          Math.min(255, Math.round(128 + nx * profile * 127))
-        );
-        gChan = Math.max(
-          0,
-          Math.min(255, Math.round(128 + ny * profile * lateralWeight * 68))
-        );
       }
 
       const idx = (y * W + x) * 4;
@@ -103,12 +109,13 @@ export function SrdavoLiquidMenu({
   const [bezelMapUrl, setBezelMapUrl] = useState<string>("");
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const barBgRef = useRef<HTMLDivElement>(null);
   const grayWindowRef = useRef<HTMLDivElement>(null);
   const grayStripRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
+  const menuBodyCloneRef = useRef<HTMLDivElement>(null);
   const blackStripRef = useRef<HTMLDivElement>(null);
 
-  // Referencias SVG para sincronizar el mapa al tamaño exacto en píxeles de la píldora
   const fgFilterRef = useRef<SVGFilterElement>(null);
   const bgFilterRef = useRef<SVGFilterElement>(null);
   const fgImageRef = useRef<SVGFEImageElement>(null);
@@ -123,17 +130,14 @@ export function SrdavoLiquidMenu({
   const state = useRef({
     slotWidth: 100,
     trackWidth: 300,
-    // Doble resorte (Borde izquierdo y Borde derecho) para estiramiento orgánico al pasar de un tab a otro
     leftX: 0,
     rightX: 0,
     velLeftX: 0,
     velRightX: 0,
     targetPillX: 0,
-    // Carrusel de ~10 ítems
     scrollX: 0,
     targetScrollX: 0,
     velScrollX: 0,
-    // Expansión en píxeles
     extraW: 0,
     extraH: 0,
     refraction: 0,
@@ -202,7 +206,7 @@ export function SrdavoLiquidMenu({
       const s = state.current;
       const scrubbing = s.mode === "scrubbing";
 
-      // Auto-scroll en los extremos cuando arrastras la gota a través de los ~10 ítems
+      // Auto-scroll en los bordes para navegar por los ~10 ítems sin soltar la gota
       if (scrubbing && now - edgeTimer.current > 400) {
         const edge = s.slotWidth * 0.24;
         const maxScroll = Math.max(0, (items.length - visibleCount) * s.slotWidth);
@@ -215,7 +219,7 @@ export function SrdavoLiquidMenu({
         }
       }
 
-      // 1. Física de Doble Resorte (Borde Delantero rápido + Borde Trasero elástico como en 00:08 y 00:31)
+      // 1. Física de Doble Resorte
       const movingRight = s.targetPillX >= (s.leftX + s.rightX) * 0.5;
       const fastStiff = scrubbing ? 0.30 : 0.24;
       const fastDamp = scrubbing ? 0.68 : 0.74;
@@ -244,30 +248,29 @@ export function SrdavoLiquidMenu({
       const stretchSpan = spanRight - spanLeft - s.slotWidth;
       const avgSpeed = (Math.abs(s.velLeftX) + Math.abs(s.velRightX)) * 0.5;
 
-      // 3. Desborde generoso arriba y abajo al mantener presionado (+28px de alto y +22px de ancho)
-      // Y elevación sutil automática proporcional al estiramiento cuando pasas de un tab a otro con un clic
-      const flightLift = Math.min(10, stretchSpan * 0.35 + avgSpeed * 0.3);
-      const targetExtraW = s.elevated ? 22 : Math.min(10, avgSpeed * 0.4);
-      const targetExtraH = s.elevated ? 28 : flightLift;
+      // 3. Expansión de la píldora (+30px de altura y +26px de ancho al elevarse)
+      const flightLift = Math.min(12, stretchSpan * 0.36 + avgSpeed * 0.32);
+      const targetExtraW = s.elevated ? 26 : Math.min(12, avgSpeed * 0.45);
+      const targetExtraH = s.elevated ? 30 : flightLift;
 
       s.extraW += (targetExtraW - s.extraW) * 0.22;
       s.extraH += (targetExtraH - s.extraH) * 0.22;
 
-      // 4. Intensidad de refracción: máxima al mantener presionado, o proporcional a la velocidad durante un tap
+      // 4. Escala de refracción más potente (46 al elevarse) para bordes más gruesos y marcados
       const targetRefraction = s.elevated
-        ? 38
-        : avgSpeed > 0.6 || stretchSpan > 2
-        ? Math.min(28, stretchSpan * 0.9 + avgSpeed * 1.4)
+        ? 46
+        : avgSpeed > 0.5 || stretchSpan > 2
+        ? Math.min(34, stretchSpan * 1.0 + avgSpeed * 1.5)
         : 0;
       s.refraction += (targetRefraction - s.refraction) * 0.22;
 
       const totalStripW = items.length * s.slotWidth;
+      const fullBarW = s.trackWidth + 8;
       const pillW = Math.max(40, spanRight - spanLeft + s.extraW);
-      const pillH = 50 + s.extraH; // Barra de 58px -> Píldora base de 50px, crece a 78px al elevarse
+      const pillH = 50 + s.extraH; // En reposo 50px; elevada llega a 80px (sobresaliendo 11px arriba y 11px abajo de la barra de 58px)
       const pillLeft = 4 + spanLeft - s.extraW / 2;
       const pillTop = 4 - s.extraH / 2;
 
-      // Sincronizar dimensiones exactas en píxeles del filtro SVG para que ambos bordes (izq/der) refracten simétricamente
       const wStr = pillW.toFixed(1);
       const hStr = pillH.toFixed(1);
       const scaleStr = s.refraction.toFixed(1);
@@ -287,7 +290,22 @@ export function SrdavoLiquidMenu({
         bgDisplacementRef.current.setAttribute("scale", scaleStr);
       }
 
-      // Mover tira gris de fondo y actualizar máscara
+      // 5. Máscara en el cuerpo exterior del menú (barBgRef) para eliminar la línea horizontal recta bajo el cristal
+      if (barBgRef.current) {
+        if (s.extraH > 3) {
+          const insetCorner = Math.min(14, s.extraH * 0.42);
+          const bgHoleLeft = Math.max(0, pillLeft + insetCorner);
+          const bgHoleRight = Math.min(fullBarW, pillLeft + pillW - insetCorner);
+          const bgMask = `linear-gradient(to right, #000 0px, #000 ${bgHoleLeft}px, transparent ${bgHoleLeft + 4}px, transparent ${bgHoleRight - 4}px, #000 ${bgHoleRight}px, #000 100%)`;
+          barBgRef.current.style.maskImage = bgMask;
+          barBgRef.current.style.webkitMaskImage = bgMask;
+        } else {
+          barBgRef.current.style.maskImage = "none";
+          barBgRef.current.style.webkitMaskImage = "none";
+        }
+      }
+
+      // 6. Mover tira gris de íconos y su máscara
       if (grayStripRef.current && grayWindowRef.current) {
         grayStripRef.current.style.width = `${totalStripW}px`;
         grayStripRef.current.style.transform = `translate3d(${-s.scrollX}px, 0, 0)`;
@@ -299,14 +317,21 @@ export function SrdavoLiquidMenu({
         grayWindowRef.current.style.webkitMaskImage = mask;
       }
 
-      // Posicionar píldora y compensar tira negra interna al sub-píxel
-      if (pillRef.current && blackStripRef.current) {
+      // 7. Posicionar píldora, cuerpo del menú clonado (para refracción arriba/abajo) y tira negra de íconos
+      if (pillRef.current && blackStripRef.current && menuBodyCloneRef.current) {
         pillRef.current.style.width = `${pillW}px`;
         pillRef.current.style.height = `${pillH}px`;
         pillRef.current.style.transform = `translate3d(${pillLeft}px, ${pillTop}px, 0)`;
 
-        const innerX = -spanLeft - s.scrollX + s.extraW / 2;
         const innerY = -4 + s.extraH / 2;
+
+        // El clon de la pastilla horizontal del menú dentro del filtro SVG:
+        // Así los bordes de arriba y abajo del botón flotante curvan e invierten el cuerpo del menú
+        menuBodyCloneRef.current.style.width = `${fullBarW}px`;
+        menuBodyCloneRef.current.style.transform = `translate3d(${-pillLeft}px, ${innerY}px, 0)`;
+        menuBodyCloneRef.current.style.opacity = s.extraH > 2 ? "1" : "0";
+
+        const innerX = -spanLeft - s.scrollX + s.extraW / 2;
         blackStripRef.current.style.width = `${totalStripW}px`;
         blackStripRef.current.style.transform = `translate3d(${innerX}px, ${innerY}px, 0)`;
       }
@@ -353,15 +378,13 @@ export function SrdavoLiquidMenu({
       s.targetPillX = clampPillX(e.clientX);
     } else {
       s.mode = "pending";
-      // Solo entra en modo burbuja elevada si mantiene presionado 160ms;
-      // si suelta antes, hace el viaje elástico directo (como en 00:08 y 00:31 del video)
       holdTimer.current = setTimeout(() => {
         if (state.current.mode === "pending") {
           state.current.mode = "scrubbing";
           elevateGlass(true);
           state.current.targetPillX = clampPillX(state.current.pointerX);
         }
-      }, 160);
+      }, 150);
     }
   };
 
@@ -405,7 +428,6 @@ export function SrdavoLiquidMenu({
       s.targetPillX = activeIndex * s.slotWidth - s.targetScrollX;
       elevateGlass(false);
     } else if (s.mode === "scrubbing" || s.mode === "pending") {
-      // Al soltar o hacer tap simple, baja a estado reposo mientras el doble resorte hace el estiramiento líquido
       elevateGlass(false);
 
       const finalX = s.mode === "pending" ? clampPillX(e.clientX) : s.targetPillX;
@@ -427,7 +449,6 @@ export function SrdavoLiquidMenu({
 
   return (
     <>
-      {/* Filtros en userSpaceOnUse sincronizados en tiempo real al ancho y alto exacto de la píldora */}
       <svg className="fixed w-0 h-0 pointer-events-none" aria-hidden="true">
         <defs>
           <filter
@@ -437,8 +458,8 @@ export function SrdavoLiquidMenu({
             primitiveUnits="userSpaceOnUse"
             x="0"
             y="0"
-            width="120"
-            height="78"
+            width="126"
+            height="80"
             colorInterpolationFilters="sRGB"
           >
             {bezelMapUrl && (
@@ -447,8 +468,8 @@ export function SrdavoLiquidMenu({
                 href={bezelMapUrl}
                 x="0"
                 y="0"
-                width="120"
-                height="78"
+                width="126"
+                height="80"
                 preserveAspectRatio="none"
                 result="bezelMap"
               />
@@ -470,8 +491,8 @@ export function SrdavoLiquidMenu({
             primitiveUnits="userSpaceOnUse"
             x="0"
             y="0"
-            width="120"
-            height="78"
+            width="126"
+            height="80"
             colorInterpolationFilters="sRGB"
           >
             {bezelMapUrl && (
@@ -480,8 +501,8 @@ export function SrdavoLiquidMenu({
                 href={bezelMapUrl}
                 x="0"
                 y="0"
-                width="120"
-                height="78"
+                width="126"
+                height="80"
                 preserveAspectRatio="none"
                 result="bezelMap"
               />
@@ -498,7 +519,7 @@ export function SrdavoLiquidMenu({
         </defs>
       </svg>
 
-      {/* Pista Gris Base (58px de alto para dar buen aire al ícono y texto) */}
+      {/* Contenedor interactivo del Menú */}
       <div
         ref={trackRef}
         onContextMenu={(e) => e.preventDefault()}
@@ -512,12 +533,18 @@ export function SrdavoLiquidMenu({
           userSelect: "none",
           WebkitTouchCallout: "none",
         }}
-        className={`relative flex items-center h-[58px] px-1 rounded-full bg-[#DCDCDC]/85 dark:bg-zinc-800/85 backdrop-blur-md select-none cursor-pointer ${className}`}
+        className={`relative flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer ${className}`}
       >
+        {/* Cuerpo de pastilla horizontal del menú (se recorta bajo la gota elevada para que no se vea recto) */}
+        <div
+          ref={barBgRef}
+          className="absolute inset-0 rounded-full bg-[#DCDCDC]/88 dark:bg-zinc-800/88 backdrop-blur-md pointer-events-none"
+        />
+
         {/* CAPA 1: Ítems en Gris */}
         <div
           ref={grayWindowRef}
-          className="relative w-full h-full overflow-hidden rounded-full pointer-events-none"
+          className="relative z-10 w-full h-full overflow-hidden rounded-full pointer-events-none"
         >
           <div ref={grayStripRef} className="flex h-full items-center will-change-transform">
             {items.map((item) => {
@@ -547,7 +574,7 @@ export function SrdavoLiquidMenu({
           </div>
         </div>
 
-        {/* CAPA 2: Píldora Liquid Glass */}
+        {/* CAPA 2: Botón Flotante Liquid Glass */}
         <div
           ref={pillRef}
           style={{
@@ -561,18 +588,26 @@ export function SrdavoLiquidMenu({
               ? "url(#srdavo-pill-bg) blur(1px)"
               : "blur(6px)",
             background: isElevated
-              ? "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.18) 100%)"
-              : "rgba(255, 255, 255, 0.65)",
+              ? "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.18) 100%)"
+              : "rgba(255, 255, 255, 0.66)",
           }}
           className="absolute z-20 rounded-full overflow-hidden pointer-events-none transition-[background] duration-200"
         >
-          {/* Ventana óptica del tamaño exacto de la píldora */}
+          {/* Ventana óptica que refracta TANTO el cuerpo horizontal del menú (arriba/abajo) COMO los íconos (laterales) */}
           <div
             style={{
               filter: "url(#srdavo-pill-fg)",
             }}
             className="relative w-full h-full overflow-hidden rounded-full"
           >
+            {/* Clon sincronizado del cuerpo de pastilla horizontal del menú */}
+            <div
+              ref={menuBodyCloneRef}
+              style={{ willChange: "transform, opacity" }}
+              className="absolute top-0 left-0 h-[58px] rounded-full bg-[#DCDCDC]/92 dark:bg-zinc-800/92 border-y border-black/[0.08] dark:border-white/[0.08]"
+            />
+
+            {/* Tira de íconos activos en negro */}
             <div
               ref={blackStripRef}
               style={{
@@ -607,7 +642,7 @@ export function SrdavoLiquidMenu({
             </div>
           </div>
 
-          {/* Bisel especular blanco brillante */}
+          {/* Bisel especular en overlay */}
           <div
             style={{
               border: isElevated
@@ -615,10 +650,10 @@ export function SrdavoLiquidMenu({
                 : "1px solid rgba(255, 255, 255, 0.85)",
               boxShadow: isElevated
                 ? `
-                  inset 0 3.5px 7px rgba(255, 255, 255, 0.98),
-                  inset 0 -3.5px 7px rgba(255, 255, 255, 0.88),
-                  inset 0 0 12px rgba(255, 255, 255, 0.35),
-                  0 12px 28px rgba(0, 0, 0, 0.15)
+                  inset 0 4px 8px rgba(255, 255, 255, 0.98),
+                  inset 0 -4px 8px rgba(255, 255, 255, 0.90),
+                  inset 0 0 14px rgba(255, 255, 255, 0.38),
+                  0 12px 28px rgba(0, 0, 0, 0.16)
                 `
                 : "inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 1px 3px rgba(0, 0, 0, 0.05)",
             }}
