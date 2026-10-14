@@ -50,11 +50,11 @@ function getDisplacementMap({ height, width, radius, depth }: DisplacementParams
         <stop offset="100%" stop-color="#000" />
       </linearGradient>
     </defs>
-    <rect x="0" y="0" height="${height}" width="${width}" fill="#808080" />
+    <rect x="0" y="0" height="${height}" width="${width}" rx="${safeRadius}" ry="${safeRadius}" fill="#808080" />
     <g filter="blur(2px)">
-      <rect x="0" y="0" height="${height}" width="${width}" fill="#000080" />
-      <rect x="0" y="0" height="${height}" width="${width}" fill="url(#Y)" class="mix" />
-      <rect x="0" y="0" height="${height}" width="${width}" fill="url(#X)" class="mix" />
+      <rect x="0" y="0" height="${height}" width="${width}" rx="${safeRadius}" ry="${safeRadius}" fill="#000080" />
+      <rect x="0" y="0" height="${height}" width="${width}" rx="${safeRadius}" ry="${safeRadius}" fill="url(#Y)" class="mix" />
+      <rect x="0" y="0" height="${height}" width="${width}" rx="${safeRadius}" ry="${safeRadius}" fill="url(#X)" class="mix" />
       <rect
         x="${safeDepth}"
         y="${safeDepth}"
@@ -89,7 +89,7 @@ export function getDisplacementFilter({
     chromaticAberration <= 0
       ? `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="displace" color-interpolation-filters="sRGB">
+      <filter id="displace" x="0" y="0" width="${width}" height="${height}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
         <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
         <feDisplacementMap
           transform-origin="center"
@@ -104,7 +104,7 @@ export function getDisplacementFilter({
   </svg>`
       : `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="displace" color-interpolation-filters="sRGB">
+      <filter id="displace" x="0" y="0" width="${width}" height="${height}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
         <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
         <feDisplacementMap
           transform-origin="center"

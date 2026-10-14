@@ -727,26 +727,35 @@ export function SrdavoLiquidMenu({
             WebkitUserSelect: "none",
             userSelect: "none",
             WebkitTouchCallout: "none",
-            backdropFilter: hasSvgFilterSupport && barFilterUrl
-              ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
-              : "blur(18px) saturate(190%) brightness(1.10)",
-            WebkitBackdropFilter: hasSvgFilterSupport && barFilterUrl
-              ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
-              : "blur(18px) saturate(190%) brightness(1.10)",
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(240,240,248,0.24) 100%)",
-            boxShadow: `
-              inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.88),
-              inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
-              inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
-              0 10px 30px rgba(0, 0, 0, 0.10)
-            `,
-            border: "1px solid rgba(255, 255, 255, 0.72)",
           }}
           className="relative flex-1 min-w-0 w-full overflow-visible flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer"
         >
-          {/* Reflejo especular superior característico de srdavo/liquid-glass */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full z-0" />
+          {/* CAPA DE CRISTAL LÍQUIDO DEL CUERPO (estrictamente recortada a la cápsula perfecta sin esquinas cuadradas) */}
+          <div
+            className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0"
+            style={{
+              clipPath: "inset(0 round 9999px)",
+              WebkitClipPath: "inset(0 round 9999px)",
+              backdropFilter: hasSvgFilterSupport && barFilterUrl
+                ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
+              WebkitBackdropFilter: hasSvgFilterSupport && barFilterUrl
+                ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(240,240,248,0.24) 100%)",
+              boxShadow: `
+                inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.88),
+                inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
+                inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
+                0 10px 30px rgba(0, 0, 0, 0.10)
+              `,
+              border: "1px solid rgba(255, 255, 255, 0.72)",
+            }}
+          >
+            {/* Reflejo especular superior característico de srdavo/liquid-glass */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full" />
+          </div>
 
           {/* CAPA 1: Ítems en Gris */}
           <div
@@ -878,6 +887,8 @@ export function SrdavoLiquidMenu({
             onPointerUp={() => setIsSearchPressed(false)}
             onPointerLeave={() => setIsSearchPressed(false)}
             style={{
+              clipPath: "inset(0 round 9999px)",
+              WebkitClipPath: "inset(0 round 9999px)",
               backdropFilter: isSearchActive
                 ? "blur(12px)"
                 : hasSvgFilterSupport && orbFilterUrl
@@ -911,7 +922,7 @@ export function SrdavoLiquidMenu({
                 : "1px solid rgba(255, 255, 255, 0.76)",
               transform: isSearchPressed ? "scale(1.08)" : "scale(1)",
             }}
-            className={`relative flex items-center justify-center w-[58px] h-[58px] rounded-full transition-all duration-200 select-none shrink-0 cursor-pointer ${
+            className={`relative flex items-center justify-center w-[58px] h-[58px] rounded-full overflow-hidden transition-all duration-200 select-none shrink-0 cursor-pointer ${
               isSearchActive ? "text-white" : "text-zinc-900 dark:text-white"
             }`}
             aria-label="Buscar"
