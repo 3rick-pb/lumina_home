@@ -2,35 +2,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
-// Mapa de desplazamiento exacto estilo srdavo/liquid-glass:
-// Bordes refractivos R/G y centro 100% neutro rgb(128,128,128) para que solo curve los bordes de la cápsula
-const SRDAVO_CAPSULE_BEZEL_MAP = `data:image/svg+xml;utf8,${encodeURIComponent(`
-  <svg xmlns="http://www.w3.org/2000/svg" width="240" height="120" viewBox="0 0 240 120">
-    <defs>
-      <linearGradient id="edgeX" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="rgb(255, 128, 128)" />
-        <stop offset="18%" stop-color="rgb(128, 128, 128)" />
-        <stop offset="82%" stop-color="rgb(128, 128, 128)" />
-        <stop offset="100%" stop-color="rgb(0, 128, 128)" />
-      </linearGradient>
-      <linearGradient id="edgeY" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="rgb(128, 255, 128)" />
-        <stop offset="22%" stop-color="rgb(128, 128, 128)" />
-        <stop offset="78%" stop-color="rgb(128, 128, 128)" />
-        <stop offset="100%" stop-color="rgb(128, 0, 128)" />
-      </linearGradient>
-      <filter id="blurBezel">
-        <feGaussianBlur stdDeviation="6" />
-      </filter>
-    </defs>
-    <style>.mix-overlay { mix-blend-mode: overlay; }</style>
-    <rect width="240" height="120" rx="60" fill="rgb(128,128,128)" />
-    <rect width="240" height="120" rx="60" fill="url(#edgeX)" filter="url(#blurBezel)" />
-    <rect width="240" height="120" rx="60" fill="url(#edgeY)" class="mix-overlay" style="mix-blend-mode: overlay" filter="url(#blurBezel)" />
-    <rect x="22" y="16" width="196" height="88" rx="44" fill="rgb(128,128,128)" filter="url(#blurBezel)" />
-  </svg>
-`)}`;
-
 export interface LiquidTabItem {
   id: string;
   label: string;
@@ -48,6 +19,71 @@ export interface SrdavoLiquidMenuProps {
   className?: string;
 }
 
+/**
+ * Genera un mapa de desplazamiento SDF de cápsula exacta (estilo srdavo/liquid-glass):
+ * - Centro (r <= 0.46): rgb(128,128,128) -> 0 distorsión (ícono central 100% quieto y nítido).
+ * - Bisel interior (0.46 < r < 0.76): estira suavemente hacia afuera siguiendo el arco semicircular.
+ * - Labio exterior (0.76 <= r <= 1.0): invierte el vector normal creando el reflejo inverso en los bordes izq/der.
+ */
+function createCapsuleInverseBezelMap(): string {
+  if (typeof document === "undefined") return "";
+  const W = 240;
+  const H = 120;
+  const R = H / 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  const img = ctx.createImageData(W, H);
+  const data = img.data;
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      // Punto más cercano en la espina central de la cápsula
+      const cx = Math.max(R, Math.min(W - R, x));
+      const cy = R;
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.hypot(dx, dy);
+      const r = dist / R; // 0 en el centro, 1 en el borde exacto de la cápsula
+
+      let rChan = 128;
+      let gChan = 128;
+
+      if (r > 0.44 && r <= 1.08 && dist > 0.001) {
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const t = Math.min(1, (r - 0.44) / 0.56);
+
+        let profile = 0;
+        if (t < 0.68) {
+          // Fase 1: curvatura convexa interna hacia el borde
+          const u = t / 0.68;
+          profile = -Math.sin(u * Math.PI) * 0.65;
+        } else {
+          // Fase 2: inversión óptica en el labio exterior (efecto inverso al tocar el ícono vecino)
+          const v = (t - 0.68) / 0.32;
+          profile = Math.sin(v * Math.PI * 0.5) ** 1.6 * 1.0;
+        }
+
+        rChan = Math.max(0, Math.min(255, Math.round(128 + nx * profile * 127)));
+        gChan = Math.max(0, Math.min(255, Math.round(128 + ny * profile * 127)));
+      }
+
+      const idx = (y * W + x) * 4;
+      data[idx] = rChan;
+      data[idx + 1] = gChan;
+      data[idx + 2] = 128;
+      data[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(img, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
 export function SrdavoLiquidMenu({
   items,
   activeId,
@@ -57,12 +93,16 @@ export function SrdavoLiquidMenu({
 }: SrdavoLiquidMenuProps) {
   const activeIndex = Math.max(0, items.findIndex((i) => i.id === activeId));
   const [isElevated, setIsElevated] = useState(false);
+  const [bezelMapUrl, setBezelMapUrl] = useState<string>("");
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const grayWindowRef = useRef<HTMLDivElement>(null);
   const grayStripRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
+  const lensViewportRef = useRef<HTMLDivElement>(null);
   const blackStripRef = useRef<HTMLDivElement>(null);
-  const displacementRef = useRef<SVGFEDisplacementMapElement>(null);
+  const fgDisplacementRef = useRef<SVGFEDisplacementMapElement>(null);
+  const bgDisplacementRef = useRef<SVGFEDisplacementMapElement>(null);
 
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,9 +118,9 @@ export function SrdavoLiquidMenu({
     scrollX: 0,
     targetScrollX: 0,
     velScrollX: 0,
-    scaleX: 1,
-    scaleY: 1,
-    refractionScale: 0,
+    extraW: 0,
+    extraH: 0,
+    refraction: 0,
     mode: "idle" as "idle" | "pending" | "scrubbing" | "scrolling",
     elevated: false,
     startX: 0,
@@ -88,11 +128,15 @@ export function SrdavoLiquidMenu({
     pointerX: 0,
   });
 
+  useEffect(() => {
+    setBezelMapUrl(createCapsuleInverseBezelMap());
+  }, []);
+
   const syncLayout = useCallback(
     (immediate = false) => {
       if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
-      const innerW = Math.max(120, (rect?.width || 300) - 8); // 4px padding por lado (px-1 = 4px)
+      const innerW = Math.max(120, (rect?.width || 300) - 8); // 4px padding lateral
       const slotW = innerW / visibleCount;
 
       const s = state.current;
@@ -134,7 +178,6 @@ export function SrdavoLiquidMenu({
     return () => window.removeEventListener("resize", onResize);
   }, [syncLayout]);
 
-  // Motor físico de 60/120fps: controla posición, estiramiento y nivel de refracción del borde
   useEffect(() => {
     let rafId: number;
 
@@ -142,9 +185,9 @@ export function SrdavoLiquidMenu({
       const s = state.current;
       const scrubbing = s.mode === "scrubbing";
 
-      // Auto-scroll suave en los bordes si tienes ~10 íconos y mantienes la gota en el extremo
+      // Auto-scroll en bordes para recorrer los ~10 íconos mientras arrastras la píldora
       if (scrubbing && now - edgeTimer.current > 400) {
-        const edge = s.slotWidth * 0.25;
+        const edge = s.slotWidth * 0.24;
         const maxScroll = Math.max(0, (items.length - visibleCount) * s.slotWidth);
         if (s.targetPillX > s.trackWidth - s.slotWidth - edge && s.targetScrollX < maxScroll) {
           s.targetScrollX = Math.min(maxScroll, s.targetScrollX + s.slotWidth * visibleCount);
@@ -155,56 +198,62 @@ export function SrdavoLiquidMenu({
         }
       }
 
-      // Resorte de la píldora
+      // 1. Física de resorte de la píldora
       const pStiff = scrubbing ? 0.26 : 0.15;
       const pDamp = scrubbing ? 0.68 : 0.76;
       s.velPillX = (s.velPillX + (s.targetPillX - s.pillX) * pStiff) * pDamp;
       s.pillX += s.velPillX;
 
-      // Resorte del carrusel de 10 ítems
+      // 2. Física de resorte del carrusel de 10 ítems
       const cStiff = s.mode === "scrolling" ? 0.32 : 0.14;
       const cDamp = s.mode === "scrolling" ? 0.66 : 0.78;
       s.velScrollX = (s.velScrollX + (s.targetScrollX - s.scrollX) * cStiff) * cDamp;
       s.scrollX += s.velScrollX;
 
-      // Velocidad para estirar la cápsula horizontalmente
-      const speed = Math.min(Math.abs(s.velPillX), 30);
-      const stretchX = speed * 0.014;
+      // 3. Expansión geométrica en píxeles (SIN scale() para no levantar el ícono ni el texto)
+      const speed = Math.min(Math.abs(s.velPillX), 28);
+      const targetExtraW = (s.elevated ? 14 : 0) + speed * 0.95;
+      const targetExtraH = (s.elevated ? 14 : 0) - Math.min(4, speed * 0.15);
 
-      // En reposo: scale(1, 1) dentro de la barra. Elevada: sobresale arriba, abajo y a los lados
-      const targetScaleX = (s.elevated ? 1.12 : 1.0) + stretchX;
-      const targetScaleY = s.elevated ? 1.32 : 1.0;
+      s.extraW += (targetExtraW - s.extraW) * 0.22;
+      s.extraH += (targetExtraH - s.extraH) * 0.22;
 
-      s.scaleX += (targetScaleX - s.scaleX) * 0.2;
-      s.scaleY += (targetScaleY - s.scaleY) * 0.2;
+      // 4. Intensidad de refracción en los bordes laterales (0 en reposo, 34 al interactuar)
+      const targetRefraction = s.elevated || speed > 0.35 ? 34 : 0;
+      s.refraction += (targetRefraction - s.refraction) * 0.2;
 
-      // Escala de refracción del filtro SVG: 0 en reposo y 28 cuando está elevada/moviéndose
-      const targetRefraction = s.elevated || speed > 0.4 ? 28 : 0;
-      s.refractionScale += (targetRefraction - s.refractionScale) * 0.18;
-
-      if (displacementRef.current) {
-        displacementRef.current.setAttribute("scale", s.refractionScale.toFixed(1));
-      }
+      const scaleStr = s.refraction.toFixed(1);
+      if (fgDisplacementRef.current) fgDisplacementRef.current.setAttribute("scale", scaleStr);
+      if (bgDisplacementRef.current) bgDisplacementRef.current.setAttribute("scale", scaleStr);
 
       const totalStripW = items.length * s.slotWidth;
+      const pillW = s.slotWidth + s.extraW;
+      const pillH = 48 + s.extraH; // 48px alto base dentro de barra de 56px
+      const pillLeft = 4 + s.pillX - s.extraW / 2;
+      const pillTop = 4 - s.extraH / 2;
 
-      // 1. Mover tira gris de fondo
-      if (grayStripRef.current) {
+      // Mover tira gris de fondo y recortar máscara bajo la píldora para que NUNCA se duplique el ícono
+      if (grayStripRef.current && grayWindowRef.current) {
         grayStripRef.current.style.width = `${totalStripW}px`;
         grayStripRef.current.style.transform = `translate3d(${-s.scrollX}px, 0, 0)`;
+
+        const holeLeft = Math.max(0, s.pillX - s.extraW / 2 + 2);
+        const holeRight = Math.min(s.trackWidth, s.pillX + s.slotWidth + s.extraW / 2 - 2);
+        const mask = `linear-gradient(to right, #000 0px, #000 ${holeLeft}px, transparent ${holeLeft + 2}px, transparent ${holeRight - 2}px, #000 ${holeRight}px, #000 100%)`;
+        grayWindowRef.current.style.maskImage = mask;
+        grayWindowRef.current.style.webkitMaskImage = mask;
       }
 
-      // 2. Mover píldora de cristal y contra-mover tira negra interna para recorte exacto
+      // Posicionar píldora y compensar la tira negra interna al sub-píxel (0 levantamiento vertical)
       if (pillRef.current && blackStripRef.current) {
-        pillRef.current.style.width = `${s.slotWidth}px`;
-        pillRef.current.style.transform = `translate3d(${4 + s.pillX}px, 0, 0) scale(${s.scaleX}, ${s.scaleY})`;
+        pillRef.current.style.width = `${pillW}px`;
+        pillRef.current.style.height = `${pillH}px`;
+        pillRef.current.style.transform = `translate3d(${pillLeft}px, ${pillTop}px, 0)`;
 
-        const zoom = s.elevated ? 1.06 : 1.0;
-        const invX = (1 / s.scaleX) * zoom;
-        const invY = (1 / s.scaleY) * zoom;
-
+        const innerX = -s.pillX - s.scrollX + s.extraW / 2;
+        const innerY = -4 + s.extraH / 2;
         blackStripRef.current.style.width = `${totalStripW}px`;
-        blackStripRef.current.style.transform = `scale(${invX}, ${invY}) translate3d(${-(s.pillX + s.scrollX)}px, 0, 0)`;
+        blackStripRef.current.style.transform = `translate3d(${innerX}px, ${innerY}px, 0)`;
       }
 
       rafId = requestAnimationFrame(animate);
@@ -299,7 +348,6 @@ export function SrdavoLiquidMenu({
       s.targetPillX = activeIndex * s.slotWidth - s.targetScrollX;
       elevateGlass(false);
     } else if (s.mode === "scrubbing" || s.mode === "pending") {
-      // Si fue un clic directo, inflar brevemente durante el viaje y desinflar al llegar
       if (s.mode === "pending") {
         elevateGlass(true);
         settleTimer.current = setTimeout(() => elevateGlass(false), 260);
@@ -326,24 +374,59 @@ export function SrdavoLiquidMenu({
 
   return (
     <>
-      {/* Filtro SVG de srdavo/liquid-glass: deforma únicamente los bordes curvos de la cápsula */}
+      {/* Filtros SVG dimensionados al 100% de la píldora (objectBoundingBox) para que los bordes izq/der siempre refracten */}
       <svg className="fixed w-0 h-0 pointer-events-none" aria-hidden="true">
         <defs>
           <filter
-            id="srdavo-capsule-glass"
-            x="-15%"
-            y="-15%"
-            width="130%"
-            height="130%"
+            id="srdavo-pill-fg"
+            x="0%"
+            y="0%"
+            width="100%"
+            height="100%"
             colorInterpolationFilters="sRGB"
           >
-            <feImage
-              href={SRDAVO_CAPSULE_BEZEL_MAP}
-              result="bezelMap"
-              preserveAspectRatio="none"
-            />
+            {bezelMapUrl && (
+              <feImage
+                href={bezelMapUrl}
+                x="0%"
+                y="0%"
+                width="100%"
+                height="100%"
+                preserveAspectRatio="none"
+                result="bezelMap"
+              />
+            )}
             <feDisplacementMap
-              ref={displacementRef}
+              ref={fgDisplacementRef}
+              in="SourceGraphic"
+              in2="bezelMap"
+              scale="0"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+
+          <filter
+            id="srdavo-pill-bg"
+            x="0%"
+            y="0%"
+            width="100%"
+            height="100%"
+            colorInterpolationFilters="sRGB"
+          >
+            {bezelMapUrl && (
+              <feImage
+                href={bezelMapUrl}
+                x="0%"
+                y="0%"
+                width="100%"
+                height="100%"
+                preserveAspectRatio="none"
+                result="bezelMap"
+              />
+            )}
+            <feDisplacementMap
+              ref={bgDisplacementRef}
               in="SourceGraphic"
               in2="bezelMap"
               scale="0"
@@ -354,18 +437,27 @@ export function SrdavoLiquidMenu({
         </defs>
       </svg>
 
-      {/* Pista Gris Base (Cápsula gris clara bg-black/[0.07], sin recorte de desbordamiento exterior) */}
+      {/* Pista Gris Base */}
       <div
         ref={trackRef}
+        onContextMenu={(e) => e.preventDefault()}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        style={{ touchAction: "none", WebkitUserSelect: "none", userSelect: "none" }}
-        className={`relative flex items-center h-14 px-1 rounded-full bg-black/[0.07] dark:bg-white/[0.08] backdrop-blur-md select-none cursor-pointer ${className}`}
+        style={{
+          touchAction: "none",
+          WebkitUserSelect: "none",
+          userSelect: "none",
+          WebkitTouchCallout: "none",
+        }}
+        className={`relative flex items-center h-14 px-1 rounded-full bg-[#DCDCDC]/85 dark:bg-zinc-800/85 backdrop-blur-md select-none cursor-pointer ${className}`}
       >
-        {/* CAPA 1: Ítems en Gris Medio (Lo que se ve fuera de la píldora) */}
-        <div className="relative w-full h-full overflow-hidden rounded-full pointer-events-none">
+        {/* CAPA 1: Ítems en Gris (Con máscara automática bajo la píldora para evitar doble ícono) */}
+        <div
+          ref={grayWindowRef}
+          className="relative w-full h-full overflow-hidden rounded-full pointer-events-none"
+        >
           <div ref={grayStripRef} className="flex h-full items-center will-change-transform">
             {items.map((item) => {
               const badgeVal = item.badge ?? item.badgeCount;
@@ -385,7 +477,7 @@ export function SrdavoLiquidMenu({
                       ) : null}
                     </div>
                   )}
-                  <span className="text-[11px] tracking-tight truncate max-w-[90%]">
+                  <span className="text-[12px] tracking-tight truncate max-w-[90%]">
                     {item.label}
                   </span>
                 </div>
@@ -394,71 +486,84 @@ export function SrdavoLiquidMenu({
           </div>
         </div>
 
-        {/* CAPA 2: Píldora Liquid Glass (Reposo dentro de la barra vs. Elevada transparente con bisel) */}
+        {/* CAPA 2: Píldora Liquid Glass */}
         <div
           ref={pillRef}
           style={{
-            top: "4px",
-            bottom: "4px",
+            top: 0,
             left: 0,
-            willChange: "transform, width",
+            willChange: "transform, width, height",
             backdropFilter: isElevated
-              ? "url(#srdavo-capsule-glass) blur(0.5px)"
-              : "blur(4px)",
+              ? "url(#srdavo-pill-bg) blur(1px)"
+              : "blur(6px)",
             WebkitBackdropFilter: isElevated
-              ? "url(#srdavo-capsule-glass) blur(0.5px)"
-              : "blur(4px)",
+              ? "url(#srdavo-pill-bg) blur(1px)"
+              : "blur(6px)",
             background: isElevated
-              ? "rgba(255, 255, 255, 0.12)"
-              : "rgba(255, 255, 255, 0.58)",
-            border: isElevated
-              ? "1.5px solid rgba(255, 255, 255, 0.9)"
-              : "1px solid rgba(255, 255, 255, 0.85)",
-            boxShadow: isElevated
-              ? `
-                inset 0 2px 4px rgba(255, 255, 255, 0.95),
-                inset 0 -2px 4px rgba(255, 255, 255, 0.85),
-                0 10px 24px rgba(0, 0, 0, 0.12)
-              `
-              : "inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 1px 3px rgba(0, 0, 0, 0.04)",
+              ? "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.16) 100%)"
+              : "rgba(255, 255, 255, 0.65)",
           }}
-          className="absolute z-20 rounded-full overflow-hidden pointer-events-none transition-[background,box-shadow,border] duration-200"
+          className="absolute z-20 rounded-full overflow-hidden pointer-events-none transition-[background] duration-200"
         >
-          {/* Interior de la píldora: Ítems en Negro Puro (#000) pasados por el filtro de borde de srdavo */}
+          {/* Ventana óptica del tamaño exacto de la píldora: aquí actúa el filtro de bordes izq/der */}
           <div
-            ref={blackStripRef}
+            ref={lensViewportRef}
             style={{
-              filter: "url(#srdavo-capsule-glass)",
-              transformOrigin: "left center",
-              willChange: "transform",
+              filter: "url(#srdavo-pill-fg)",
             }}
-            className="absolute top-[-4px] bottom-[-4px] left-0 flex h-14 items-center"
+            className="relative w-full h-full overflow-hidden rounded-full"
           >
-            {items.map((item) => {
-              const badgeVal = item.badge ?? item.badgeCount;
-              return (
-                <div
-                  key={`active-${item.id}`}
-                  style={{ width: `${100 / items.length}%` }}
-                  className="flex flex-col items-center justify-center gap-0.5 text-black dark:text-white font-bold"
-                >
-                  {item.icon && (
-                    <div className="relative flex items-center justify-center">
-                      {item.icon}
-                      {typeof badgeVal === "number" && badgeVal > 0 ? (
-                        <span className="absolute -top-1.5 -right-2.5 min-w-[15px] h-[15px] px-1 text-[9px] font-black text-white bg-rose-500 rounded-full flex items-center justify-center shadow-xs">
-                          {badgeVal > 99 ? "99+" : badgeVal}
-                        </span>
-                      ) : null}
-                    </div>
-                  )}
-                  <span className="text-[11px] tracking-tight truncate max-w-[90%]">
-                    {item.label}
-                  </span>
-                </div>
-              );
-            })}
+            <div
+              ref={blackStripRef}
+              style={{
+                willChange: "transform",
+              }}
+              className="absolute top-0 left-0 flex h-14 items-center"
+            >
+              {items.map((item) => {
+                const badgeVal = item.badge ?? item.badgeCount;
+                return (
+                  <div
+                    key={`active-${item.id}`}
+                    style={{ width: `${100 / items.length}%` }}
+                    className="flex flex-col items-center justify-center gap-0.5 text-black dark:text-white font-bold"
+                  >
+                    {item.icon && (
+                      <div className="relative flex items-center justify-center">
+                        {item.icon}
+                        {typeof badgeVal === "number" && badgeVal > 0 ? (
+                          <span className="absolute -top-1.5 -right-2.5 min-w-[15px] h-[15px] px-1 text-[9px] font-black text-white bg-rose-500 rounded-full flex items-center justify-center shadow-xs">
+                            {badgeVal > 99 ? "99+" : badgeVal}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+                    <span className="text-[12px] tracking-tight truncate max-w-[90%]">
+                      {item.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Bisel especular en overlay separado para no alterar el box-model ni mover los íconos */}
+          <div
+            style={{
+              border: isElevated
+                ? "1.5px solid rgba(255, 255, 255, 0.92)"
+                : "1px solid rgba(255, 255, 255, 0.85)",
+              boxShadow: isElevated
+                ? `
+                  inset 0 3px 6px rgba(255, 255, 255, 0.95),
+                  inset 0 -3px 6px rgba(255, 255, 255, 0.85),
+                  inset 0 0 10px rgba(255, 255, 255, 0.35),
+                  0 10px 24px rgba(0, 0, 0, 0.14)
+                `
+                : "inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 1px 3px rgba(0, 0, 0, 0.05)",
+            }}
+            className="absolute inset-0 rounded-full pointer-events-none transition-[border,box-shadow] duration-200"
+          />
         </div>
       </div>
     </>
