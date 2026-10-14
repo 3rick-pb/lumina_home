@@ -179,11 +179,11 @@ export function SrdavoLiquidMenu({
     (immediate = false) => {
       if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
-      const innerW = rect.width - 8;
-      const slotW = innerW / visibleCount;
+      const visibleW = grayWindowRef.current?.clientWidth || Math.max(120, rect.width - 8);
+      const slotW = visibleW / visibleCount;
 
       const s = state.current;
-      s.trackWidth = innerW;
+      s.trackWidth = visibleW;
       s.slotWidth = slotW;
 
       if (barFilterRef.current && barImageRef.current) {
@@ -290,9 +290,9 @@ export function SrdavoLiquidMenu({
       // 3. Elevación y desborde tanto al mantener presionado como al viajar con un toque (inFlight)
       const activeGlass = s.elevated || s.inFlight;
       const targetExtraW = s.elevated
-        ? 24
+        ? 12
         : s.inFlight
-        ? 18 + Math.min(10, stretchSpan * 0.25)
+        ? 8 + Math.min(6, stretchSpan * 0.2)
         : 0;
       const targetExtraH = s.elevated
         ? 28
@@ -647,7 +647,7 @@ export function SrdavoLiquidMenu({
       </svg>
 
       {/* Contenedor General: Cuerpo del Menú + Botón de Lupa de Búsqueda */}
-      <div className={`flex items-center gap-2.5 w-full max-w-[420px] mx-auto ${className}`}>
+      <div className={`flex items-center gap-2.5 w-full max-w-full min-w-0 overflow-visible px-1 box-border mx-auto ${className}`}>
         {/* CUERPO DEL MENÚ CON LIQUID GLASS REAL (srdavo-bar-glass) */}
         <div
           ref={trackRef}
@@ -672,7 +672,7 @@ export function SrdavoLiquidMenu({
             `,
             border: "1px solid rgba(255, 255, 255, 0.7)",
           }}
-          className="relative flex-1 flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer"
+          className="relative flex-1 min-w-0 w-full overflow-visible flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer"
         >
           {/* CAPA 1: Ítems en Gris */}
           <div
@@ -681,7 +681,7 @@ export function SrdavoLiquidMenu({
           >
             <div
               ref={grayStripRef}
-              className="flex h-full items-center will-change-transform"
+              className="absolute top-0 left-0 flex h-full items-center will-change-transform"
             >
               {items.map((item) => {
                 const badgeVal = item.badge ?? item.badgeCount;
