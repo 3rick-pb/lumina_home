@@ -204,10 +204,10 @@ export function LiquidScrubberNav({
       const targetCenter = (s.targetLeftX + s.targetRightX) * 0.5;
       const movingRight = targetCenter >= currentCenter;
 
-      const fastStiff = scrubbing ? 0.32 : 0.28;
-      const fastDamp = scrubbing ? 0.68 : 0.72;
-      const slowStiff = scrubbing ? 0.20 : 0.11;
-      const slowDamp = scrubbing ? 0.70 : 0.75;
+      const fastStiff = scrubbing ? 0.38 : 0.24;
+      const fastDamp = scrubbing ? 0.70 : 0.76;
+      const slowStiff = scrubbing ? 0.32 : 0.12;
+      const slowDamp = scrubbing ? 0.70 : 0.78;
 
       const leftStiff = movingRight ? slowStiff : fastStiff;
       const leftDamp = movingRight ? slowDamp : fastDamp;
@@ -215,10 +215,26 @@ export function LiquidScrubberNav({
       const rightDamp = movingRight ? fastDamp : slowDamp;
 
       s.velLeftX = (s.velLeftX + (s.targetLeftX - s.leftX) * leftStiff) * leftDamp;
-      s.leftX += s.velLeftX;
-
       s.velRightX = (s.velRightX + (s.targetRightX - s.rightX) * rightStiff) * rightDamp;
+
+      // Limitar velocidad máxima para evitar rebotes exagerados en saltos lejanos (#1 -> #4)
+      const maxVel = 18;
+      s.velLeftX = Math.max(-maxVel, Math.min(maxVel, s.velLeftX));
+      s.velRightX = Math.max(-maxVel, Math.min(maxVel, s.velRightX));
+
+      s.leftX += s.velLeftX;
       s.rightX += s.velRightX;
+
+      // Amortiguación de rebote: nunca permitir que la píldora sobrepase más de 4px el destino
+      if (!scrubbing) {
+        if (movingRight && s.rightX > s.targetRightX + 4) {
+          s.rightX = s.targetRightX + 4;
+          s.velRightX *= 0.2;
+        } else if (!movingRight && s.leftX < s.targetLeftX - 4) {
+          s.leftX = s.targetLeftX - 4;
+          s.velLeftX *= 0.2;
+        }
+      }
 
       const spanLeft = Math.min(s.leftX, s.rightX);
       const spanRight = Math.max(s.leftX, s.rightX);
@@ -320,16 +336,20 @@ export function LiquidScrubberNav({
     return () => cancelAnimationFrame(rafId);
   }, [trackDims.height, trackDims.width]);
 
-  const getClosestIndex = (clientX: number) => {
-    if (!trackRef.current || tabsGeo.length === 0) return 0;
+  const clampPillX = (clientX: number, width: number) => {
+    if (!trackRef.current) return 0;
     const trackRect = trackRef.current.getBoundingClientRect();
-    const localX = clientX - trackRect.left;
+    const rawLeft = clientX - trackRect.left - width / 2;
+    return Math.max(0, Math.min(trackRect.width - width, rawLeft));
+  };
 
+  const getClosestIndex = (localCenterX: number) => {
+    if (!trackRef.current || tabsGeo.length === 0) return 0;
     let closestIdx = 0;
     let minDist = Infinity;
     tabsGeo.forEach((geo, idx) => {
       const tabCenter = geo.x + geo.width / 2;
-      const dist = Math.abs(localX - tabCenter);
+      const dist = Math.abs(localCenterX - tabCenter);
       if (dist < minDist) {
         minDist = dist;
         closestIdx = idx;
@@ -349,24 +369,21 @@ export function LiquidScrubberNav({
     s.mode = "scrubbing";
     s.elevated = true;
 
-    const closestIdx = getClosestIndex(e.clientX);
-    if (tabsGeo[closestIdx]) {
-      const geo = tabsGeo[closestIdx];
-      s.targetLeftX = geo.x;
-      s.targetRightX = geo.x + geo.width;
-    }
+    const currentW = Math.max(40, tabsGeo[activeIndex]?.width || 75);
+    const targetLeft = clampPillX(e.clientX, currentW);
+    s.targetLeftX = targetLeft;
+    s.targetRightX = targetLeft + currentW;
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const s = state.current;
     if (s.mode === "scrubbing") {
       s.pointerX = e.clientX;
-      const closestIdx = getClosestIndex(e.clientX);
-      if (tabsGeo[closestIdx]) {
-        const geo = tabsGeo[closestIdx];
-        s.targetLeftX = geo.x;
-        s.targetRightX = geo.x + geo.width;
-      }
+      const currentW = Math.max(40, tabsGeo[activeIndex]?.width || 75);
+      const targetLeft = clampPillX(e.clientX, currentW);
+      // Desplazamiento continuo 1:1 sin enganches magnéticos por pasos
+      s.targetLeftX = targetLeft;
+      s.targetRightX = targetLeft + currentW;
     }
   };
 
@@ -381,7 +398,12 @@ export function LiquidScrubberNav({
     s.elevated = false;
     s.mode = "idle";
 
-    const targetIdx = getClosestIndex(e.clientX);
+    // Al soltar, encajamos al ícono más cercano según el centro del cristal
+    if (!trackRef.current) return;
+    const trackRect = trackRef.current.getBoundingClientRect();
+    const localCenterX = e.clientX - trackRect.left;
+    const targetIdx = getClosestIndex(localCenterX);
+
     if (tabsGeo[targetIdx]) {
       const geo = tabsGeo[targetIdx];
       s.targetLeftX = geo.x;
@@ -389,11 +411,6 @@ export function LiquidScrubberNav({
     }
 
     if (items[targetIdx]) {
-      if (targetIdx !== activeIndex) {
-        const dir = s.targetLeftX > s.leftX ? 1 : -1;
-        if (dir > 0) s.velRightX += 5;
-        else s.velLeftX -= 5;
-      }
       onSelect(items[targetIdx].id, items[targetIdx]);
       items[targetIdx].onClick?.();
     }

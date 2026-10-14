@@ -8,7 +8,13 @@ import {
   HERO_SVG_LINE2_STATIC,
 } from "./heroTitleData";
 
-export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
+interface HandwrittenHeroTitleProps {
+  isReady?: boolean;
+}
+
+export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle({
+  isReady = true,
+}: HandwrittenHeroTitleProps = {}) {
   const [mounted, setMounted] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
   const [prefersReduced, setPrefersReduced] = useState(false);
@@ -28,8 +34,9 @@ export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
     setReplayKey((k) => k + 1);
   }, []);
 
-  // Durante SSR y antes del montaje: renderiza el SVG estático invisible para reservar el espacio exacto (CLS=0) sin iniciar animaciones prematuras que se corten en la hidratación
-  if (!mounted) {
+  // Durante SSR o mientras la GPU decodifica la imagen activa (isHeroReady=false):
+  // Renderiza el SVG estático invisible para reservar el espacio exacto (CLS=0) sin iniciar animaciones prematuras
+  if (!mounted || !isReady) {
     return (
       <div className="relative group/title select-none">
         <h1 className="sr-only">

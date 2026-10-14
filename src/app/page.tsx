@@ -369,7 +369,12 @@ export default function Home() {
         data-ambient-category="default"
         className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
       >
-        <DynamicHeroBackground activePhaseId={heroTime.phaseId} />
+        <DynamicHeroBackground 
+          activePhaseId={heroTime.phaseId}
+          displayedPeriod={heroTime.displayedPeriod}
+          previousPeriod={heroTime.previousPeriod}
+          isHeroReady={heroTime.isHeroReady}
+        />
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-4 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex-1 flex flex-col justify-between sm:justify-center">
           <motion.div 
@@ -405,7 +410,7 @@ export default function Home() {
                 />
               </div>
 
-              <HandwrittenHeroTitle />
+              <HandwrittenHeroTitle isReady={heroTime.isHeroReady} />
               
               <p className="mt-3 sm:mt-2.5 [@media(min-height:760px)]:mt-4 [@media(min-height:860px)]:mt-6 text-sm sm:text-xs md:text-base [@media(min-height:760px)]:md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
                 Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
