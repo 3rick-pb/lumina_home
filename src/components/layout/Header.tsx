@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, ShoppingBag, Menu, Home, Sparkles, User, X, ArrowRight, Layers } from "lucide-react";
@@ -12,7 +12,7 @@ import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
-import { LiquidGlass } from "@/components/ui/LiquidGlass";
+import { LiquidGlass, getDisplacementFilter } from "@/components/ui/LiquidGlass";
 import { LiquidScrubberNav } from "@/components/ui/LiquidScrubberNav";
 import dynamic from 'next/dynamic';
 const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod => ({ default: mod.CartDrawer })), {
@@ -47,6 +47,47 @@ export function Header() {
   const products = useCatalogStore((state) => state.products);
   const categories = useCatalogStore((state) => state.categories);
   const [isMounted, setIsMounted] = useState(false);
+
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [headerDims, setHeaderDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState(true);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
+      setHasSvgFilterSupport(isChromium);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const el = headerRef.current;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.ceil(rect.width);
+      const h = Math.ceil(rect.height);
+      if (w > 0 && h > 0) {
+        setHeaderDims((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const headerFilterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport || headerDims.width === 0 || headerDims.height === 0) return null;
+    return getDisplacementFilter({
+      width: headerDims.width,
+      height: headerDims.height,
+      radius: 9999,
+      depth: 4,
+      strength: 24,
+      chromaticAberration: 1.5,
+    });
+  }, [hasSvgFilterSupport, headerDims.width, headerDims.height]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -201,18 +242,45 @@ export function Header() {
       <CartDrawer />
       <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
         <div
-          className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full border border-white/75 dark:border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.08)] bg-white/40 dark:bg-[#18181b]/50 backdrop-blur-xl relative transform-gpu max-w-full"
+          ref={headerRef}
+          className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full relative transform-gpu max-w-full overflow-visible select-none"
         >
+          {/* Capa de Cristal Líquido Real de la Barra Superior (#srdavo-header-bar-glass) */}
+          <div
+            className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0"
+            style={{
+              clipPath: "inset(0 round 9999px)",
+              WebkitClipPath: "inset(0 round 9999px)",
+              backdropFilter: hasSvgFilterSupport && headerFilterUrl
+                ? `blur(0.8px) url('${headerFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
+              WebkitBackdropFilter: hasSvgFilterSupport && headerFilterUrl
+                ? `blur(0.8px) url('${headerFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.46) 0%, rgba(240,240,248,0.20) 100%)",
+              boxShadow: `
+                inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.88),
+                inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
+                inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
+                0 12px 40px rgba(0, 0, 0, 0.08)
+              `,
+              border: "1px solid rgba(255, 255, 255, 0.72)",
+            }}
+          >
+            {/* Reflejo especular superior característico de srdavo/liquid-glass */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full" />
+          </div>
           
           {/* Logo Section */}
-          <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
+          <Link href="/" className="relative z-10 pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
             <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 active:text-[#8c9276] [@media(hover:hover)]:group-hover:text-[#8c9276] transition-colors">
               {brand.logo.text}<span className="text-[#8c9276]">{brand.logo.accentDot}</span>
             </span>
           </Link>
 
           {/* Liquid Glass Navigation (Apple Fluid Hold & Slide + Direct Tap Scrubber) */}
-          <nav className="hidden md:flex items-center relative overflow-visible">
+          <nav className="relative z-10 hidden md:flex items-center overflow-visible">
             <LiquidScrubberNav
               items={navTabs.map((tab) => ({
                 id: tab.id,
@@ -232,13 +300,13 @@ export function Header() {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-4 pr-1 sm:pr-2">
+          <div className="relative z-10 flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-4 pr-1 sm:pr-2">
             
             {/* Profile Link */}
             <Link 
               href={isAuthenticated ? '/profile' : '/auth/login'}
               aria-label="Perfil" 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/45 dark:bg-[#18181b]/50 backdrop-blur-md border border-white/75 dark:border-white/20 text-gray-700 dark:text-gray-200 hover:bg-white/65 dark:hover:bg-[#18181b]/70 transition-all shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden active:scale-95 cursor-pointer"
               title={isAuthenticated ? `Mi Perfil (${user?.name || 'Cuenta'})` : "Iniciar Sesión"}
             >
               {isAuthenticated && user && showAvatarInNavbar ? (
@@ -263,7 +331,7 @@ export function Header() {
                   onChange={(e) => setSearchVal(e.target.value)}
                   placeholder="Buscar en catálogo..."
                   className={cn(
-                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 placeholder:text-gray-500 outline-none bg-white/50 backdrop-blur-md border border-white/60 focus:bg-white/90 focus:border-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
+                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none bg-white/50 dark:bg-[#18181b]/50 backdrop-blur-md border border-white/75 dark:border-white/20 focus:bg-white/90 dark:focus:bg-[#18181b]/90 focus:border-white/90 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.8),0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 
                       ? "w-32 sm:w-64 pr-8 opacity-100" 
                       : "w-9 sm:w-10 pr-0 opacity-0 group-hover:w-32 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-32 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
@@ -397,7 +465,7 @@ export function Header() {
                   y: rect.top + rect.height / 2
                 });
               }}
-              className="relative p-2 sm:p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shrink-0 cursor-pointer"
+              className="relative p-2 sm:p-2.5 rounded-full bg-white/45 dark:bg-[#18181b]/50 backdrop-blur-md border border-white/75 dark:border-white/20 text-gray-900 dark:text-gray-100 hover:bg-white/65 dark:hover:bg-[#18181b]/70 transition-all shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_4px_16px_rgba(0,0,0,0.05)] shrink-0 cursor-pointer active:scale-95"
             >
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {totalItems > 0 && (

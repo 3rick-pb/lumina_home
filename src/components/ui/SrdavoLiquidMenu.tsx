@@ -301,8 +301,8 @@ export function SrdavoLiquidMenu({
       lastFrameTime.current = now;
 
       // Auto-scroll controlado en los bordes al mantener arrastrada la gota:
-      // 1. Debe mantenerse en el borde continuamente durante 0.92s (920ms) antes de iniciar el desplazamiento.
-      // 2. Transcurridos los 0.92s, se desplaza a velocidad constante, ágil y fluida (~190 px/s).
+      // 1. Debe mantenerse en el borde continuamente durante 0.76s (760ms) antes de iniciar el desplazamiento.
+      // 2. Transcurridos los 0.76s, se desplaza a velocidad constante, más ágil (~240 px/s).
       if (scrubbing) {
         const edgeMargin = Math.min(12, s.slotWidth * 0.12);
         const maxScroll = Math.max(0, (items.length - visibleCount) * s.slotWidth);
@@ -320,8 +320,8 @@ export function SrdavoLiquidMenu({
             edgeEnteredTime.current = now;
           } else {
             const dwellTime = now - edgeEnteredTime.current;
-            if (dwellTime >= 920) {
-              const scrollSpeed = 190; // px/segundo constante, más ágil y fluido
+            if (dwellTime >= 760) {
+              const scrollSpeed = 240; // px/segundo constante, aún más ágil y fluido
               const delta = scrollSpeed * dt;
 
               if (activeEdge === "right") {

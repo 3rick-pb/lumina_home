@@ -155,6 +155,82 @@ export function getDisplacementFilter({
   return result;
 }
 
+let cachedCapsuleBezelMapUrl = "";
+
+/**
+ * Mapa óptico de cápsula (srdavo/liquid-glass):
+ * - Centro plano (rgb(128,128,128)) para que el ícono, badge y texto se vean limpios.
+ * - Bisel lateral grueso con inversión en el labio exterior para curvar los íconos al pasar.
+ */
+export function getCapsuleInverseBezelMap(): string {
+  if (typeof document === "undefined") return "";
+  if (cachedCapsuleBezelMapUrl) return cachedCapsuleBezelMapUrl;
+
+  const W = 256;
+  const H = 128;
+  const R = H / 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  const img = ctx.createImageData(W, H);
+  const data = img.data;
+
+  const bezelStart = 0.56;
+  const bezelSpan = 1.0 - bezelStart;
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const cx = Math.max(R, Math.min(W - R, x));
+      const cy = R;
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.hypot(dx, dy);
+      const r = dist / R;
+
+      let rChan = 128;
+      let gChan = 128;
+
+      if (r > bezelStart && r <= 1.04 && dist > 0.001) {
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const t = Math.min(1, (r - bezelStart) / bezelSpan);
+
+        let profile = 0;
+        if (t < 0.58) {
+          const u = t / 0.58;
+          profile = -Math.sin(u * Math.PI) * 0.76;
+        } else {
+          const v = (t - 0.58) / 0.42;
+          profile = Math.pow(Math.sin(v * Math.PI * 0.5), 1.35) * 1.0;
+        }
+
+        const lateralWeight = 0.35 + 0.65 * Math.abs(nx);
+        rChan = Math.max(
+          0,
+          Math.min(255, Math.round(128 + nx * profile * 127))
+        );
+        gChan = Math.max(
+          0,
+          Math.min(255, Math.round(128 + ny * profile * lateralWeight * 68))
+        );
+      }
+
+      const idx = (y * W + x) * 4;
+      data[idx] = rChan;
+      data[idx + 1] = gChan;
+      data[idx + 2] = 128;
+      data[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(img, 0, 0);
+  cachedCapsuleBezelMapUrl = canvas.toDataURL("image/png");
+  return cachedCapsuleBezelMapUrl;
+}
+
 // ============================================================================
 // REACT COMPONENT: LIQUID GLASS (DIV CONTAINER)
 // ============================================================================
