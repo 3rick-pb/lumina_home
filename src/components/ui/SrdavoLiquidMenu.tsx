@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { getDisplacementFilter } from "./LiquidGlass";
 
 export interface LiquidTabItem {
@@ -22,18 +22,36 @@ export interface SrdavoLiquidMenuProps {
   className?: string;
 }
 
+// Estado físico persistente a nivel de módulo:
+// Garantiza que aunque la página de Lumina re-monte el menú al cambiar de pestaña,
+// la píldora nunca se teletransporte y siempre viaje desde su coordenada anterior.
+const persistedPhysics = {
+  initialized: false,
+  leftX: 0,
+  rightX: 0,
+  velLeftX: 0,
+  velRightX: 0,
+  scrollX: 0,
+  targetScrollX: 0,
+  velScrollX: 0,
+  extraW: 0,
+  extraH: 0,
+  refraction: 0,
+  glassAlpha: 0,
+};
+
+let cachedBezelMapUrl = "";
+
 /**
- * Generador de mapas de desplazamiento SDF basados en srdavo/liquid-glass:
- * - "pill-fg": Bordes laterales más gruesos (bezelStart = 0.54) con inversión óptica para íconos vecinos.
- * - "pill-bg": Refractor completo (X e Y) para el backdrop de la píldora flotante.
- * - "bar": Mapa de refracción de cápsula ancha para el cuerpo del menú principal.
- * - "orb": Mapa de lente circular para el botón de la lupa de búsqueda.
+ * Mapa óptico de cápsula (srdavo/liquid-glass):
+ * - Centro plano (rgb(128,128,128)) para que el ícono, badge y texto se vean limpios.
+ * - Bisel lateral grueso con inversión en el labio exterior para curvar los íconos al pasar.
  */
-function createSrdavoDisplacementMap(
-  type: "pill-fg" | "pill-bg" | "bar" | "orb"
-): string {
+function getCapsuleInverseBezelMap(): string {
   if (typeof document === "undefined") return "";
-  const W = type === "bar" ? 360 : type === "orb" ? 128 : 256;
+  if (cachedBezelMapUrl) return cachedBezelMapUrl;
+
+  const W = 256;
   const H = 128;
   const R = H / 2;
   const canvas = document.createElement("canvas");
@@ -45,7 +63,7 @@ function createSrdavoDisplacementMap(
   const img = ctx.createImageData(W, H);
   const data = img.data;
 
-  const bezelStart = type === "bar" ? 0.62 : type === "orb" ? 0.48 : 0.54;
+  const bezelStart = 0.56;
   const bezelSpan = 1.0 - bezelStart;
 
   for (let y = 0; y < H; y++) {
@@ -68,29 +86,21 @@ function createSrdavoDisplacementMap(
         let profile = 0;
         if (t < 0.58) {
           const u = t / 0.58;
-          profile = -Math.sin(u * Math.PI) * 0.78;
+          profile = -Math.sin(u * Math.PI) * 0.76;
         } else {
           const v = (t - 0.58) / 0.42;
           profile = Math.pow(Math.sin(v * Math.PI * 0.5), 1.35) * 1.0;
         }
 
+        const lateralWeight = 0.35 + 0.65 * Math.abs(nx);
         rChan = Math.max(
           0,
           Math.min(255, Math.round(128 + nx * profile * 127))
         );
-
-        if (type === "pill-fg") {
-          const lateralWeight = 0.35 + 0.65 * Math.abs(nx);
-          gChan = Math.max(
-            0,
-            Math.min(255, Math.round(128 + ny * profile * lateralWeight * 68))
-          );
-        } else {
-          gChan = Math.max(
-            0,
-            Math.min(255, Math.round(128 - ny * profile * 127))
-          );
-        }
+        gChan = Math.max(
+          0,
+          Math.min(255, Math.round(128 + ny * profile * lateralWeight * 68))
+        );
       }
 
       const idx = (y * W + x) * 4;
@@ -102,7 +112,8 @@ function createSrdavoDisplacementMap(
   }
 
   ctx.putImageData(img, 0, 0);
-  return canvas.toDataURL("image/png");
+  cachedBezelMapUrl = canvas.toDataURL("image/png");
+  return cachedBezelMapUrl;
 }
 
 export function SrdavoLiquidMenu({
@@ -115,18 +126,49 @@ export function SrdavoLiquidMenu({
   className = "",
 }: SrdavoLiquidMenuProps) {
   const activeIndex = Math.max(0, items.findIndex((i) => i.id === activeId));
-  const [isElevated, setIsElevated] = useState(false);
+  const [bezelMapUrl, setBezelMapUrl] = useState<string>("");
   const [isSearchPressed, setIsSearchPressed] = useState(false);
-
-  const [maps, setMaps] = useState<{
-    fg: string;
-    bg: string;
-    bar: string;
-    orb: string;
-  }>({ fg: "", bg: "", bar: "", orb: "" });
-
   const [trackDims, setTrackDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState<boolean>(true);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const grayWindowRef = useRef<HTMLDivElement>(null);
+  const grayStripRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
+  const blackStripRef = useRef<HTMLDivElement>(null);
+  const rimOverlayRef = useRef<HTMLDivElement>(null);
+
+  const fgFilterRef = useRef<SVGFilterElement>(null);
+  const bgFilterRef = useRef<SVGFilterElement>(null);
+  const fgImageRef = useRef<SVGFEImageElement>(null);
+  const bgImageRef = useRef<SVGFEImageElement>(null);
+  const fgDisplacementRef = useRef<SVGFEDisplacementMapElement>(null);
+  const bgDisplacementRef = useRef<SVGFEDisplacementMapElement>(null);
+
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const edgeTimer = useRef<number>(0);
+
+  const state = useRef({
+    slotWidth: 100,
+    trackWidth: 300,
+    leftX: persistedPhysics.leftX,
+    rightX: persistedPhysics.rightX,
+    velLeftX: persistedPhysics.velLeftX,
+    velRightX: persistedPhysics.velRightX,
+    targetPillX: 0,
+    scrollX: persistedPhysics.scrollX,
+    targetScrollX: persistedPhysics.targetScrollX,
+    velScrollX: persistedPhysics.velScrollX,
+    extraW: persistedPhysics.extraW,
+    extraH: persistedPhysics.extraH,
+    refraction: persistedPhysics.refraction,
+    glassAlpha: persistedPhysics.glassAlpha,
+    mode: "idle" as "idle" | "pending" | "scrubbing" | "scrolling",
+    elevated: false,
+    startX: 0,
+    startScrollX: 0,
+    pointerX: 0,
+  });
 
   // Detectar soporte para filtros SVG en backdrop-filter
   useEffect(() => {
@@ -135,6 +177,11 @@ export function SrdavoLiquidMenu({
       const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
       setHasSvgFilterSupport(isChromium);
     }
+  }, []);
+
+  // Generar mapa óptico de cápsula para refracción de bordes
+  useEffect(() => {
+    setBezelMapUrl(getCapsuleInverseBezelMap());
   }, []);
 
   // Medir dimensiones del track para alimentar el filtro oficial de srdavo/liquid-glass
@@ -181,90 +228,23 @@ export function SrdavoLiquidMenu({
     });
   }, [hasSvgFilterSupport, isSearchPressed]);
 
-  useEffect(() => {
-    setMaps({
-      fg: createSrdavoDisplacementMap("pill-fg"),
-      bg: createSrdavoDisplacementMap("pill-bg"),
-      bar: createSrdavoDisplacementMap("bar"),
-      orb: createSrdavoDisplacementMap("orb"),
-    });
-  }, []);
-
-  const trackRef = useRef<HTMLDivElement>(null);
-  const grayWindowRef = useRef<HTMLDivElement>(null);
-  const grayStripRef = useRef<HTMLDivElement>(null);
-  const pillRef = useRef<HTMLDivElement>(null);
-  const blackStripRef = useRef<HTMLDivElement>(null);
-
-  const fgFilterRef = useRef<SVGFilterElement>(null);
-  const bgFilterRef = useRef<SVGFilterElement>(null);
-  const barFilterRef = useRef<SVGFilterElement>(null);
-  const fgImageRef = useRef<SVGFEImageElement>(null);
-  const bgImageRef = useRef<SVGFEImageElement>(null);
-  const barImageRef = useRef<SVGFEImageElement>(null);
-  const fgDisplacementRef = useRef<SVGFEDisplacementMapElement>(null);
-  const bgDisplacementRef = useRef<SVGFEDisplacementMapElement>(null);
-
-  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const edgeTimer = useRef<number>(0);
-
-  const state = useRef({
-    slotWidth: 100,
-    trackWidth: 300,
-    leftX: 0,
-    rightX: 0,
-    velLeftX: 0,
-    velRightX: 0,
-    targetPillX: 0,
-    scrollX: 0,
-    targetScrollX: 0,
-    velScrollX: 0,
-    extraW: 0,
-    extraH: 0,
-    refraction: 0,
-    mode: "idle" as "idle" | "pending" | "scrubbing" | "scrolling",
-    elevated: false,
-    inFlight: false,
-    startX: 0,
-    startY: 0,
-    startScrollX: 0,
-    pointerX: 0,
-  });
-
-  useEffect(() => {
-    setMaps({
-      fg: createSrdavoDisplacementMap("pill-fg"),
-      bg: createSrdavoDisplacementMap("pill-bg"),
-      bar: createSrdavoDisplacementMap("bar"),
-      orb: createSrdavoDisplacementMap("orb"),
-    });
-  }, []);
-
-  const syncLayout = useCallback(
-    (immediate = false) => {
+  // Medir geometría y calcular destino sin destruir la posición actual del resorte
+  const updateTargets = useCallback(
+    (snapImmediately = false) => {
       if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
-      const visibleW = grayWindowRef.current?.clientWidth || Math.max(120, rect.width - 8);
-      const slotW = visibleW / visibleCount;
+      if (rect.width <= 0) return;
+
+      const innerW = grayWindowRef.current?.clientWidth || Math.max(120, rect.width - 8);
+      const slotW = innerW / visibleCount;
 
       const s = state.current;
-      s.trackWidth = visibleW;
+      s.trackWidth = innerW;
       s.slotWidth = slotW;
 
-      if (barFilterRef.current && barImageRef.current) {
-        const bw = rect.width.toFixed(1);
-        const bh = rect.height.toFixed(1);
-        barFilterRef.current.setAttribute("width", bw);
-        barFilterRef.current.setAttribute("height", bh);
-        barImageRef.current.setAttribute("width", bw);
-        barImageRef.current.setAttribute("height", bh);
-      }
-
-      // Si estamos haciendo scroll manual, no forzar el salto de página hasta seleccionar
+      // Si no estamos en scroll manual libre, calcular la página y posición de destino
       if (s.mode !== "scrolling") {
         const maxScroll = Math.max(0, (items.length - visibleCount) * slotW);
-        // Asegurar que el ícono activo sea visible dentro de la ventana actual
         let nextScrollX = s.targetScrollX;
         const activeAbsX = activeIndex * slotW;
         if (activeAbsX < nextScrollX) {
@@ -278,26 +258,33 @@ export function SrdavoLiquidMenu({
         s.targetScrollX = nextScrollX;
         s.targetPillX = nextPillX;
 
-        if (immediate) {
+        if (snapImmediately && !persistedPhysics.initialized) {
           s.scrollX = nextScrollX;
           s.leftX = nextPillX;
           s.rightX = nextPillX;
+          persistedPhysics.initialized = true;
         }
       }
     },
     [activeIndex, items.length, visibleCount]
   );
 
+  // Cuando cambia activeIndex (por un toque o navegación), SOLO actualizamos el objetivo (snapImmediately = false)
+  // para que los resortes viajen suavemente desde la coordenada anterior hasta la nueva
   useEffect(() => {
-    syncLayout(false);
-  }, [activeIndex, syncLayout]);
+    updateTargets(false);
+  }, [activeIndex, updateTargets]);
 
+  // Snap inicial único al montar la app o al redimensionar la ventana
   useEffect(() => {
-    syncLayout(true);
-    const onResize = () => syncLayout(true);
+    updateTargets(true);
+    const onResize = () => {
+      persistedPhysics.initialized = false;
+      updateTargets(true);
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [syncLayout]);
+  }, [updateTargets]);
 
   useEffect(() => {
     let rafId: number;
@@ -305,38 +292,30 @@ export function SrdavoLiquidMenu({
     const animate = (now: number) => {
       const s = state.current;
       const scrubbing = s.mode === "scrubbing";
-      const scrolling = s.mode === "scrolling";
 
-      // Auto-scroll suave de 1 en 1 ícono cuando mantienes la gota en el borde
-      if (scrubbing && now - edgeTimer.current > 340) {
-        const edge = s.slotWidth * 0.22;
+      // Auto-scroll en los bordes al mantener arrastrada la gota
+      if (scrubbing && now - edgeTimer.current > 400) {
+        const edge = s.slotWidth * 0.24;
         const maxScroll = Math.max(0, (items.length - visibleCount) * s.slotWidth);
         if (s.targetPillX > s.trackWidth - s.slotWidth - edge && s.targetScrollX < maxScroll) {
-          s.targetScrollX = Math.min(maxScroll, s.targetScrollX + s.slotWidth);
+          s.targetScrollX = Math.min(maxScroll, s.targetScrollX + s.slotWidth * visibleCount);
           edgeTimer.current = now;
         } else if (s.targetPillX < edge && s.targetScrollX > 0) {
-          s.targetScrollX = Math.max(0, s.targetScrollX - s.slotWidth);
+          s.targetScrollX = Math.max(0, s.targetScrollX - s.slotWidth * visibleCount);
           edgeTimer.current = now;
         }
       }
 
-      // 1. Física del carrusel de ~10 íconos (1:1 inmediato al deslizar con el dedo, sin lag)
-      const cStiff = scrolling ? 0.48 : 0.16;
-      const cDamp = scrolling ? 0.62 : 0.78;
-      s.velScrollX = (s.velScrollX + (s.targetScrollX - s.scrollX) * cStiff) * cDamp;
-      s.scrollX += s.velScrollX;
+      // 1. Física de Doble Resorte Asimétrico (Oruga Líquida):
+      // El borde delantero sale rápido hacia el nuevo ícono y el trasero lo sigue con elasticidad,
+      // estirando la cápsula entre ambos botones durante el trayecto y contrayéndola al aterrizar.
+      const centerPos = (s.leftX + s.rightX) * 0.5;
+      const movingRight = s.targetPillX >= centerPos;
 
-      // Si no está arrastrando la gota, la píldora sigue la posición de su ícono activo respecto al scroll
-      if (!scrubbing && !s.inFlight) {
-        s.targetPillX = activeIndex * s.slotWidth - s.scrollX;
-      }
-
-      // 2. Física de Doble Resorte para la píldora (efecto oruga líquida al tocar otro ícono)
-      const movingRight = s.targetPillX >= (s.leftX + s.rightX) * 0.5;
-      const fastStiff = scrubbing ? 0.32 : scrolling ? 0.55 : 0.24;
-      const fastDamp = scrubbing ? 0.68 : scrolling ? 0.60 : 0.75;
-      const slowStiff = scrubbing ? 0.24 : scrolling ? 0.55 : 0.11;
-      const slowDamp = scrubbing ? 0.70 : scrolling ? 0.60 : 0.77;
+      const fastStiff = scrubbing ? 0.30 : 0.28;
+      const fastDamp = scrubbing ? 0.68 : 0.72;
+      const slowStiff = scrubbing ? 0.22 : 0.11;
+      const slowDamp = scrubbing ? 0.70 : 0.75;
 
       const leftStiff = movingRight ? slowStiff : fastStiff;
       const leftDamp = movingRight ? slowDamp : fastDamp;
@@ -349,42 +328,60 @@ export function SrdavoLiquidMenu({
       s.velRightX = (s.velRightX + (s.targetPillX - s.rightX) * rightStiff) * rightDamp;
       s.rightX += s.velRightX;
 
-      const rawSpanLeft = Math.min(s.leftX, s.rightX);
-      const rawSpanRight = Math.max(s.leftX, s.rightX) + s.slotWidth;
-      const stretchSpan = rawSpanRight - rawSpanLeft - s.slotWidth;
+      // 2. Física del carrusel de ~10 ítems (1:1 inmediato al deslizar con el dedo)
+      const cStiff = s.mode === "scrolling" ? 0.44 : 0.16;
+      const cDamp = s.mode === "scrolling" ? 0.62 : 0.78;
+      s.velScrollX = (s.velScrollX + (s.targetScrollX - s.scrollX) * cStiff) * cDamp;
+      s.scrollX += s.velScrollX;
 
-      // 3. Elevación y desborde tanto al mantener presionado como al viajar con un toque (inFlight)
-      const activeGlass = s.elevated || s.inFlight;
-      const targetExtraW = s.elevated
-        ? 12
-        : s.inFlight
-        ? 8 + Math.min(6, stretchSpan * 0.2)
-        : 0;
-      const targetExtraH = s.elevated
-        ? 28
-        : s.inFlight
-        ? 22
-        : 0;
+      const spanLeft = Math.min(s.leftX, s.rightX);
+      const spanRight = Math.max(s.leftX, s.rightX) + s.slotWidth;
+      const stretchSpan = Math.max(0, spanRight - spanLeft - s.slotWidth);
+      const avgSpeed = (Math.abs(s.velLeftX) + Math.abs(s.velRightX)) * 0.5;
+      const distToTarget = Math.abs(s.targetPillX - centerPos);
+
+      // 3. Activación automática del cristal líquido durante el vuelo de un toque simple (flightIntensity)
+      const flightIntensity = Math.min(
+        1,
+        stretchSpan / Math.max(1, s.slotWidth * 0.32) +
+          avgSpeed / 3.2 +
+          distToTarget / Math.max(1, s.slotWidth * 0.65)
+      );
+
+      const targetGlassAlpha = s.elevated ? 1 : flightIntensity > 0.08 ? Math.min(1, flightIntensity * 1.15) : 0;
+      s.glassAlpha += (targetGlassAlpha - s.glassAlpha) * 0.25;
+
+      // 4. Desborde vertical y horizontal tanto al mantener pulsado como al viajar con un toque
+      const targetExtraW = s.elevated ? 22 : s.glassAlpha * 16;
+      const targetExtraH = s.elevated ? 28 : s.glassAlpha * 22;
 
       s.extraW += (targetExtraW - s.extraW) * 0.24;
       s.extraH += (targetExtraH - s.extraH) * 0.24;
 
-      // 4. Potencia de refracción en los bordes
-      const targetRefraction = activeGlass ? 44 : 0;
-      s.refraction += (targetRefraction - s.refraction) * 0.24;
+      // 5. Potencia de refracción en los bordes proporcional a glassAlpha
+      const targetRefraction = s.elevated ? 42 : s.glassAlpha * 38;
+      s.refraction += (targetRefraction - s.refraction) * 0.25;
 
-      // 5. Clampeo horizontal para que la píldora NUNCA se salga sobre la lupa al hacer scroll
-      const clampedLeft = Math.max(0, rawSpanLeft);
-      const clampedRight = Math.min(s.trackWidth, rawSpanRight);
-      const visibleSpanW = clampedRight - clampedLeft;
+      // Guardar en memoria persistente para sobrevivir re-montados de componente
+      persistedPhysics.leftX = s.leftX;
+      persistedPhysics.rightX = s.rightX;
+      persistedPhysics.velLeftX = s.velLeftX;
+      persistedPhysics.velRightX = s.velRightX;
+      persistedPhysics.scrollX = s.scrollX;
+      persistedPhysics.targetScrollX = s.targetScrollX;
+      persistedPhysics.velScrollX = s.velScrollX;
+      persistedPhysics.extraW = s.extraW;
+      persistedPhysics.extraH = s.extraH;
+      persistedPhysics.refraction = s.refraction;
+      persistedPhysics.glassAlpha = s.glassAlpha;
 
       const totalStripW = items.length * s.slotWidth;
-      const pillW = Math.max(0, visibleSpanW + s.extraW);
+      const pillW = Math.max(40, spanRight - spanLeft + s.extraW);
       const pillH = 50 + s.extraH;
-      const pillLeft = 4 + clampedLeft - s.extraW / 2;
+      const pillLeft = 4 + spanLeft - s.extraW / 2;
       const pillTop = 4 - s.extraH / 2;
 
-      const wStr = Math.max(1, pillW).toFixed(1);
+      const wStr = pillW.toFixed(1);
       const hStr = pillH.toFixed(1);
       const scaleStr = s.refraction.toFixed(1);
 
@@ -403,32 +400,46 @@ export function SrdavoLiquidMenu({
         bgDisplacementRef.current.setAttribute("scale", scaleStr);
       }
 
-      // Mover tira gris de fondo y recortar máscara bajo la píldora
+      // Mover tira gris de fondo y actualizar máscara bajo la píldora
       if (grayStripRef.current && grayWindowRef.current) {
         grayStripRef.current.style.width = `${totalStripW}px`;
         grayStripRef.current.style.transform = `translate3d(${-s.scrollX}px, 0, 0)`;
 
-        if (visibleSpanW > 4) {
-          const holeLeft = Math.max(0, clampedLeft - s.extraW / 2 + 3);
-          const holeRight = Math.min(s.trackWidth, clampedRight + s.extraW / 2 - 3);
-          const mask = `linear-gradient(to right, #000 0px, #000 ${holeLeft}px, transparent ${holeLeft + 2}px, transparent ${holeRight - 2}px, #000 ${holeRight}px, #000 100%)`;
-          grayWindowRef.current.style.maskImage = mask;
-          grayWindowRef.current.style.webkitMaskImage = mask;
-        } else {
-          grayWindowRef.current.style.maskImage = "none";
-          grayWindowRef.current.style.webkitMaskImage = "none";
-        }
+        const holeLeft = Math.max(0, spanLeft - s.extraW / 2 + 3);
+        const holeRight = Math.min(s.trackWidth, spanRight + s.extraW / 2 - 3);
+        const mask = `linear-gradient(to right, #000 0px, #000 ${holeLeft}px, transparent ${holeLeft + 2}px, transparent ${holeRight - 2}px, #000 ${holeRight}px, #000 100%)`;
+        grayWindowRef.current.style.maskImage = mask;
+        grayWindowRef.current.style.webkitMaskImage = mask;
       }
 
-      // Posicionar píldora y compensar tira negra interna
-      if (pillRef.current && blackStripRef.current) {
-        const pillOpacity = Math.min(1, Math.max(0, visibleSpanW / (s.slotWidth * 0.35)));
-        pillRef.current.style.opacity = pillOpacity.toFixed(2);
+      // Posicionar píldora, interpolar su transparencia de cristal en vivo y alinear la tira negra interna
+      if (pillRef.current && blackStripRef.current && rimOverlayRef.current) {
         pillRef.current.style.width = `${pillW}px`;
         pillRef.current.style.height = `${pillH}px`;
         pillRef.current.style.transform = `translate3d(${pillLeft}px, ${pillTop}px, 0)`;
 
-        const innerX = -clampedLeft - s.scrollX + s.extraW / 2;
+        // Interpolación continua entre Reposo Mate (glassAlpha = 0) y Cristal Líquido (glassAlpha = 1)
+        const a = s.glassAlpha;
+        const topAlpha = (0.44 - a * 0.16).toFixed(3);
+        const midAlpha = (0.18 - a * 0.12).toFixed(3);
+        const botAlpha = (0.35 - a * 0.15).toFixed(3);
+        pillRef.current.style.background = `linear-gradient(180deg, rgba(255,255,255,${topAlpha}) 0%, rgba(255,255,255,${midAlpha}) 50%, rgba(255,255,255,${botAlpha}) 100%)`;
+        const filterVal =
+          a > 0.05
+            ? `blur(${(12 + a * 2).toFixed(1)}px) saturate(${(190 + a * 20).toFixed(0)}%) brightness(1.10)`
+            : "blur(12px) saturate(190%) brightness(1.08)";
+        pillRef.current.style.backdropFilter = filterVal;
+        pillRef.current.style.setProperty("-webkit-backdrop-filter", filterVal);
+
+        rimOverlayRef.current.style.boxShadow =
+          a > 0.1
+            ? `inset 0 ${(1.5 + a * 2).toFixed(1)}px ${(2 + a * 5).toFixed(1)}px rgba(255, 255, 255, 0.98),
+               inset 0 -${(1 + a * 2.5).toFixed(1)}px ${(2 + a * 5).toFixed(1)}px rgba(255, 255, 255, 0.88),
+               inset 0 0 ${(12 * a).toFixed(1)}px rgba(255, 255, 255, 0.35),
+               0 ${(4 + a * 8).toFixed(1)}px ${(14 + a * 14).toFixed(1)}px rgba(0, 0, 0, ${(0.08 + a * 0.08).toFixed(2)})`
+            : "inset 0 1.5px 2px rgba(255, 255, 255, 0.95), inset 0 -1px 2px rgba(255, 255, 255, 0.5), 0 4px 14px rgba(0, 0, 0, 0.08)";
+
+        const innerX = -spanLeft - s.scrollX + s.extraW / 2;
         const innerY = -4 + s.extraH / 2;
         blackStripRef.current.style.width = `${totalStripW}px`;
         blackStripRef.current.style.transform = `translate3d(${innerX}px, ${innerY}px, 0)`;
@@ -439,7 +450,7 @@ export function SrdavoLiquidMenu({
 
     rafId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafId);
-  }, [activeIndex, items.length, visibleCount]);
+  }, [items.length, visibleCount]);
 
   const clampPillX = (clientX: number) => {
     if (!trackRef.current) return 0;
@@ -449,35 +460,39 @@ export function SrdavoLiquidMenu({
     return Math.max(0, Math.min(trackWidth - slotWidth, raw));
   };
 
-  const setGlassVisualState = (elevated: boolean, inFlight = false) => {
-    state.current.elevated = elevated;
-    state.current.inFlight = inFlight;
-    setIsElevated(elevated || inFlight);
-  };
-
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
     if (holdTimer.current) clearTimeout(holdTimer.current);
-    if (flightTimer.current) clearTimeout(flightTimer.current);
 
     const s = state.current;
     s.startX = e.clientX;
-    s.startY = e.clientY;
     s.pointerX = e.clientX;
     s.startScrollX = s.scrollX;
-    s.mode = "pending";
 
-    // Solo si mantiene presionado quieto durante 200ms se activa el arrastre de la gota Liquid Glass.
-    // Así cualquier swipe inmediato mueve el carrusel sin lag ni confusión.
-    holdTimer.current = setTimeout(() => {
-      if (state.current.mode === "pending") {
-        state.current.mode = "scrubbing";
-        setGlassVisualState(true, false);
-        state.current.targetPillX = clampPillX(state.current.pointerX);
-      }
-    }, 200);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const localX = e.clientX - rect.left - 4;
+    const spanLeft = Math.min(s.leftX, s.rightX);
+    const spanRight = Math.max(s.leftX, s.rightX) + s.slotWidth;
+    const hitActivePill = localX >= spanLeft - 4 && localX <= spanRight + 4;
+
+    if (hitActivePill) {
+      s.mode = "scrubbing";
+      s.elevated = true;
+      s.targetPillX = clampPillX(e.clientX);
+    } else {
+      s.mode = "pending";
+      // Si mantiene presionado más de 170ms sobre otro ícono, invoca la burbuja hacia el dedo.
+      // Si suelta antes (toque directo), handlePointerUp dispara el vuelo elástico inmediato.
+      holdTimer.current = setTimeout(() => {
+        if (state.current.mode === "pending") {
+          state.current.mode = "scrubbing";
+          state.current.elevated = true;
+          state.current.targetPillX = clampPillX(state.current.pointerX);
+        }
+      }, 170);
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -485,11 +500,10 @@ export function SrdavoLiquidMenu({
     s.pointerX = e.clientX;
     const dx = e.clientX - s.startX;
 
-    // Si desliza el dedo más de 6px antes de los 200ms -> es un Swipe del carrusel 100% fluido
-    if (s.mode === "pending" && Math.abs(dx) > 6) {
+    if (s.mode === "pending" && Math.abs(dx) > 8) {
       if (holdTimer.current) clearTimeout(holdTimer.current);
       s.mode = "scrolling";
-      setGlassVisualState(false, false);
+      s.elevated = false;
     }
 
     if (s.mode === "scrubbing") {
@@ -512,62 +526,44 @@ export function SrdavoLiquidMenu({
     const maxScroll = Math.max(0, (items.length - visibleCount) * s.slotWidth);
 
     if (s.mode === "scrolling") {
-      // Al terminar de deslizar el carrusel: encaja al slot más cercano con inercia, NUNCA selecciona un ícono por error
       const inertia = (s.startX - e.clientX) * 0.35;
       const snappedScroll =
         Math.round((s.targetScrollX + inertia) / s.slotWidth) * s.slotWidth;
       s.targetScrollX = Math.max(0, Math.min(maxScroll, snappedScroll));
-      setGlassVisualState(false, false);
-    } else if (s.mode === "pending") {
-      // Toque limpio (Tap) sobre un ícono -> Vuelo Líquido con estiramiento y refracción activa
+      s.elevated = false;
+    } else if (s.mode === "pending" || s.mode === "scrubbing") {
+      s.elevated = false;
+
       if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
-      const localClickX = e.clientX - rect.left - 4;
-      const absClickX = s.scrollX + localClickX;
+      const targetLocalX =
+        s.mode === "pending"
+          ? e.clientX - rect.left - 4
+          : s.targetPillX + s.slotWidth / 2;
+
+      const absTargetX = s.targetScrollX + targetLocalX;
       const nextIdx = Math.max(
         0,
-        Math.min(items.length - 1, Math.floor(absClickX / s.slotWidth))
+        Math.min(items.length - 1, Math.floor(absTargetX / s.slotWidth))
       );
 
-      const nextTargetX = nextIdx * s.slotWidth - s.targetScrollX;
-      if (nextIdx !== activeIndex) {
-        // Activar el cristal líquido durante el vuelo entre el ícono viejo y el nuevo
-        setGlassVisualState(false, true);
-        s.targetPillX = nextTargetX;
-        if (items[nextIdx]) {
-          onSelect(items[nextIdx].id);
-          items[nextIdx].onClick?.();
-        }
-        flightTimer.current = setTimeout(() => {
-          setGlassVisualState(false, false);
-        }, 380);
-      } else {
-        // Pequeño pulso líquido si toca el ícono que ya estaba activo
-        setGlassVisualState(false, true);
-        if (items[nextIdx]) {
-          onSelect(items[nextIdx].id);
-          items[nextIdx].onClick?.();
-        }
-        flightTimer.current = setTimeout(() => {
-          setGlassVisualState(false, false);
-        }, 220);
-      }
-    } else if (s.mode === "scrubbing") {
-      // Soltó después de arrastrar la gota manteniendo presionado
-      const absCenter = s.targetScrollX + s.targetPillX + s.slotWidth / 2;
-      const nextIdx = Math.max(
-        0,
-        Math.min(items.length - 1, Math.floor(absCenter / s.slotWidth))
-      );
-
+      // Fijamos el nuevo destino del resorte ANTES de notificar a React
       s.targetPillX = nextIdx * s.slotWidth - s.targetScrollX;
+
+      // Damos un impulso inicial al borde delantero en toques directos para que el estiramiento sea inmediato
+      if (s.mode === "pending" && nextIdx !== activeIndex) {
+        const dir = s.targetPillX > s.leftX ? 1 : -1;
+        if (dir > 0) {
+          s.velRightX += 6;
+        } else {
+          s.velLeftX -= 6;
+        }
+      }
+
       if (items[nextIdx]) {
         onSelect(items[nextIdx].id);
         items[nextIdx].onClick?.();
       }
-      flightTimer.current = setTimeout(() => {
-        setGlassVisualState(false, false);
-      }, 180);
     }
 
     s.mode = "idle";
@@ -575,10 +571,8 @@ export function SrdavoLiquidMenu({
 
   return (
     <>
-      {/* Filtros SVG de srdavo/liquid-glass para los 3 elementos: Barra, Píldora y Lupa */}
       <svg className="fixed w-0 h-0 pointer-events-none" aria-hidden="true">
         <defs>
-          {/* 1. Filtro del frente de la píldora (íconos activos) */}
           <filter
             ref={fgFilterRef}
             id="srdavo-pill-fg"
@@ -590,10 +584,10 @@ export function SrdavoLiquidMenu({
             height="78"
             colorInterpolationFilters="sRGB"
           >
-            {maps.fg && (
+            {bezelMapUrl && (
               <feImage
                 ref={fgImageRef}
-                href={maps.fg}
+                href={bezelMapUrl}
                 x="0"
                 y="0"
                 width="120"
@@ -612,7 +606,6 @@ export function SrdavoLiquidMenu({
             />
           </filter>
 
-          {/* 2. Filtro de fondo de la píldora */}
           <filter
             ref={bgFilterRef}
             id="srdavo-pill-bg"
@@ -624,10 +617,10 @@ export function SrdavoLiquidMenu({
             height="78"
             colorInterpolationFilters="sRGB"
           >
-            {maps.bg && (
+            {bezelMapUrl && (
               <feImage
                 ref={bgImageRef}
-                href={maps.bg}
+                href={bezelMapUrl}
                 x="0"
                 y="0"
                 width="120"
@@ -641,70 +634,6 @@ export function SrdavoLiquidMenu({
               in="SourceGraphic"
               in2="bezelMap"
               scale="0"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-
-          {/* 3. Filtro Liquid Glass para el Cuerpo del Menú */}
-          <filter
-            ref={barFilterRef}
-            id="srdavo-bar-glass"
-            filterUnits="userSpaceOnUse"
-            primitiveUnits="userSpaceOnUse"
-            x="0"
-            y="0"
-            width="320"
-            height="58"
-            colorInterpolationFilters="sRGB"
-          >
-            {maps.bar && (
-              <feImage
-                ref={barImageRef}
-                href={maps.bar}
-                x="0"
-                y="0"
-                width="320"
-                height="58"
-                preserveAspectRatio="none"
-                result="barMap"
-              />
-            )}
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="barMap"
-              scale="24"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-
-          {/* 4. Filtro Liquid Glass para el Botón Circular de la Lupa */}
-          <filter
-            id="srdavo-lupa-glass"
-            filterUnits="userSpaceOnUse"
-            primitiveUnits="userSpaceOnUse"
-            x="0"
-            y="0"
-            width="58"
-            height="58"
-            colorInterpolationFilters="sRGB"
-          >
-            {maps.orb && (
-              <feImage
-                href={maps.orb}
-                x="0"
-                y="0"
-                width="58"
-                height="58"
-                preserveAspectRatio="none"
-                result="orbMap"
-              />
-            )}
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="orbMap"
-              scale={isSearchPressed ? "36" : "24"}
               xChannelSelector="R"
               yChannelSelector="G"
             />
@@ -760,7 +689,7 @@ export function SrdavoLiquidMenu({
           {/* CAPA 1: Ítems en Gris */}
           <div
             ref={grayWindowRef}
-            className="relative w-full h-full overflow-hidden rounded-full pointer-events-none"
+            className="relative w-full h-full overflow-hidden rounded-full pointer-events-none z-10"
           >
             <div
               ref={grayStripRef}
@@ -793,24 +722,15 @@ export function SrdavoLiquidMenu({
             </div>
           </div>
 
-          {/* CAPA 2: Píldora Activa Liquid Glass */}
+          {/* CAPA 2: Píldora Liquid Glass con vuelo asimétrico y cristal dinámico */}
           <div
             ref={pillRef}
             style={{
               top: 0,
               left: 0,
-              willChange: "transform, width, height, opacity",
-              backdropFilter: isElevated
-                ? "blur(14px) saturate(210%) brightness(1.12)"
-                : "blur(12px) saturate(190%) brightness(1.08)",
-              WebkitBackdropFilter: isElevated
-                ? "blur(14px) saturate(210%) brightness(1.12)"
-                : "blur(12px) saturate(190%) brightness(1.08)",
-              background: isElevated
-                ? "linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.22) 100%)"
-                : "linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.18) 100%)",
+              willChange: "transform, width, height, background",
             }}
-            className="absolute z-20 rounded-full overflow-hidden pointer-events-none transition-[background,border,box-shadow] duration-150"
+            className="absolute z-20 rounded-full overflow-hidden pointer-events-none"
           >
             {/* Reflejo especular superior continuo en la píldora */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-55 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full z-0" />
@@ -856,29 +776,16 @@ export function SrdavoLiquidMenu({
             </div>
 
             <div
+              ref={rimOverlayRef}
               style={{
-                border: isElevated
-                  ? "1.5px solid rgba(255, 255, 255, 0.95)"
-                  : "1px solid rgba(255, 255, 255, 0.88)",
-                boxShadow: isElevated
-                  ? `
-                    inset 0 3.5px 7px rgba(255, 255, 255, 0.98),
-                    inset 0 -3.5px 7px rgba(255, 255, 255, 0.88),
-                    inset 0 0 12px rgba(255, 255, 255, 0.35),
-                    0 12px 28px rgba(0, 0, 0, 0.16)
-                  `
-                  : `
-                    inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
-                    inset 0 -1px 2px rgba(255, 255, 255, 0.5),
-                    0 4px 14px rgba(0, 0, 0, 0.08)
-                  `,
+                border: "1.2px solid rgba(255, 255, 255, 0.9)",
               }}
-              className="absolute inset-0 rounded-full pointer-events-none transition-[border,box-shadow] duration-150 z-20"
+              className="absolute inset-0 rounded-full pointer-events-none transition-[box-shadow,border] duration-150 z-20"
             />
           </div>
         </div>
 
-        {/* BOTÓN DE LUPA DE BÚSQUEDA CON LIQUID GLASS REAL (srdavo-lupa-glass) */}
+        {/* BOTÓN DE LUPA DE BÚSQUEDA CON LIQUID GLASS REAL */}
         {onSearchClick && (
           <button
             type="button"
