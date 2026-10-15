@@ -143,7 +143,7 @@ export function BackToTopButton({
                 inset -1px -1px 1px 0px rgba(255, 255, 255, 0.40),
                 0 10px 30px -4px rgba(0, 0, 0, 0.12)
               `,
-              border: "1px solid rgba(255, 255, 255, 0.85)",
+              border: "3px solid #18181b",
             }}
             className="group relative flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-zinc-900 hover:scale-[1.03] active:scale-95 transition-transform duration-200 cursor-pointer select-none overflow-hidden"
           >

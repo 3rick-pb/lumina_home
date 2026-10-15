@@ -330,16 +330,12 @@ export default function Home() {
   }, []);
 
   const handlePointerEnterCategory = (catName: string) => {
-    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      setCategoryTheme(catName);
-    }
+    setCategoryTheme(catName);
   };
 
   const handlePointerLeaveCategory = (fallback = "default") => {
-    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      if (fallback === "default") resetTheme();
-      else setCategoryTheme(fallback);
-    }
+    if (fallback === "default") resetTheme();
+    else setCategoryTheme(fallback);
   };
 
   const displayProducts = isMounted ? products : [];
@@ -564,14 +560,9 @@ export default function Home() {
                 : "md:grid-cols-3 lg:grid-cols-5"
             }`}>
               {dynamicCategories.map((cat, idx) => (
-                <motion.div
+                <div
                   key={idx}
                   data-ambient-category={cat.name.toLowerCase()}
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.08 }}
-                  transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ contain: "layout paint", willChange: "transform, opacity" }}
                   className="transform-gpu"
                 >
                   <Link 
@@ -605,7 +596,7 @@ export default function Home() {
                       </div>
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -674,20 +665,15 @@ export default function Home() {
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {filteredProducts.slice(0, 8).map((product) => (
-                  <motion.div 
+                  <div 
                     key={product.id}
                     data-ambient-category={product.category.toLowerCase()}
-                    initial={{ opacity: 0, y: 18 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: false, amount: 0.08 }}
-                    transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ contain: "layout paint", willChange: "transform, opacity" }}
                     className="transform-gpu"
                     onMouseEnter={() => handlePointerEnterCategory(product.category)}
                     onMouseLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
                   >
                     <ProductCard {...product} />
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             )}

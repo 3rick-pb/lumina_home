@@ -9,28 +9,36 @@ export function AmbientBackground() {
   const searchParams = useSearchParams();
   const { theme, isProductView, setCategoryTheme, setTheme } = useAmbientStore();
   
-  // Detección en tiempo real de cursor/ratón:
-  // - Laptop / Desktop -> true (colores interactivos al pasar el cursor)
-  // - Tablet con ratón conectado -> true
-  // - Celulares y tablet táctil sin ratón -> false (fondo mate estático muy suave)
-  const [hasMouse, setHasMouse] = useState<boolean | null>(null);
+  // Detección robusta de cursor / ratón:
+  // - Laptops / Desktops (pantallas >= 768px o cualquier fine pointer/hover) -> true por defecto
+  // - Si se detecta cualquier movimiento de ratón/trackpad -> se activa true inmediatamente
+  // - Solo en móviles táctiles (< 768px estrictamente táctiles) se mantiene false (fondo mate estático suave)
+  const [hasMouse, setHasMouse] = useState<boolean>(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    setHasMouse(mq.matches);
 
-    const handler = (e: MediaQueryListEvent) => {
-      setHasMouse(e.matches);
+    const isDesktop = window.innerWidth >= 768;
+    const hasFine = window.matchMedia("(any-pointer: fine), (any-hover: hover)").matches;
+
+    if (!isDesktop && !hasFine) {
+      setHasMouse(false);
+    } else {
+      setHasMouse(true);
+    }
+
+    const onPointerActivity = (e: MouseEvent | PointerEvent) => {
+      if ("pointerType" in e && e.pointerType === "touch") return;
+      setHasMouse(true);
     };
 
-    if (mq.addEventListener) {
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    } else if (mq.addListener) {
-      mq.addListener(handler);
-      return () => mq.removeListener(handler);
-    }
+    window.addEventListener("pointermove", onPointerActivity, { passive: true });
+    window.addEventListener("mousemove", onPointerActivity, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerActivity);
+      window.removeEventListener("mousemove", onPointerActivity);
+    };
   }, []);
 
   const isAuthPage = pathname?.startsWith("/auth");
@@ -96,12 +104,12 @@ export function AmbientBackground() {
   }
 
   // Vista Catálogo / Home / Shop:
-  // CASO A: Dispositivos con ratón / cursor (Desktop, Laptop, Tablet con ratón)
-  // Muestra las auras atmosféricas que reaccionan con suavidad al pasar el cursor sobre productos/categorías.
+  // CASO A: Laptop / Desktop / Tablet con ratón
+  // Auras atmosféricas visibles que cambian suavemente de color al pasar el cursor sobre productos y categorías.
   //
-  // CASO B: Celulares o Tablet táctil sin ratón
+  // CASO B: Celulares táctiles sin ratón
   // Fondo mate uniforme derivado de #8c9276 a intensidad muy bajita, sin ningún cambio gradual de color.
-  const showInteractiveGlows = hasMouse === true;
+  const showInteractiveGlows = hasMouse;
 
   return (
     <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden bg-[#FAF8F5] dark:bg-[#121214] [contain:strict] [transform:translateZ(0)]">
@@ -109,42 +117,42 @@ export function AmbientBackground() {
         <>
           {/* Primary Atmospheric Glow (Top Left) */}
           <div 
-            className="absolute -top-[15%] -left-[10%] w-[60vw] h-[60vw] rounded-full opacity-45 transform-gpu pointer-events-none" 
+            className="absolute -top-[15%] -left-[10%] w-[65vw] h-[65vw] rounded-full opacity-55 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c1,
-              transition: "background-color 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
               willChange: "background-color",
-              WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 70%)",
-              maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 70%)"
+              WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)",
+              maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)"
             }} 
           />
           {/* Secondary Atmospheric Glow (Bottom Right) */}
           <div 
-            className="absolute -bottom-[15%] -right-[10%] w-[70vw] h-[70vw] rounded-full opacity-40 transform-gpu pointer-events-none" 
+            className="absolute -bottom-[15%] -right-[10%] w-[75vw] h-[75vw] rounded-full opacity-50 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c2,
-              transition: "background-color 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
               willChange: "background-color",
-              WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 70%)",
-              maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 70%)"
+              WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)",
+              maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)"
             }} 
           />
           {/* Center Ambient Hue */}
           <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75vw] h-[50vw] rounded-full opacity-35 transform-gpu pointer-events-none" 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[55vw] rounded-full opacity-45 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c3,
-              transition: "background-color 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
               willChange: "background-color",
-              WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 70%)",
-              maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 70%)"
+              WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)",
+              maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)"
             }} 
           />
-          {/* Velo mate sutil para fusionar los tonos */}
-          <div className="absolute inset-0 bg-[#FAF8F5]/40 dark:bg-[#121214]/40 pointer-events-none" />
+          {/* Velo mate suave para fusionar los tonos */}
+          <div className="absolute inset-0 bg-[#FAF8F5]/35 dark:bg-[#121214]/40 pointer-events-none" />
         </>
       ) : (
-        /* Fondo mate estático en celulares y tablets sin ratón: Tono derivado de #8c9276 a intensidad muy bajita */
+        /* Fondo mate estático en celulares táctiles: Tono derivado de #8c9276 a intensidad muy bajita */
         <div className="absolute inset-0 bg-[#8c9276]/[0.035] pointer-events-none" />
       )}
     </div>

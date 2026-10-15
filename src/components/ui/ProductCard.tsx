@@ -11,6 +11,7 @@ import { BeUIActionSwapLabel } from "@/components/ui/BeUIControls";
 import { flyToCart } from "@/components/ui/FlyToCartAnimation";
 
 import { normalizeImageUrl } from "@/lib/imageUtils";
+import { useLenis } from "lenis/react";
 
 interface ProductCardProps {
   id: string;
@@ -74,6 +75,20 @@ export const ProductCard = React.memo(function ProductCard({
   const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
   const showAddedState = (isMounted && isInBag) || isAdding;
 
+  const imgParallaxRef = React.useRef<HTMLDivElement>(null);
+
+  // Movimiento suave Lenis slow-motion para las imágenes de los productos al explorar el catálogo
+  useLenis(() => {
+    if (!imgParallaxRef.current) return;
+    const rect = imgParallaxRef.current.getBoundingClientRect();
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    if (rect.bottom >= -50 && rect.top <= vh + 50) {
+      const centerDiff = (rect.top + rect.height / 2) - vh / 2;
+      const translateY = centerDiff * 0.07;
+      imgParallaxRef.current.style.transform = `translate3d(0, ${translateY.toFixed(2)}px, 0) scale(1.08)`;
+    }
+  });
+
   return (
     <Link 
       href={`/product/${id}`} 
@@ -114,22 +129,24 @@ export const ProductCard = React.memo(function ProductCard({
           <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 ${isFav ? 'fill-current scale-110' : ''}`} />
         </button>
 
-        {/* Imagen del Producto - loading lazy, decoding async, suave revelado y escala GPU */}
+        {/* Imagen del Producto - Movimiento suave e inercial Lenis en scroll */}
         {imgSrc ? (
-          <Image
-            src={imgSrc}
-            alt={title}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-            onLoad={() => setImgLoaded(true)}
-            onError={() => setImgSrc("")}
-            className={`object-cover transition-all duration-500 ease-out group-hover:scale-[1.04] pointer-events-none select-none transform-gpu ${
-              imgLoaded ? "opacity-100" : "opacity-0"
-            }`}
-          />
+          <div ref={imgParallaxRef} className="relative w-full h-full will-change-transform transform-gpu">
+            <Image
+              src={imgSrc}
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgSrc("")}
+              className={`object-cover transition-opacity duration-500 ease-out pointer-events-none select-none transform-gpu ${
+                imgLoaded ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-white/[0.04] text-gray-400 dark:text-gray-500 gap-1.5 p-4 text-center">
             <Package className="w-8 h-8 stroke-1 opacity-50" />

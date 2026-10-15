@@ -16,13 +16,6 @@ export function LuminaBootOrchestrator({
   const [phase, setPhase] = useState<"loading" | "fading" | "done">("loading");
 
   useEffect(() => {
-    // Si ya cargó en esta sesión, mostrar directo sin repetir el splash
-    if (typeof window !== "undefined" && sessionStorage.getItem("lumina_booted") === "1") {
-      setPhase("done");
-      onReadyToAnimateText();
-      return;
-    }
-
     if (!activeHeroImageUrl) return;
 
     let isMounted = true;
@@ -68,18 +61,15 @@ export function LuminaBootOrchestrator({
     ]).then(() => {
       if (!isMounted) return;
 
-      try {
-        sessionStorage.setItem("lumina_booted", "1");
-      } catch {}
-
+      // Iniciar el desvanecimiento ultra suave de 1000ms
       setPhase("fading");
       // Disparar la animación caligráfica "Espacios diseñados para perdurar" justo al abrirse el telón
       onReadyToAnimateText();
 
-      // Desmontar el splash una vez terminada la transición de 700ms
+      // Desmontar el splash una vez terminada la transición suave de 1000ms
       setTimeout(() => {
         if (isMounted) setPhase("done");
-      }, 700);
+      }, 1000);
     });
 
     return () => {
@@ -92,14 +82,14 @@ export function LuminaBootOrchestrator({
       {/* El Hero y la tienda se renderizan debajo desde el milisegundo 0 */}
       {children}
 
-      {/* Pantalla de carga clásica única de corrido: anillo giratorio alrededor de la cápsula de marca */}
+      {/* Pantalla de carga clásica única de corrido: desvanecimiento suave de 1000ms sin corte brusco */}
       {phase !== "done" && (
         <div
-          style={{ willChange: "opacity, transform" }}
-          className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#fbfaf8] dark:bg-[#121214] transition-all duration-700 ease-out select-none ${
+          style={{ willChange: "opacity" }}
+          className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#fbfaf8] dark:bg-[#121214] transition-opacity duration-1000 ease-in-out select-none ${
             phase === "fading"
-              ? "opacity-0 scale-[1.02] pointer-events-none"
-              : "opacity-100 scale-100"
+              ? "opacity-0 pointer-events-none"
+              : "opacity-100 pointer-events-auto"
           }`}
         >
           {/* Ambient background glows */}
