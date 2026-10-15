@@ -232,12 +232,89 @@ export function OverviewTab({
       el.style.cursor = "grab";
     };
 
+    // Desplazamiento táctil fluido para celulares y tablets con bloqueo direccional e inercia
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartScrollLeft = 0;
+    let isHorizontalSwipe: boolean | null = null;
+    let lastTouchX = 0;
+    let lastTouchTime = 0;
+    let touchVelocityX = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      lastTouchX = t.clientX;
+      lastTouchTime = performance.now();
+      touchStartScrollLeft = el.scrollLeft;
+      targetScrollLeft = el.scrollLeft;
+      isHorizontalSwipe = null;
+      touchVelocityX = 0;
+      if (smoothRafId) {
+        cancelAnimationFrame(smoothRafId);
+        smoothRafId = 0;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const now = performance.now();
+      const dt = now - lastTouchTime;
+
+      // Determinar intención direccional en los primeros 4px de movimiento
+      if (isHorizontalSwipe === null) {
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+          isHorizontalSwipe = Math.abs(dx) >= Math.abs(dy);
+        }
+      }
+
+      if (isHorizontalSwipe) {
+        // Evitar que el scroll vertical de la ventana interrumpa o congele el desplazamiento del gráfico
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+
+        if (dt > 0) {
+          const stepDx = t.clientX - lastTouchX;
+          touchVelocityX = (stepDx / dt) * 0.7 + touchVelocityX * 0.3;
+        }
+
+        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+        el.scrollLeft = Math.max(0, Math.min(maxScroll, touchStartScrollLeft - dx));
+        targetScrollLeft = el.scrollLeft;
+        lastTouchX = t.clientX;
+        lastTouchTime = now;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (isHorizontalSwipe && Math.abs(touchVelocityX) > 0.12) {
+        // Planeo por inercia física al soltar el dedo
+        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+        const glideDistance = touchVelocityX * 240;
+        targetScrollLeft = Math.max(0, Math.min(maxScroll, el.scrollLeft - glideDistance));
+        if (!smoothRafId) {
+          smoothRafId = requestAnimationFrame(smoothScrollTick);
+        }
+      }
+      isHorizontalSwipe = null;
+    };
+
     const targetWheelEl = cardEl || el;
 
     targetWheelEl.addEventListener("wheel", handleWheel, { passive: false });
     el.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    el.addEventListener("touchend", handleTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", handleTouchEnd, { passive: true });
 
     return () => {
       if (typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches) {
@@ -247,6 +324,10 @@ export function OverviewTab({
       el.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
+      el.removeEventListener("touchend", handleTouchEnd);
+      el.removeEventListener("touchcancel", handleTouchEnd);
       if (smoothRafId) cancelAnimationFrame(smoothRafId);
     };
   }, []);
@@ -501,7 +582,7 @@ export function OverviewTab({
 
           <div 
             ref={nicheChartRef}
-            className={`flex items-end h-44 pt-8 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-x touch-pan-y [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`flex items-end h-44 pt-8 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -511,7 +592,7 @@ export function OverviewTab({
             style={{
               overscrollBehaviorX: "contain",
               overscrollBehaviorY: "auto",
-              touchAction: "pan-x pan-y",
+              touchAction: "pan-x",
               WebkitOverflowScrolling: "touch",
             }}
           >

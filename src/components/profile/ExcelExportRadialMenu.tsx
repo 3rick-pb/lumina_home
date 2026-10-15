@@ -993,21 +993,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-cyan-500/25 via-blue-500/20 to-purple-500/25 blur-xl opacity-70 -z-10 animate-pulse" 
           />
 
-          {/* Liquid chromatic shimmer ring: Always visible on mobile, tablets and desktop regardless of WebGL state */}
-          <div 
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-[2.8px] rounded-full z-0 overflow-hidden"
-          >
-            <div 
-              className="w-full h-full rounded-full animate-[spin_3.5s_linear_infinite]"
-              style={{
-                background: "conic-gradient(from 0deg, #00f0ff, #3b82f6, #8b5cf6, #ec4899, #10b981, #00f0ff)",
-                opacity: 0.85,
-                filter: "blur(1.2px)",
-              }}
-            />
-          </div>
-
           {mounted ? (
             <MetalFx
               ref={metalRef}
@@ -1015,7 +1000,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
               variant="circle"
               theme="dark"
               innerShadow
-              ringCssPx={2.8}
+              ringCssPx={3.2}
               shaderScale={1.6}
               strength={1}
               className="relative z-50 shrink-0"
@@ -1028,7 +1013,10 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                 onClick={handleToggleMenu}
                 aria-label="Exportar datos a Excel"
                 title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-[#0d0e12]/90 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_4px_16px_rgba(0,0,0,0.5)]"
+                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
+                style={{
+                  background: "transparent",
+                }}
               >
                 {/* Pulse wave on open */}
                 {isOpen && (

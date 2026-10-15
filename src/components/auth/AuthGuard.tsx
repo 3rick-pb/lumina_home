@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useUserStore } from "@/lib/userStore";
 import { usePathname, useRouter } from "next/navigation";
+import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, isAuthInitialized } = useUserStore();
@@ -33,16 +34,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, isAuthInitialized, isLoading, isAuthenticated, isStrictProtected, isAuthPage, router]);
 
-  // For strict protected routes (/profile, /admin), render deterministic loader on both SSR and CSR until session is verified
+  // For strict protected routes (/profile, /admin), render canonical brand loader until session is verified
   if (isStrictProtected && (!mounted || !isAuthInitialized || isLoading || !isAuthenticated)) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-transparent">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#8c9276] border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-stone-500 font-medium">Verificando sesión...</span>
-        </div>
-      </div>
-    );
+    return <BrandLoadingScreen isFixed={true} />;
   }
 
   return <>{children}</>;
