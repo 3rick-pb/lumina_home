@@ -18,6 +18,7 @@ export interface SrdavoLiquidMenuProps {
   onSelect: (id: string) => void;
   onSearchClick?: () => void;
   isSearchActive?: boolean;
+  isCollapsed?: boolean;
   visibleCount?: number;
   className?: string;
 }
@@ -122,6 +123,7 @@ export function SrdavoLiquidMenu({
   onSelect,
   onSearchClick,
   isSearchActive = false,
+  isCollapsed = false,
   visibleCount = 3,
   className = "",
 }: SrdavoLiquidMenuProps) {
@@ -137,6 +139,40 @@ export function SrdavoLiquidMenu({
   const pillRef = useRef<HTMLDivElement>(null);
   const blackStripRef = useRef<HTMLDivElement>(null);
   const rimOverlayRef = useRef<HTMLDivElement>(null);
+
+  // Badge indicador flotante de porcentaje (números pequeños en tipografía monospace)
+  const percentBadgeRef = useRef<HTMLDivElement>(null);
+  const percentValueRef = useRef<HTMLSpanElement>(null);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showPercentBadge = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+    if (percentBadgeRef.current) {
+      percentBadgeRef.current.style.opacity = "1";
+      percentBadgeRef.current.style.transform = "translate3d(-50%, 0, 0) scale(1)";
+    }
+  }, []);
+
+  const scheduleHidePercentBadge = useCallback((delayMs = 1800) => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    hideTimerRef.current = setTimeout(() => {
+      if (percentBadgeRef.current) {
+        percentBadgeRef.current.style.opacity = "0";
+        percentBadgeRef.current.style.transform = "translate3d(-50%, 6px, 0) scale(0.92)";
+      }
+    }, delayMs);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
 
   const fgFilterRef = useRef<SVGFilterElement>(null);
   const bgFilterRef = useRef<SVGFilterElement>(null);
@@ -275,7 +311,9 @@ export function SrdavoLiquidMenu({
   // para que los resortes viajen suavemente desde la coordenada anterior hasta la nueva
   useEffect(() => {
     updateTargets(false);
-  }, [activeIndex, updateTargets]);
+    showPercentBadge();
+    scheduleHidePercentBadge(1800);
+  }, [activeIndex, updateTargets, showPercentBadge, scheduleHidePercentBadge]);
 
   // Snap inicial único al montar la app o al redimensionar la ventana
   useEffect(() => {
@@ -331,6 +369,7 @@ export function SrdavoLiquidMenu({
               }
               s.scrollX = s.targetScrollX;
               s.velScrollX = 0;
+              showPercentBadge();
             }
           }
         } else {
@@ -436,6 +475,18 @@ export function SrdavoLiquidMenu({
         bgDisplacementRef.current.setAttribute("scale", scaleStr);
       }
 
+      // 6. Actualizar porcentaje de posición horizontal en vivo (0% a 100%)
+      if (percentValueRef.current) {
+        const totalItems = items.length;
+        if (totalItems > 1) {
+          const totalTrackSpan = Math.max(1, (totalItems - 1) * s.slotWidth);
+          const currentAbsPos = s.scrollX + Math.min(s.leftX, s.rightX);
+          const rawProgress = currentAbsPos / totalTrackSpan;
+          const pct = Math.min(100, Math.max(0, Math.round(rawProgress * 100)));
+          percentValueRef.current.textContent = `${pct}%`;
+        }
+      }
+
       // Mover tira gris de fondo y actualizar máscara bajo la píldora
       if (grayStripRef.current && grayWindowRef.current) {
         grayStripRef.current.style.width = `${totalStripW}px`;
@@ -486,7 +537,7 @@ export function SrdavoLiquidMenu({
 
     rafId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafId);
-  }, [items.length, visibleCount]);
+  }, [items.length, visibleCount, showPercentBadge]);
 
   const clampPillX = (clientX: number) => {
     if (!trackRef.current) return 0;
@@ -508,6 +559,7 @@ export function SrdavoLiquidMenu({
     s.startX = e.clientX;
     s.pointerX = e.clientX;
     s.startScrollX = s.scrollX;
+    showPercentBadge();
 
     const rect = e.currentTarget.getBoundingClientRect();
     const localX = e.clientX - rect.left - 4;
@@ -528,6 +580,7 @@ export function SrdavoLiquidMenu({
           state.current.mode = "scrubbing";
           state.current.elevated = true;
           state.current.targetPillX = clampPillX(state.current.pointerX);
+          showPercentBadge();
         }
       }, 170);
     }
@@ -544,18 +597,22 @@ export function SrdavoLiquidMenu({
       s.elevated = false;
       edgeEnteredTime.current = 0;
       currentEdge.current = null;
+      showPercentBadge();
     }
 
     if (s.mode === "scrubbing") {
       s.targetPillX = clampPillX(e.clientX);
+      showPercentBadge();
     } else if (s.mode === "scrolling") {
       const maxScroll = Math.max(0, (items.length - visibleCount) * s.slotWidth);
       s.targetScrollX = Math.max(0, Math.min(maxScroll, s.startScrollX - dx));
+      showPercentBadge();
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (holdTimer.current) clearTimeout(holdTimer.current);
+    scheduleHidePercentBadge(1800);
     edgeEnteredTime.current = 0;
     currentEdge.current = null;
     try {
@@ -694,7 +751,11 @@ export function SrdavoLiquidMenu({
       </svg>
 
       {/* Contenedor General: Cuerpo del Menú + Botón de Lupa de Búsqueda */}
-      <div className={`flex items-center gap-2.5 w-full max-w-full min-w-0 overflow-visible px-1 box-border mx-auto ${className}`}>
+      <div
+        className={`flex items-center ${
+          isCollapsed ? "justify-end gap-0" : "justify-end gap-2.5"
+        } w-full max-w-full min-w-0 overflow-visible px-1 box-border mx-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${className}`}
+      >
         {/* CUERPO DEL MENÚ CON LIQUID GLASS REAL (srdavo-bar-glass) */}
         <div
           ref={trackRef}
@@ -709,8 +770,31 @@ export function SrdavoLiquidMenu({
             userSelect: "none",
             WebkitTouchCallout: "none",
           }}
-          className="relative flex-1 min-w-0 w-full overflow-visible flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer"
+          className={`relative flex-1 min-w-0 flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] origin-right ${
+            isCollapsed
+              ? "max-w-0 opacity-0 scale-x-0 scale-y-75 translate-x-3 pointer-events-none !px-0 overflow-hidden"
+              : "max-w-full opacity-100 scale-100 translate-x-0 pointer-events-auto overflow-visible"
+          }`}
         >
+          {/* INDICADOR FLOTANTE DE PORCENTAJE (NÚMEROS PEQUEÑOS EN TIPOGRAFÍA MONOSPACE) */}
+          <div
+            ref={percentBadgeRef}
+            style={{
+              opacity: 0,
+              transform: "translate3d(-50%, 6px, 0) scale(0.92)",
+              willChange: "transform, opacity",
+            }}
+            className="absolute -top-7 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          >
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-950/85 dark:bg-white/90 text-white dark:text-zinc-950 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.18)] border border-white/20 dark:border-black/10">
+              <span
+                ref={percentValueRef}
+                className="font-mono tabular-nums text-[10.5px] font-black tracking-tight"
+              >
+                0%
+              </span>
+            </div>
+          </div>
           {/* CAPA DE CRISTAL LÍQUIDO DEL CUERPO (estrictamente recortada a la cápsula perfecta sin esquinas cuadradas) */}
           <div
             className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0"
@@ -881,9 +965,9 @@ export function SrdavoLiquidMenu({
                 : "1px solid rgba(255, 255, 255, 0.76)",
               transform: isSearchPressed ? "scale(1.08)" : "scale(1)",
             }}
-            className={`relative flex items-center justify-center w-[58px] h-[58px] rounded-full overflow-hidden transition-all duration-200 select-none shrink-0 cursor-pointer ${
+            className={`relative pointer-events-auto flex items-center justify-center w-[58px] h-[58px] rounded-full overflow-hidden transition-all duration-300 select-none shrink-0 cursor-pointer ${
               isSearchActive ? "text-white" : "text-zinc-900 dark:text-white"
-            }`}
+            } ${isCollapsed ? "shadow-[0_12px_36px_rgba(0,0,0,0.22)] ring-1 ring-black/10 dark:ring-white/20" : ""}`}
             aria-label="Buscar"
           >
             {/* Reflejo especular superior característico de srdavo/liquid-glass */}
