@@ -152,7 +152,6 @@ export function SrdavoLiquidMenu({
     }
     if (percentBadgeRef.current) {
       percentBadgeRef.current.style.opacity = "1";
-      percentBadgeRef.current.style.transform = "translate3d(-50%, 0, 0) scale(1)";
     }
   }, []);
 
@@ -163,7 +162,6 @@ export function SrdavoLiquidMenu({
     hideTimerRef.current = setTimeout(() => {
       if (percentBadgeRef.current) {
         percentBadgeRef.current.style.opacity = "0";
-        percentBadgeRef.current.style.transform = "translate3d(-50%, 6px, 0) scale(0.92)";
       }
     }, delayMs);
   }, []);
@@ -173,6 +171,12 @@ export function SrdavoLiquidMenu({
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (isCollapsed && percentBadgeRef.current) {
+      percentBadgeRef.current.style.opacity = "0";
+    }
+  }, [isCollapsed]);
 
   const fgFilterRef = useRef<SVGFilterElement>(null);
   const bgFilterRef = useRef<SVGFilterElement>(null);
@@ -752,9 +756,7 @@ export function SrdavoLiquidMenu({
 
       {/* Contenedor General: Cuerpo del Menú + Botón de Lupa de Búsqueda */}
       <div
-        className={`flex items-center ${
-          isCollapsed ? "justify-end gap-0" : "justify-end gap-2.5"
-        } w-full max-w-full min-w-0 overflow-visible px-1 box-border mx-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${className}`}
+        className={`flex items-center justify-end gap-2.5 w-full max-w-full min-w-0 overflow-visible px-1 box-border mx-auto ${className}`}
       >
         {/* CUERPO DEL MENÚ CON LIQUID GLASS REAL (srdavo-bar-glass) */}
         <div
@@ -770,26 +772,26 @@ export function SrdavoLiquidMenu({
             userSelect: "none",
             WebkitTouchCallout: "none",
           }}
-          className={`relative flex-1 min-w-0 flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] origin-right ${
+          className={`relative flex-1 min-w-0 flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer origin-right transition-[transform,opacity] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isCollapsed
-              ? "max-w-0 opacity-0 scale-x-0 scale-y-75 translate-x-3 pointer-events-none !px-0 overflow-hidden"
-              : "max-w-full opacity-100 scale-100 translate-x-0 pointer-events-auto overflow-visible"
+              ? "opacity-0 scale-x-0 scale-y-75 translate-x-4 pointer-events-none"
+              : "opacity-100 scale-100 translate-x-0 pointer-events-auto"
           }`}
         >
-          {/* INDICADOR FLOTANTE DE PORCENTAJE (NÚMEROS PEQUEÑOS EN TIPOGRAFÍA MONOSPACE) */}
+          {/* INDICADOR FLOTANTE DE PORCENTAJE (AL LADO IZQUIERDO, ARRIBA DEL PRIMER ÍCONO) */}
           <div
             ref={percentBadgeRef}
             style={{
+              left: `calc(100% / (${visibleCount} * 2))`,
               opacity: 0,
-              transform: "translate3d(-50%, 6px, 0) scale(0.92)",
-              willChange: "transform, opacity",
+              willChange: "opacity",
             }}
-            className="absolute -top-7 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="absolute -top-7 -translate-x-1/2 z-30 pointer-events-none select-none transition-opacity duration-350 ease-out"
           >
             <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-950/85 dark:bg-white/90 text-white dark:text-zinc-950 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.18)] border border-white/20 dark:border-black/10">
               <span
                 ref={percentValueRef}
-                className="font-mono tabular-nums text-[10.5px] font-black tracking-tight"
+                className="font-mono tabular-nums text-[10.5px] font-bold tracking-tight"
               >
                 0%
               </span>

@@ -43,62 +43,49 @@ export function BeUIPaginatedDock({
   const activeItemId = activeItem?.id || items[0]?.id || "";
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Detección de dirección de scroll vertical y gestos táctiles (Scroll Down -> Colapsar en la lupa; Scroll Up -> Desplegar)
+  // Detección de dirección de scroll vertical ultra-fluida con histeresis y RAF (sin lag)
   useEffect(() => {
-    let lastY = typeof window !== "undefined" ? window.scrollY : 0;
+    let lastScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+    let accumulatedDelta = 0;
     let ticking = false;
-    let touchStartY = 0;
 
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const currentY = window.scrollY;
-          const delta = currentY - lastY;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
 
-          // Cerca de la parte superior siempre expandido
-          if (currentY < 45) {
-            setIsCollapsed(false);
-          } else if (delta > 10 && currentY > 70) {
-            // Scroll hacia abajo: colapsar menú dentro de la lupa derecha
+      window.requestAnimationFrame(() => {
+        const currentY = window.scrollY;
+        const delta = currentY - lastScrollY;
+
+        // Cerca del tope superior (< 45px): siempre expandido
+        if (currentY < 45) {
+          setIsCollapsed(false);
+          accumulatedDelta = 0;
+        } else {
+          // Si cambia la dirección del scroll, reiniciar acumulador
+          if ((delta > 0 && accumulatedDelta < 0) || (delta < 0 && accumulatedDelta > 0)) {
+            accumulatedDelta = 0;
+          }
+          accumulatedDelta += delta;
+
+          // Scroll hacia abajo continuo (> 16px): colapsar para dar espacio de lectura
+          if (accumulatedDelta > 16 && currentY > 60) {
             setIsCollapsed(true);
-          } else if (delta < -8) {
-            // Scroll hacia arriba: volver a modo normal
+          }
+          // Scroll hacia arriba continuo (< -12px): re-abrir suavemente
+          else if (accumulatedDelta < -12) {
             setIsCollapsed(false);
           }
+        }
 
-          lastY = currentY;
-          ticking = false;
-        });
-        ticking = true;
-      }
+        lastScrollY = currentY;
+        ticking = false;
+      });
     };
 
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0]?.clientY || 0;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const currentTouchY = e.touches[0]?.clientY || 0;
-      const touchDelta = currentTouchY - touchStartY;
-      const currentScrollY = window.scrollY;
-
-      // Si el dedo desliza hacia arriba (página baja)
-      if (touchDelta < -16 && currentScrollY > 70) {
-        setIsCollapsed(true);
-      } else if (touchDelta > 14) {
-        // Si el dedo desliza hacia abajo (página sube)
-        setIsCollapsed(false);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: true });
-
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("scroll", onScroll);
     };
   }, []);
 

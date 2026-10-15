@@ -14,7 +14,6 @@ import {
   FileSpreadsheet,
   ChevronRight
 } from "lucide-react";
-import { MicrosoftExcel } from "@thesvg/react";
 import { MetalFx, useMetalBend } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
@@ -659,25 +658,27 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
         className={`relative inline-flex items-center justify-center w-11 h-11 shrink-0 select-none ${isOpen ? "z-50" : "z-20"}`}
       >
         {/* GOOEY LIQUID LAYER: Merges touching pieces like goo and morphs like jelly while text/icons above stay 100% crisp */}
-        <div
-          aria-hidden="true"
-          style={{ filter: "url(#excel-gooey-jelly)" }}
-          className="pointer-events-none absolute inset-0 flex items-center justify-center z-30 overflow-visible"
-        >
-          {/* Central Gooey Anchor Blob */}
-          <motion.div
-            animate={
-              isOpen
-                ? { scaleX: [1, 1.24, 0.88, 1.04], scaleY: [1, 0.86, 1.18, 1.04] }
-                : { scaleX: [1.04, 1.18, 0.92, 1], scaleY: [1.04, 0.88, 1.12, 1] }
-            }
-            transition={{ duration: 0.48, ease: [0.34, 1.56, 0.64, 1] }}
-            className="w-11 h-11 rounded-full bg-emerald-500/85 dark:bg-[#1b3a28]"
-          />
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              aria-hidden="true"
+              style={{ filter: "url(#excel-gooey-jelly)" }}
+              className="pointer-events-none absolute inset-0 flex items-center justify-center z-30 overflow-visible"
+            >
+              {/* Central Gooey Anchor Blob */}
+              <motion.div
+                initial={{ scale: 0.7 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.7 }}
+                transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                className="w-11 h-11 rounded-full bg-emerald-500/85 dark:bg-[#1b3a28]"
+              />
 
-          <AnimatePresence>
-            {isOpen &&
-              subButtons.map((btn, index) => (
+              {subButtons.map((btn, index) => (
                 <React.Fragment key={`gooey-blob-${btn.id}`}>
                   {/* Viscous Tendril Droplet that bridges the center hub and the emerging satellite */}
                   <motion.div
@@ -736,8 +737,9 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                   />
                 </React.Fragment>
               ))}
-          </AnimatePresence>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Liquid Glass Emergence Orbit (Crisp Foreground Layer) */}
         <AnimatePresence>
@@ -890,13 +892,12 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN TRIGGER BUTTON WITH METAL-FX CHROMATIC LIQUID SHADER & EXCEL ICON */}
+        {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC THINKING ORBS METAL-FX CHROMATIC LIQUID SHADER */}
         <MetalFx
           ref={metalRef}
           preset="chromatic"
           variant="circle"
           theme="dark"
-          normalizeHostStyles={false}
           innerShadow
           strength={1}
           className="relative z-50 shrink-0"
@@ -909,16 +910,10 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             onClick={handleToggleMenu}
             aria-label="Exportar datos a Excel"
             title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+            className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
             style={{
-              width: 44,
-              height: 44,
-              backgroundColor: isOpen ? "#e11d48" : "#18181b",
+              background: "transparent",
             }}
-            className={`relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer overflow-hidden active:scale-95 shrink-0 ${
-              isOpen
-                ? "bg-rose-600 text-white shadow-[0_4px_20px_rgba(244,63,94,0.4)]"
-                : "bg-zinc-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.35)]"
-            }`}
           >
             {/* Pulse wave on open */}
             {isOpen && (
@@ -939,24 +934,25 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
               className="relative z-10 flex items-center justify-center select-none"
             >
               {isOpen ? (
-                <X className="w-5 h-5 text-white stroke-[2.5]" />
+                <X className="w-5 h-5 text-rose-400 stroke-[2.4]" />
               ) : (
-                <svg 
-                  width="24"
-                  height="24"
-                  className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] shrink-0 select-none pointer-events-none relative z-10" 
-                  viewBox="0 0 32 32" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect x="3" y="4" width="26" height="24" rx="4" fill="#107C41" />
-                  <path d="M17 4H25C27.2091 4 29 5.79086 29 8V24C29 26.2091 27.2091 28 25 28H17V4Z" fill="#185C37" />
-                  <path d="M5 8C5 6.89543 5.89543 6 7 6H19C20.1046 6 21 6.89543 21 8V24C21 25.1046 20.1046 26 19 26H7C5.89543 26 5 25.1046 5 24V8Z" fill="#107C41" />
-                  <path d="M9 11.5L12 16L9 20.5H11.2L13.1 17.3L15 20.5H17.2L14.2 16L17.2 11.5H15L13.1 14.6L11.2 11.5H9Z" fill="white" />
-                  <rect x="23" y="10" width="3" height="2" rx="0.5" fill="white" opacity="0.85" />
-                  <rect x="23" y="15" width="3" height="2" rx="0.5" fill="white" opacity="0.85" />
-                  <rect x="23" y="20" width="3" height="2" rx="0.5" fill="white" opacity="0.85" />
-                </svg>
+                <div className="relative flex items-center justify-center text-white">
+                  <svg 
+                    className="w-5 h-5 text-white stroke-[2] drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="3.5" />
+                    <path d="M3 9h18" />
+                    <path d="M3 15h18" />
+                    <path d="M9 9v12" />
+                    <path d="M15 9v12" />
+                  </svg>
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                </div>
               )}
             </motion.div>
           </button>
