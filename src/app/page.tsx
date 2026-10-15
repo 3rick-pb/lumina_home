@@ -572,7 +572,9 @@ export default function Home() {
                       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
                     }}
                     onMouseEnter={() => handlePointerEnterCategory(cat.name)}
+                    onPointerEnter={() => handlePointerEnterCategory(cat.name)}
                     onMouseLeave={() => handlePointerLeaveCategory("default")}
+                    onPointerLeave={() => handlePointerLeaveCategory("default")}
                     className="group relative h-[240px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-xs border border-black/5 transition-transform duration-300 ease-out hover:-translate-y-1 transform-gpu"
                   >
                     <Image 
@@ -670,7 +672,9 @@ export default function Home() {
                     data-ambient-category={product.category.toLowerCase()}
                     className="transform-gpu"
                     onMouseEnter={() => handlePointerEnterCategory(product.category)}
+                    onPointerEnter={() => handlePointerEnterCategory(product.category)}
                     onMouseLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
+                    onPointerLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
                   >
                     <ProductCard {...product} />
                   </div>

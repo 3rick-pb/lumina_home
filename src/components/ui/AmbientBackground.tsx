@@ -10,26 +10,40 @@ export function AmbientBackground() {
   const { theme, isProductView, setCategoryTheme, setTheme } = useAmbientStore();
   
   // Detección robusta de cursor / ratón:
-  // - Laptops / Desktops (pantallas >= 768px o cualquier fine pointer/hover) -> true por defecto
-  // - Si se detecta cualquier movimiento de ratón/trackpad -> se activa true inmediatamente
-  // - Solo en móviles táctiles (< 768px estrictamente táctiles) se mantiene false (fondo mate estático suave)
-  const [hasMouse, setHasMouse] = useState<boolean>(true);
+  // - En Laptops / Desktops: se activa de inmediato (pointer fine o ancho >= 768px con mouse)
+  // - En Tablets: detecta si se conecta/mueve un ratón (pointerType === 'mouse' | 'pen' o fine pointer)
+  // - En Celulares: permanece en false (fondo mate estático suave, sin cambios graduales)
+  const [hasMouse, setHasMouse] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const isDesktop = window.innerWidth >= 1024;
+    const hasFinePointer = window.matchMedia("(pointer: fine), (any-pointer: fine)").matches;
+    return isDesktop || hasFinePointer;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const isDesktop = window.innerWidth >= 768;
-    const hasFine = window.matchMedia("(any-pointer: fine), (any-hover: hover)").matches;
+    const checkFinePointer = () => {
+      const hasFine = window.matchMedia("(pointer: fine), (any-pointer: fine)").matches;
+      const isCoarseOnly = window.matchMedia("(pointer: coarse) and (not (any-pointer: fine))").matches;
+      
+      if (isCoarseOnly && window.innerWidth < 1024) {
+        setHasMouse(false);
+      } else if (hasFine || window.innerWidth >= 1024) {
+        setHasMouse(true);
+      }
+    };
 
-    if (!isDesktop && !hasFine) {
-      setHasMouse(false);
-    } else {
-      setHasMouse(true);
-    }
+    checkFinePointer();
 
     const onPointerActivity = (e: MouseEvent | PointerEvent) => {
-      if ("pointerType" in e && e.pointerType === "touch") return;
-      setHasMouse(true);
+      if ("pointerType" in e) {
+        if (e.pointerType === "mouse" || e.pointerType === "pen") {
+          setHasMouse(true);
+        }
+      } else {
+        setHasMouse(true);
+      }
     };
 
     window.addEventListener("pointermove", onPointerActivity, { passive: true });
@@ -105,19 +119,31 @@ export function AmbientBackground() {
 
   // Vista Catálogo / Home / Shop:
   // CASO A: Laptop / Desktop / Tablet con ratón
-  // Auras atmosféricas visibles que cambian suavemente de color al pasar el cursor sobre productos y categorías.
+  // Auras atmosféricas y fondo mate que reaccionan suavemente al pasar el cursor sobre productos y categorías.
   //
   // CASO B: Celulares táctiles sin ratón
   // Fondo mate uniforme derivado de #8c9276 a intensidad muy bajita, sin ningún cambio gradual de color.
   const showInteractiveGlows = hasMouse;
 
+  const isDefaultMood = !theme.mood || theme.mood === "default";
+  const activeMatteColor = showInteractiveGlows && !isDefaultMood && theme.browserColor && theme.browserColor !== "#8c9276"
+    ? theme.browserColor
+    : "#FAF8F5";
+
   return (
-    <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden bg-[#FAF8F5] dark:bg-[#121214] [contain:strict] [transform:translateZ(0)]">
+    <div 
+      className="fixed inset-0 pointer-events-none -z-10 overflow-hidden dark:bg-[#121214] [contain:strict] [transform:translateZ(0)]"
+      style={{
+        backgroundColor: activeMatteColor,
+        transition: "background-color 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
+        willChange: "background-color",
+      }}
+    >
       {showInteractiveGlows ? (
         <>
           {/* Primary Atmospheric Glow (Top Left) */}
           <div 
-            className="absolute -top-[15%] -left-[10%] w-[65vw] h-[65vw] rounded-full opacity-55 transform-gpu pointer-events-none" 
+            className="absolute -top-[15%] -left-[10%] w-[65vw] h-[65vw] rounded-full opacity-60 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c1,
               transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -128,7 +154,7 @@ export function AmbientBackground() {
           />
           {/* Secondary Atmospheric Glow (Bottom Right) */}
           <div 
-            className="absolute -bottom-[15%] -right-[10%] w-[75vw] h-[75vw] rounded-full opacity-50 transform-gpu pointer-events-none" 
+            className="absolute -bottom-[15%] -right-[10%] w-[75vw] h-[75vw] rounded-full opacity-55 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c2,
               transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -139,7 +165,7 @@ export function AmbientBackground() {
           />
           {/* Center Ambient Hue */}
           <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[55vw] rounded-full opacity-45 transform-gpu pointer-events-none" 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[55vw] rounded-full opacity-50 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c3,
               transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",

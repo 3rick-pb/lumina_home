@@ -33,10 +33,27 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
 
   const heroParallaxRef = useRef<HTMLDivElement>(null);
 
-  // Movimiento suave Lenis slow-motion para la imagen del Hero al hacer scroll
+  // Movimiento suave Lenis slow-motion para la imagen del Hero:
+  // - En Desktop / Laptop con ratón/trackpad: desplazamiento suave inercial slow-motion.
+  // - En Celulares y pantallas táctiles: DESACTIVADO para garantizar 120Hz y 60Hz nativos sin ningún lagazo ni interferencia con el scroll táctil del dedo.
   useLenis(({ scroll }) => {
     if (!heroParallaxRef.current) return;
-    const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+    if (typeof window === "undefined") return;
+
+    // Detectar si es dispositivo táctil o móvil (celulares)
+    const isTouchOrMobile =
+      window.innerWidth < 1024 ||
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(hover: none)").matches;
+
+    if (isTouchOrMobile) {
+      if (heroParallaxRef.current.style.transform) {
+        heroParallaxRef.current.style.transform = "";
+      }
+      return;
+    }
+
+    const vh = window.innerHeight || 900;
     if (scroll <= vh * 1.5) {
       const slowTranslateY = scroll * 0.32;
       heroParallaxRef.current.style.transform = `translate3d(0, ${slowTranslateY.toFixed(2)}px, 0) scale(1.05)`;

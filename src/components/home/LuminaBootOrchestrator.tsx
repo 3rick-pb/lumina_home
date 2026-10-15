@@ -78,7 +78,7 @@ export function LuminaBootOrchestrator({
   }, [activeHeroImageUrl, onReadyToAnimateText]);
 
   return (
-    <div className="relative min-h-screen bg-[#FAF8F5]">
+    <div className="relative min-h-screen bg-transparent">
       {/* El Hero y la tienda se renderizan debajo desde el milisegundo 0 */}
       {children}
 

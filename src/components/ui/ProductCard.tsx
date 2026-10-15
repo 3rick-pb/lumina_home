@@ -77,11 +77,27 @@ export const ProductCard = React.memo(function ProductCard({
 
   const imgParallaxRef = React.useRef<HTMLDivElement>(null);
 
-  // Movimiento suave Lenis slow-motion para las imágenes de los productos al explorar el catálogo
+  // Movimiento suave Lenis slow-motion para las imágenes de los productos al explorar el catálogo:
+  // - En Desktop / Laptop con ratón/trackpad: efecto inercial suave slow-motion.
+  // - En Celulares y pantallas táctiles: DESACTIVADO para garantizar 120Hz y 60Hz nativos sin layout thrashing al arrastrar con el dedo.
   useLenis(() => {
     if (!imgParallaxRef.current) return;
+    if (typeof window === "undefined") return;
+
+    const isTouchOrMobile =
+      window.innerWidth < 1024 ||
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(hover: none)").matches;
+
+    if (isTouchOrMobile) {
+      if (imgParallaxRef.current.style.transform) {
+        imgParallaxRef.current.style.transform = "";
+      }
+      return;
+    }
+
     const rect = imgParallaxRef.current.getBoundingClientRect();
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    const vh = window.innerHeight || 800;
     if (rect.bottom >= -50 && rect.top <= vh + 50) {
       const centerDiff = (rect.top + rect.height / 2) - vh / 2;
       const translateY = centerDiff * 0.07;
