@@ -33,7 +33,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   const prevPhase = prevPeriod ? HERO_PHASES[prevPeriod] : null;
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-[#191715]">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-brand-900">
       {/* 1. Capa de Fondo (Doble Buffer - Imagen Anterior durante transición) */}
       {prevPhase && (
         <div
@@ -68,8 +68,8 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
         </motion.div>
       )}
 
-      {/* 3. Lumina Warm Stone Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#191715]/90 via-[#191715]/40 to-transparent pointer-events-none z-20" />
+      {/* 3. Original Lumina Brand Gradient Overlay (matches Original.png 100%) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent pointer-events-none z-20" />
     </div>
   );
 });

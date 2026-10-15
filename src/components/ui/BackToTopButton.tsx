@@ -131,29 +131,29 @@ export function BackToTopButton({
               clipPath: "inset(0 round 9999px)",
               WebkitClipPath: "inset(0 round 9999px)",
               backdropFilter: hasSvgFilterSupport && filterUrl
-                ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.05) saturate(1.4)`
-                : "blur(20px) saturate(180%) brightness(1.05)",
+                ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
               WebkitBackdropFilter: hasSvgFilterSupport && filterUrl
-                ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.05) saturate(1.4)`
-                : "blur(20px) saturate(180%) brightness(1.05)",
+                ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
               background:
-                "linear-gradient(180deg, rgba(28,28,32,0.86) 0%, rgba(14,14,18,0.80) 100%)",
+                "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,245,250,0.58) 100%)",
               boxShadow: `
-                inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.32),
-                inset -1px -1px 1px 0px rgba(0, 0, 0, 0.45),
-                0 12px 32px -4px rgba(0, 0, 0, 0.35)
+                inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.95),
+                inset -1px -1px 1px 0px rgba(255, 255, 255, 0.40),
+                0 10px 30px -4px rgba(0, 0, 0, 0.12)
               `,
-              border: "1px solid rgba(255, 255, 255, 0.22)",
+              border: "1px solid rgba(255, 255, 255, 0.85)",
             }}
-            className="group relative flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-white hover:scale-[1.03] active:scale-95 transition-transform duration-200 cursor-pointer select-none overflow-hidden"
+            className="group relative flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-zinc-900 hover:scale-[1.03] active:scale-95 transition-transform duration-200 cursor-pointer select-none overflow-hidden"
           >
             {/* Reflejo especular superior característico de srdavo/liquid-glass */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-50 bg-gradient-to-b from-white/35 via-white/5 to-transparent rounded-full" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/60 via-white/15 to-transparent rounded-full" />
 
-            <div className="relative z-10 w-5 h-5 rounded-full bg-white/20 border border-white/30 flex items-center justify-center transition-transform duration-200 group-hover:-translate-y-0.5 shadow-xs">
-              <ArrowUp className="w-3.5 h-3.5 text-white stroke-[2.4]" />
+            <div className="relative z-10 w-5 h-5 rounded-full bg-white/50 border border-white/70 flex items-center justify-center transition-transform duration-200 group-hover:-translate-y-0.5 shadow-2xs">
+              <ArrowUp className="w-3.5 h-3.5 text-zinc-900 stroke-[2.4]" />
             </div>
-            <span className="relative z-10 text-xs font-bold tracking-tight whitespace-nowrap text-white drop-shadow-xs">
+            <span className="relative z-10 text-xs font-bold tracking-tight whitespace-nowrap text-zinc-900 drop-shadow-xs">
               {label}
             </span>
           </button>

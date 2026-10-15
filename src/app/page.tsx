@@ -355,12 +355,12 @@ export default function Home() {
       activeHeroImageUrl={activeHeroImageUrl}
       onReadyToAnimateText={() => setStartHeroAnimation(true)}
     >
-      {/* Hero Section - Piedra cálido neutro #191715 sin ningún destello verde */}
+      {/* Hero Section */}
       <section 
         id="hero-section" 
         ref={heroRef} 
         data-ambient-category="default"
-        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-[#191715]"
+        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
       >
         <DynamicHeroBackground 
           activePhaseId={heroTime.phaseId}
