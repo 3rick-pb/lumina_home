@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getDisplacementFilter } from "./LiquidGlass";
 
 interface BackToTopButtonProps {
   threshold?: number;
@@ -10,6 +11,12 @@ interface BackToTopButtonProps {
   label?: string;
 }
 
+/**
+ * Botón flotante "+ Volver arriba" aislado en la raíz del viewport:
+ * - Liquid Glass Real Negro Apple-style (refracción SVG displacement + bisel especular)
+ * - Cero re-renders en el scroll del catálogo gracias a listener pasivo con rAF
+ * - Posicionado en la raíz (fixed bottom-6 left-1/2 -translate-x-1/2 z-40) para nunca romperse ni meterse en las tarjetas
+ */
 export function BackToTopButton({
   threshold = 600,
   className = "",
@@ -18,6 +25,18 @@ export function BackToTopButton({
   const [isVisible, setIsVisible] = useState(false);
   const isVisibleRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+
+  const [dims, setDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      const isChromium = /chrome|chromium|crios|edg/.test(ua) && !/firefox|fxios/.test(ua);
+      setHasSvgFilterSupport(isChromium);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -51,6 +70,35 @@ export function BackToTopButton({
     };
   }, [threshold]);
 
+  useEffect(() => {
+    if (!buttonRef.current || !isVisible) return;
+    const el = buttonRef.current;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.ceil(rect.width);
+      const h = Math.ceil(rect.height);
+      if (w > 0 && h > 0) {
+        setDims((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isVisible]);
+
+  const filterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport || dims.width === 0 || dims.height === 0) return null;
+    return getDisplacementFilter({
+      width: dims.width,
+      height: dims.height,
+      radius: 9999,
+      depth: 4,
+      strength: 22,
+      chromaticAberration: 1.5,
+    });
+  }, [hasSvgFilterSupport, dims.width, dims.height]);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     if (typeof document !== "undefined") {
@@ -70,19 +118,42 @@ export function BackToTopButton({
           initial={{ opacity: 0, y: 16, scale: 0.92 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.92 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center justify-center pointer-events-auto select-none ${className}`}
         >
           <button
+            ref={buttonRef}
             type="button"
             onClick={scrollToTop}
             aria-label={label}
-            className="group relative inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-zinc-900/90 hover:bg-zinc-900 dark:bg-white/90 dark:hover:bg-white text-white dark:text-zinc-900 border border-white/15 dark:border-black/10 shadow-[0_8px_24px_rgba(0,0,0,0.18)] active:scale-95 transition-transform duration-200 cursor-pointer"
+            title={label}
+            style={{
+              clipPath: "inset(0 round 9999px)",
+              WebkitClipPath: "inset(0 round 9999px)",
+              backdropFilter: hasSvgFilterSupport && filterUrl
+                ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.05) saturate(1.4)`
+                : "blur(20px) saturate(180%) brightness(1.05)",
+              WebkitBackdropFilter: hasSvgFilterSupport && filterUrl
+                ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.05) saturate(1.4)`
+                : "blur(20px) saturate(180%) brightness(1.05)",
+              background:
+                "linear-gradient(180deg, rgba(28,28,32,0.86) 0%, rgba(14,14,18,0.80) 100%)",
+              boxShadow: `
+                inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.32),
+                inset -1px -1px 1px 0px rgba(0, 0, 0, 0.45),
+                0 12px 32px -4px rgba(0, 0, 0, 0.35)
+              `,
+              border: "1px solid rgba(255, 255, 255, 0.22)",
+            }}
+            className="group relative flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-white hover:scale-[1.03] active:scale-95 transition-transform duration-200 cursor-pointer select-none overflow-hidden"
           >
-            <div className="w-5 h-5 rounded-full bg-white/20 dark:bg-zinc-900/15 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-0.5">
-              <ArrowUp className="w-3 h-3 stroke-[2.5]" />
+            {/* Reflejo especular superior característico de srdavo/liquid-glass */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-50 bg-gradient-to-b from-white/35 via-white/5 to-transparent rounded-full" />
+
+            <div className="relative z-10 w-5 h-5 rounded-full bg-white/20 border border-white/30 flex items-center justify-center transition-transform duration-200 group-hover:-translate-y-0.5 shadow-xs">
+              <ArrowUp className="w-3.5 h-3.5 text-white stroke-[2.4]" />
             </div>
-            <span className="text-xs font-semibold tracking-wide">
+            <span className="relative z-10 text-xs font-bold tracking-tight whitespace-nowrap text-white drop-shadow-xs">
               {label}
             </span>
           </button>

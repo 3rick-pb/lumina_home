@@ -63,9 +63,11 @@ export const ProductCard = React.memo(function ProductCard({
 
   const initialUrl = normalizeImageUrl(imageUrl) || "";
   const [imgSrc, setImgSrc] = React.useState(initialUrl);
+  const [imgLoaded, setImgLoaded] = React.useState(false);
 
   React.useEffect(() => {
     setImgSrc(normalizeImageUrl(imageUrl) || "");
+    setImgLoaded(false);
   }, [imageUrl]);
 
   const isFav = isMounted ? isFavStore : false;
@@ -112,7 +114,7 @@ export const ProductCard = React.memo(function ProductCard({
           <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 ${isFav ? 'fill-current scale-110' : ''}`} />
         </button>
 
-        {/* Imagen del Producto - loading lazy, decoding async, animación solo de escala GPU */}
+        {/* Imagen del Producto - loading lazy, decoding async, suave revelado y escala GPU */}
         {imgSrc ? (
           <Image
             src={imgSrc}
@@ -122,8 +124,11 @@ export const ProductCard = React.memo(function ProductCard({
             loading="lazy"
             decoding="async"
             draggable={false}
+            onLoad={() => setImgLoaded(true)}
             onError={() => setImgSrc("")}
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] pointer-events-none select-none transform-gpu"
+            className={`object-cover transition-all duration-500 ease-out group-hover:scale-[1.04] pointer-events-none select-none transform-gpu ${
+              imgLoaded ? "opacity-100" : "opacity-0"
+            }`}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-white/[0.04] text-gray-400 dark:text-gray-500 gap-1.5 p-4 text-center">

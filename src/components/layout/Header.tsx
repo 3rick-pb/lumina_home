@@ -51,12 +51,19 @@ export function Header() {
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerDims, setHeaderDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState(true);
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
 
   useEffect(() => {
-    if (typeof navigator !== "undefined") {
+    if (typeof window !== "undefined") {
+      const checkMobile = () => setIsMobileScreen(window.innerWidth < 640);
+      checkMobile();
+      window.addEventListener("resize", checkMobile, { passive: true });
+
       const ua = navigator.userAgent.toLowerCase();
       const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
       setHasSvgFilterSupport(isChromium);
+
+      return () => window.removeEventListener("resize", checkMobile);
     }
   }, []);
 
@@ -329,7 +336,7 @@ export function Header() {
                   type="text" 
                   value={searchVal}
                   onChange={(e) => setSearchVal(e.target.value)}
-                  placeholder="Buscar en catálogo..."
+                  placeholder={isMobileScreen ? "Búscame..." : "Buscar en catálogo..."}
                   className={cn(
                     "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none bg-white/50 dark:bg-[#18181b]/50 backdrop-blur-md border border-white/75 dark:border-white/20 focus:bg-white/90 dark:focus:bg-[#18181b]/90 focus:border-white/90 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.8),0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 

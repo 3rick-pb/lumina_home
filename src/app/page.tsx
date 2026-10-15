@@ -382,9 +382,13 @@ export default function Home() {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-                  className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white shadow-sm [isolation:isolate] transform-gpu select-none bg-white/10"
+                  transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white shadow-sm [isolation:isolate] transform-gpu select-none"
                 >
+                  <div 
+                    className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
+                    style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+                  />
                   <span className="relative z-10">Artículos premium para tu hogar</span>
                 </motion.div>
               </div>
@@ -401,18 +405,18 @@ export default function Home() {
             <div className="mt-auto sm:mt-4 [@media(min-height:760px)]:mt-6 [@media(min-height:860px)]:mt-8 pb-3 sm:pb-0 flex flex-col sm:flex-row gap-2.5 sm:gap-3.5">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/35 hover:bg-white/45 active:bg-white/55 border border-white/60 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-transform duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[48px] sm:min-h-0"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-4 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[50px] sm:min-h-0"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-xs">
+                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[48px] sm:min-h-0"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-4 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[50px] sm:min-h-0"
               >
-                <span className="relative z-10 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-xs">
+                <span className="relative z-10 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
                   Filtrar por categoría
                 </span>
               </a>
@@ -563,10 +567,10 @@ export default function Home() {
                 <motion.div
                   key={idx}
                   data-ambient-category={cat.name.toLowerCase()}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.1 }}
-                  transition={{ duration: 0.35, delay: Math.min(idx * 0.03, 0.12), ease: [0.22, 1, 0.36, 1] }}
+                  viewport={{ once: false, amount: 0.08 }}
+                  transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
                   style={{ contain: "layout paint", willChange: "transform, opacity" }}
                   className="transform-gpu"
                 >
@@ -669,14 +673,14 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                {filteredProducts.slice(0, 8).map((product, idx) => (
+                {filteredProducts.slice(0, 8).map((product) => (
                   <motion.div 
                     key={product.id}
                     data-ambient-category={product.category.toLowerCase()}
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 18 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.1 }}
-                    transition={{ duration: 0.35, delay: Math.min((idx % 4) * 0.03, 0.12), ease: [0.22, 1, 0.36, 1] }}
+                    viewport={{ once: false, amount: 0.08 }}
+                    transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
                     style={{ contain: "layout paint", willChange: "transform, opacity" }}
                     className="transform-gpu"
                     onMouseEnter={() => handlePointerEnterCategory(product.category)}
