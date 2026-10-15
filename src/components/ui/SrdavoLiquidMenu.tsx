@@ -731,7 +731,6 @@ export function SrdavoLiquidMenu({
                 inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
                 0 10px 30px rgba(0, 0, 0, 0.10)
               `,
-              border: "0.9px solid #18181b",
             }}
           >
             {/* Reflejo especular superior característico de srdavo/liquid-glass */}
@@ -835,6 +834,13 @@ export function SrdavoLiquidMenu({
               className="absolute inset-0 rounded-full pointer-events-none transition-[box-shadow,border] duration-150 z-20"
             />
           </div>
+
+          {/* Marco exterior 0.9px: overlay vectorial limpio sin distorsión ni artefactos de recorte horizontal */}
+          <div
+            className="pointer-events-none absolute inset-0 rounded-full border-[0.9px] border-[#18181b] z-30"
+            style={{ borderRadius: 9999 }}
+            aria-hidden="true"
+          />
         </div>
 
         {/* BOTÓN DE LUPA DE BÚSQUEDA CON LIQUID GLASS REAL */}
@@ -876,7 +882,6 @@ export function SrdavoLiquidMenu({
                   inset -1px -1px 1px 0px rgba(255, 255, 255, 0.40),
                   0 10px 26px rgba(0, 0, 0, 0.10)
                 `,
-              border: "0.9px solid #18181b",
               transform: isSearchPressed ? "scale(1.08)" : "scale(1)",
             }}
             className={`relative flex items-center justify-center w-[58px] h-[58px] rounded-full overflow-hidden transition-all duration-200 select-none shrink-0 cursor-pointer ${
@@ -895,6 +900,12 @@ export function SrdavoLiquidMenu({
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3.5-3.5" strokeLinecap="round" />
             </svg>
+            {/* Marco exterior 0.9px perfectamente redondeado sin distorsión */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-full border-[0.9px] border-[#18181b] z-20"
+              style={{ borderRadius: 9999 }}
+              aria-hidden="true"
+            />
           </button>
         )}
       </div>

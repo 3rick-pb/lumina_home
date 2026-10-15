@@ -102,7 +102,7 @@ export function LuminaBootOrchestrator({
             <div className="relative w-16 h-16 flex items-center justify-center">
               <div className="absolute inset-0 rounded-2xl border-2 border-black/[0.06] dark:border-white/10" />
               <div className="absolute inset-0 rounded-2xl border-2 border-transparent border-t-[#8c9276] dark:border-t-amber-400 animate-spin" />
-              <div className="w-10 h-10 rounded-xl bg-[#FFE4D1] text-[#080C26] border border-[#F5C2A1]/80 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 select-none">
+              <div className="w-10 h-10 rounded-xl bg-[#080C26] text-[#FFE4D1] border border-[#FFE4D1]/30 flex items-center justify-center shadow-md shadow-black/50 select-none">
                 <LuminaBrandEmblem size={24} />
               </div>
             </div>

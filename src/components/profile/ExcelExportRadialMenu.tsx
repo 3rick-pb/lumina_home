@@ -895,19 +895,29 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
           ref={metalRef}
           preset="chromatic"
           variant="circle"
+          theme="dark"
+          normalizeHostStyles={false}
           innerShadow
-          strength={0.90}
+          strength={1}
           className="relative z-50 shrink-0"
+          style={{
+            borderRadius: "9999px",
+          }}
         >
           <button
             type="button"
             onClick={handleToggleMenu}
             aria-label="Exportar datos a Excel"
             title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+            style={{
+              width: 44,
+              height: 44,
+              backgroundColor: isOpen ? "#e11d48" : "#18181b",
+            }}
             className={`relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer overflow-hidden active:scale-95 shrink-0 ${
               isOpen
                 ? "bg-rose-600 text-white shadow-[0_4px_20px_rgba(244,63,94,0.4)]"
-                : "bg-zinc-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+                : "bg-zinc-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.35)]"
             }`}
           >
             {/* Pulse wave on open */}
@@ -932,7 +942,9 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                 <X className="w-5 h-5 text-white stroke-[2.5]" />
               ) : (
                 <svg 
-                  className="w-5.5 h-5.5 sm:w-6 sm:h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] shrink-0 select-none" 
+                  width="24"
+                  height="24"
+                  className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] shrink-0 select-none pointer-events-none relative z-10" 
                   viewBox="0 0 32 32" 
                   fill="none" 
                   xmlns="http://www.w3.org/2000/svg"
