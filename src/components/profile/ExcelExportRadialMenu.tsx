@@ -15,6 +15,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { MicrosoftExcel } from "@thesvg/react";
+import { MetalFx, useMetalBend } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
@@ -113,6 +114,8 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const metalRef = useRef<HTMLDivElement>(null);
+  useMetalBend(metalRef);
 
   useEffect(() => {
     setMounted(true);
@@ -887,46 +890,65 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN SQUIRCLE ARCHITECTURE TRIGGER BUTTON WITH EXCEL 2026 ICON */}
-        <button
-          type="button"
-          onClick={handleToggleMenu}
-          aria-label="Exportar datos a Excel"
-          title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-          className={`relative z-50 h-10 sm:h-11 w-10 sm:w-11 rounded-2xl flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-2xl overflow-hidden active:scale-95 shrink-0 ${
-            isOpen
-              ? "border-rose-500 bg-rose-600 dark:bg-rose-600 text-white shadow-[0_4px_20px_rgba(244,63,94,0.4)] scale-105"
-              : "border-black/10 dark:border-white/15 bg-white/95 dark:bg-[#151916]/95 hover:border-emerald-500/60 dark:hover:border-emerald-400/60 shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_3px_rgba(16,185,129,0.12)] hover:shadow-[0_8px_24px_rgba(16,185,129,0.22)] hover:scale-105"
-          }`}
+        {/* 3. MAIN TRIGGER BUTTON WITH METAL-FX CHROMATIC LIQUID SHADER & EXCEL ICON */}
+        <MetalFx
+          ref={metalRef}
+          preset="chromatic"
+          variant="circle"
+          innerShadow
+          strength={0.90}
+          className="relative z-50 shrink-0"
         >
-          {/* Subtle ambient emerald glow on hover */}
-          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-tr from-emerald-500/10 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity" />
-
-          {/* Pulse wave on open */}
-          {isOpen && (
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0.8 }}
-              animate={{ scale: 1.3, opacity: 0 }}
-              transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
-              className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-rose-400"
-            />
-          )}
-
-          <motion.div
-            animate={{ 
-              rotate: isOpen ? 90 : 0, 
-              scale: isOpen ? 1.05 : 1 
-            }}
-            transition={{ type: "spring", stiffness: 380, damping: 20 }}
-            className="relative z-10 flex items-center justify-center"
+          <button
+            type="button"
+            onClick={handleToggleMenu}
+            aria-label="Exportar datos a Excel"
+            title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+            className={`relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer overflow-hidden active:scale-95 shrink-0 ${
+              isOpen
+                ? "bg-rose-600 text-white shadow-[0_4px_20px_rgba(244,63,94,0.4)]"
+                : "bg-zinc-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+            }`}
           >
-            {isOpen ? (
-              <X className="w-5 h-5 text-white" />
-            ) : (
-              <MicrosoftExcel className="w-5.5 h-5.5 sm:w-6 sm:h-6 drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200" />
+            {/* Pulse wave on open */}
+            {isOpen && (
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0.8 }}
+                animate={{ scale: 1.3, opacity: 0 }}
+                transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
+                className="pointer-events-none absolute inset-0 rounded-full border-2 border-rose-400"
+              />
             )}
-          </motion.div>
-        </button>
+
+            <motion.div
+              animate={{ 
+                rotate: isOpen ? 90 : 0, 
+                scale: isOpen ? 1.05 : 1 
+              }}
+              transition={{ type: "spring", stiffness: 380, damping: 20 }}
+              className="relative z-10 flex items-center justify-center select-none"
+            >
+              {isOpen ? (
+                <X className="w-5 h-5 text-white stroke-[2.5]" />
+              ) : (
+                <svg 
+                  className="w-5.5 h-5.5 sm:w-6 sm:h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] shrink-0 select-none" 
+                  viewBox="0 0 32 32" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect x="3" y="4" width="26" height="24" rx="4" fill="#107C41" />
+                  <path d="M17 4H25C27.2091 4 29 5.79086 29 8V24C29 26.2091 27.2091 28 25 28H17V4Z" fill="#185C37" />
+                  <path d="M5 8C5 6.89543 5.89543 6 7 6H19C20.1046 6 21 6.89543 21 8V24C21 25.1046 20.1046 26 19 26H7C5.89543 26 5 25.1046 5 24V8Z" fill="#107C41" />
+                  <path d="M9 11.5L12 16L9 20.5H11.2L13.1 17.3L15 20.5H17.2L14.2 16L17.2 11.5H15L13.1 14.6L11.2 11.5H9Z" fill="white" />
+                  <rect x="23" y="10" width="3" height="2" rx="0.5" fill="white" opacity="0.85" />
+                  <rect x="23" y="15" width="3" height="2" rx="0.5" fill="white" opacity="0.85" />
+                  <rect x="23" y="20" width="3" height="2" rx="0.5" fill="white" opacity="0.85" />
+                </svg>
+              )}
+            </motion.div>
+          </button>
+        </MetalFx>
       </div>
 
       {/* 4. ORDERS SUBMENU FOR MOBILE: Rendered via Portal into document.body to avoid ancestor CSS transform clipping */}

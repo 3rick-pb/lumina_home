@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 
 interface LuminaBootOrchestratorProps {
   activeHeroImageUrl: string;
@@ -101,9 +102,9 @@ export function LuminaBootOrchestrator({
             <div className="relative w-16 h-16 flex items-center justify-center">
               <div className="absolute inset-0 rounded-2xl border-2 border-black/[0.06] dark:border-white/10" />
               <div className="absolute inset-0 rounded-2xl border-2 border-transparent border-t-[#8c9276] dark:border-t-amber-400 animate-spin" />
-              <span className="font-display font-bold text-xl text-gray-900 dark:text-white tracking-widest pl-0.5 select-none">
-                L
-              </span>
+              <div className="w-10 h-10 rounded-xl bg-[#FFE4D1] text-[#080C26] border border-[#F5C2A1]/80 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 select-none">
+                <LuminaBrandEmblem size={24} />
+              </div>
             </div>
 
             {/* Brand Caption */}

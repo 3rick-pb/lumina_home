@@ -731,7 +731,7 @@ export function SrdavoLiquidMenu({
                 inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
                 0 10px 30px rgba(0, 0, 0, 0.10)
               `,
-              border: "1px solid rgba(255, 255, 255, 0.72)",
+              border: "0.9px solid #18181b",
             }}
           >
             {/* Reflejo especular superior característico de srdavo/liquid-glass */}
@@ -876,9 +876,7 @@ export function SrdavoLiquidMenu({
                   inset -1px -1px 1px 0px rgba(255, 255, 255, 0.40),
                   0 10px 26px rgba(0, 0, 0, 0.10)
                 `,
-              border: isSearchActive
-                ? "2px solid rgba(255, 255, 255, 0.9)"
-                : "1px solid rgba(255, 255, 255, 0.76)",
+              border: "0.9px solid #18181b",
               transform: isSearchPressed ? "scale(1.08)" : "scale(1)",
             }}
             className={`relative flex items-center justify-center w-[58px] h-[58px] rounded-full overflow-hidden transition-all duration-200 select-none shrink-0 cursor-pointer ${
