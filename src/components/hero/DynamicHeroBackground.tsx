@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useRef } from "react";
+import { memo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLenis } from "lenis/react";
 import { HERO_PHASES, HeroPhaseId } from "@/hooks/useHeroTimePhase";
@@ -15,7 +15,7 @@ export interface DynamicHeroBackgroundProps {
 /**
  * DynamicHeroBackground:
  * - Doble buffer para transición suave entre fases
- * - Movimiento suave e inercial slow-motion con Lenis al hacer scroll
+ * - Movimiento suave e inercial slow-motion con Lenis y listener táctil adaptativo
  * - Degradado original brand-900 verde bosque suave
  */
 export const DynamicHeroBackground = memo(function DynamicHeroBackground({
@@ -32,38 +32,57 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   const prevPhase = prevPeriod ? HERO_PHASES[prevPeriod] : null;
 
   const heroParallaxRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number | null>(null);
 
-  // Movimiento suave Lenis slow-motion para la imagen del Hero:
-  // - En Desktop / Laptop con ratón/trackpad: desplazamiento suave inercial slow-motion.
-  // - En Celulares y pantallas táctiles: DESACTIVADO para garantizar 120Hz y 60Hz nativos sin ningún lagazo ni interferencia con el scroll táctil del dedo.
-  useLenis(({ scroll }) => {
-    if (!heroParallaxRef.current) return;
-    if (typeof window === "undefined") return;
+  // Efecto de desplazamiento suave (parallax) para la imagen del Hero:
+  // - Activo en TODOS los dispositivos: Celulares, Tablets y Desktops.
+  // - En móviles y pantallas táctiles: adaptado ergonómicamente a la velocidad y distancia de arrastre del dedo (ratio 0.16) para que se mueva con elegancia natural sin dar tirones.
+  // - En laptops/desktops con ratón/trackpad: desplazamiento slow-motion inercial (ratio 0.28).
+  // - Sincronizado a través de requestAnimationFrame con el VSYNC del display (120Hz / 60Hz nativos) para garantizar CERO lag y CERO caídas de FPS.
+  const applyParallax = (currentScroll: number) => {
+    if (rafIdRef.current !== null) return;
 
-    // Detectar si es dispositivo táctil o móvil (celulares)
-    const isTouchOrMobile =
-      window.innerWidth < 1024 ||
-      window.matchMedia("(pointer: coarse)").matches ||
-      window.matchMedia("(hover: none)").matches;
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      if (!heroParallaxRef.current) return;
+      if (typeof window === "undefined") return;
 
-    if (isTouchOrMobile) {
-      if (heroParallaxRef.current.style.transform) {
-        heroParallaxRef.current.style.transform = "";
+      const vh = window.innerHeight || 800;
+      if (currentScroll <= vh * 1.35) {
+        const isMobileOrTouch =
+          window.innerWidth < 768 ||
+          (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
+        const factor = isMobileOrTouch ? 0.16 : 0.28;
+        const slowTranslateY = currentScroll * factor;
+        heroParallaxRef.current.style.transform = `translate3d(0, ${slowTranslateY.toFixed(1)}px, 0)`;
       }
-      return;
-    }
+    });
+  };
 
-    const vh = window.innerHeight || 900;
-    if (scroll <= vh * 1.5) {
-      const slowTranslateY = scroll * 0.32;
-      heroParallaxRef.current.style.transform = `translate3d(0, ${slowTranslateY.toFixed(2)}px, 0) scale(1.05)`;
-    }
+  // 1. Lenis scroll listener
+  useLenis(({ scroll }) => {
+    applyParallax(scroll);
   });
+
+  // 2. Listener nativo pasivo de respaldo para asegurar activación instantánea al arrastrar con el dedo en cualquier celular
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onScroll = () => {
+      applyParallax(window.scrollY);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-brand-900">
-      {/* Contenedor con movimiento suave e inercial Lenis */}
-      <div ref={heroParallaxRef} className="absolute inset-0 pointer-events-none select-none will-change-transform transform-gpu">
+      {/* Contenedor con movimiento suave e inercial Lenis y escala estática en GPU */}
+      <div ref={heroParallaxRef} className="absolute inset-0 pointer-events-none select-none will-change-transform transform-gpu scale-[1.06] origin-center">
         {/* 1. Capa de Fondo (Doble Buffer - Imagen Anterior durante transición) */}
         {prevPhase && (
           <div

@@ -135,7 +135,7 @@ export function AmbientBackground() {
       className="fixed inset-0 pointer-events-none -z-10 overflow-hidden dark:bg-[#121214] [contain:strict] [transform:translateZ(0)]"
       style={{
         backgroundColor: activeMatteColor,
-        transition: "background-color 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
+        transition: "background-color 1.6s cubic-bezier(0.4, 0, 0.2, 1)",
         willChange: "background-color",
       }}
     >
@@ -143,10 +143,10 @@ export function AmbientBackground() {
         <>
           {/* Primary Atmospheric Glow (Top Left) */}
           <div 
-            className="absolute -top-[15%] -left-[10%] w-[65vw] h-[65vw] rounded-full opacity-60 transform-gpu pointer-events-none" 
+            className="absolute -top-[15%] -left-[10%] w-[65vw] h-[65vw] rounded-full opacity-50 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c1,
-              transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "background-color 1.8s cubic-bezier(0.4, 0, 0.2, 1)",
               willChange: "background-color",
               WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)",
               maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)"
@@ -154,10 +154,10 @@ export function AmbientBackground() {
           />
           {/* Secondary Atmospheric Glow (Bottom Right) */}
           <div 
-            className="absolute -bottom-[15%] -right-[10%] w-[75vw] h-[75vw] rounded-full opacity-55 transform-gpu pointer-events-none" 
+            className="absolute -bottom-[15%] -right-[10%] w-[75vw] h-[75vw] rounded-full opacity-45 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c2,
-              transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "background-color 1.8s cubic-bezier(0.4, 0, 0.2, 1)",
               willChange: "background-color",
               WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)",
               maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)"
@@ -165,17 +165,17 @@ export function AmbientBackground() {
           />
           {/* Center Ambient Hue */}
           <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[55vw] rounded-full opacity-50 transform-gpu pointer-events-none" 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[55vw] rounded-full opacity-40 transform-gpu pointer-events-none" 
             style={{ 
               backgroundColor: theme.c3,
-              transition: "background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "background-color 1.8s cubic-bezier(0.4, 0, 0.2, 1)",
               willChange: "background-color",
               WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)",
               maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 70%)"
             }} 
           />
-          {/* Velo mate suave para fusionar los tonos */}
-          <div className="absolute inset-0 bg-[#FAF8F5]/35 dark:bg-[#121214]/40 pointer-events-none" />
+          {/* Velo mate suave para fusionar los tonos con acabado sedoso y aterciopelado */}
+          <div className="absolute inset-0 bg-[#FAF8F5]/45 dark:bg-[#121214]/50 pointer-events-none" />
         </>
       ) : (
         /* Fondo mate estático en celulares táctiles: Tono derivado de #8c9276 a intensidad muy bajita */
