@@ -115,7 +115,7 @@ export function BeUIPaginatedDock({
           }}
           onSearchClick={onSearchClick}
           isSearchActive={isSearchActive}
-          isCollapsed={isCollapsed && !isSearchActive}
+          isCollapsed={isCollapsed}
         />
       </div>
     </nav>

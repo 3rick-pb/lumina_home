@@ -13,9 +13,9 @@ import {
   Loader2,
   Sparkles,
   FileSpreadsheet,
-  ChevronRight,
-  ArrowUp
+  ChevronRight
 } from "lucide-react";
+import MicrosoftExcel from "@thesvg/react/microsoft-excel";
 import { useMetalBend, BEND } from "metal-fx";
 
 const MetalFx = dynamic(() => import("metal-fx").then((mod) => mod.MetalFx), {
@@ -139,7 +139,79 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
     return () => obs.disconnect();
   }, [mounted]);
 
-  useMetalBend(metalRef, useCallback(() => BEND, [canvasReady]));
+  useMetalBend(
+    metalRef,
+    useCallback(
+      () => ({
+        ...BEND,
+        applyTo: "ring" as const,
+        strength: 1,
+        reach: 26,
+        blob: 10,
+        liquidBlob: 14,
+        maxDisp: 15,
+        liquid: 12,
+        gain: 25,
+        pressGain: 1.0,
+        pullGain: 1.2,
+      }),
+      [canvasReady]
+    )
+  );
+
+  // Movimiento orbital autónomo de metal líquido:
+  // Garantiza que la onda de metal líquido fluya de forma continua alrededor del perímetro del botón
+  // en celulares y pantallas táctiles (donde no hay cursor hover constante) y en desktop cuando el mouse está inactivo.
+  useEffect(() => {
+    if (!mounted) return;
+    let rafId: number;
+    let angle = 0;
+    let lastRealPointerTime = 0;
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.isTrusted) {
+        lastRealPointerTime = Date.now();
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+
+    const orbitLoop = () => {
+      const now = Date.now();
+      const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+      const isIdle = now - lastRealPointerTime > 1200;
+
+      if ((isTouch || isIdle) && metalRef.current) {
+        const rect = metalRef.current.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const radius = (rect.width / 2) * 0.96;
+
+          angle += 0.042; // Onda suave y fluida (~2.5s por ciclo)
+          const px = cx + Math.cos(angle) * radius;
+          const py = cy + Math.sin(angle) * radius;
+
+          document.dispatchEvent(
+            new PointerEvent("pointermove", {
+              clientX: px,
+              clientY: py,
+              bubbles: true,
+              cancelable: false,
+            })
+          );
+        }
+      }
+      rafId = requestAnimationFrame(orbitLoop);
+    };
+
+    rafId = requestAnimationFrame(orbitLoop);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      cancelAnimationFrame(rafId);
+    };
+  }, [mounted]);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -921,6 +993,21 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-cyan-500/25 via-blue-500/20 to-purple-500/25 blur-xl opacity-70 -z-10 animate-pulse" 
           />
 
+          {/* Liquid chromatic shimmer ring: Always visible on mobile, tablets and desktop regardless of WebGL state */}
+          <div 
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-[2.8px] rounded-full z-0 overflow-hidden"
+          >
+            <div 
+              className="w-full h-full rounded-full animate-[spin_3.5s_linear_infinite]"
+              style={{
+                background: "conic-gradient(from 0deg, #00f0ff, #3b82f6, #8b5cf6, #ec4899, #10b981, #00f0ff)",
+                opacity: 0.85,
+                filter: "blur(1.2px)",
+              }}
+            />
+          </div>
+
           {mounted ? (
             <MetalFx
               ref={metalRef}
@@ -928,7 +1015,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
               variant="circle"
               theme="dark"
               innerShadow
-              ringCssPx={4.5}
+              ringCssPx={2.8}
               shaderScale={1.6}
               strength={1}
               className="relative z-50 shrink-0"
@@ -941,10 +1028,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                 onClick={handleToggleMenu}
                 aria-label="Exportar datos a Excel"
                 title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
-                style={{
-                  background: "transparent",
-                }}
+                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-[#0d0e12]/90 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_4px_16px_rgba(0,0,0,0.5)]"
               >
                 {/* Pulse wave on open */}
                 {isOpen && (
@@ -965,18 +1049,18 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                   className="relative z-10 flex items-center justify-center select-none"
                 >
                   {isOpen ? (
-                    <X className="w-5 h-5 text-rose-400 stroke-[2.4]" />
+                    <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
                   ) : (
-                    <ArrowUp className="w-5 h-5 text-white stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                    <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
                   )}
                 </motion.div>
               </button>
             </MetalFx>
           ) : (
             <div
-              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center bg-[#0f0f11] border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center bg-[#0d0e12] border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
             >
-              <ArrowUp className="w-5 h-5 text-white stroke-[2.4]" />
+              <MicrosoftExcel className="w-5 h-5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
             </div>
           )}
         </div>

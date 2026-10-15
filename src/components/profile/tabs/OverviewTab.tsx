@@ -501,7 +501,7 @@ export function OverviewTab({
 
           <div 
             ref={nicheChartRef}
-            className={`flex items-end h-44 pt-8 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-y [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`flex items-end h-44 pt-8 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-x touch-pan-y [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -511,7 +511,8 @@ export function OverviewTab({
             style={{
               overscrollBehaviorX: "contain",
               overscrollBehaviorY: "auto",
-              touchAction: "pan-y",
+              touchAction: "pan-x pan-y",
+              WebkitOverflowScrolling: "touch",
             }}
           >
             {isAdmin ? (
