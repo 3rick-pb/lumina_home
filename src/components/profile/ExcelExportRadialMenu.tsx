@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -12,9 +13,14 @@ import {
   Loader2,
   Sparkles,
   FileSpreadsheet,
-  ChevronRight
+  ChevronRight,
+  ArrowUp
 } from "lucide-react";
-import { MetalFx, useMetalBend } from "metal-fx";
+import { useMetalBend, BEND } from "metal-fx";
+
+const MetalFx = dynamic(() => import("metal-fx").then((mod) => mod.MetalFx), {
+  ssr: false,
+});
 import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
@@ -110,15 +116,30 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
   const [successExport, setSuccessExport] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(0);
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const metalRef = useRef<HTMLDivElement>(null);
-  useMetalBend(metalRef);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted || !metalRef.current) return;
+    const check = () => {
+      if (metalRef.current?.querySelector("canvas.metal-fx-canvas")) {
+        setCanvasReady((v) => v + 1);
+      }
+    };
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(metalRef.current, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, [mounted]);
+
+  useMetalBend(metalRef, useCallback(() => BEND, [canvasReady]));
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -893,70 +914,72 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
         </AnimatePresence>
 
         {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC THINKING ORBS METAL-FX CHROMATIC LIQUID SHADER */}
-        <MetalFx
-          ref={metalRef}
-          preset="chromatic"
-          variant="circle"
-          theme="dark"
-          innerShadow
-          strength={1}
-          className="relative z-50 shrink-0"
-          style={{
-            borderRadius: "9999px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleToggleMenu}
-            aria-label="Exportar datos a Excel"
-            title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-            className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
-            style={{
-              background: "transparent",
-            }}
-          >
-            {/* Pulse wave on open */}
-            {isOpen && (
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0.8 }}
-                animate={{ scale: 1.3, opacity: 0 }}
-                transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
-                className="pointer-events-none absolute inset-0 rounded-full border-2 border-rose-400"
-              />
-            )}
+        <div className="relative inline-flex items-center justify-center shrink-0">
+          {/* Ambient chromatic light spill mirroring Thinking Orbs demo */}
+          <div 
+            aria-hidden="true" 
+            className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-cyan-500/25 via-blue-500/20 to-purple-500/25 blur-xl opacity-70 -z-10 animate-pulse" 
+          />
 
-            <motion.div
-              animate={{ 
-                rotate: isOpen ? 90 : 0, 
-                scale: isOpen ? 1.05 : 1 
+          {mounted ? (
+            <MetalFx
+              ref={metalRef}
+              preset="chromatic"
+              variant="circle"
+              theme="dark"
+              innerShadow
+              ringCssPx={4.5}
+              shaderScale={1.6}
+              strength={1}
+              className="relative z-50 shrink-0"
+              style={{
+                borderRadius: "9999px",
               }}
-              transition={{ type: "spring", stiffness: 380, damping: 20 }}
-              className="relative z-10 flex items-center justify-center select-none"
             >
-              {isOpen ? (
-                <X className="w-5 h-5 text-rose-400 stroke-[2.4]" />
-              ) : (
-                <div className="relative flex items-center justify-center text-white">
-                  <svg 
-                    className="w-5 h-5 text-white stroke-[2] drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  >
-                    <rect width="18" height="18" x="3" y="3" rx="3.5" />
-                    <path d="M3 9h18" />
-                    <path d="M3 15h18" />
-                    <path d="M9 9v12" />
-                    <path d="M15 9v12" />
-                  </svg>
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-                </div>
-              )}
-            </motion.div>
-          </button>
-        </MetalFx>
+              <button
+                type="button"
+                onClick={handleToggleMenu}
+                aria-label="Exportar datos a Excel"
+                title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
+                style={{
+                  background: "transparent",
+                }}
+              >
+                {/* Pulse wave on open */}
+                {isOpen && (
+                  <motion.div 
+                    initial={{ scale: 0.8, opacity: 0.8 }}
+                    animate={{ scale: 1.3, opacity: 0 }}
+                    transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
+                    className="pointer-events-none absolute inset-0 rounded-full border-2 border-rose-400"
+                  />
+                )}
+
+                <motion.div
+                  animate={{ 
+                    rotate: isOpen ? 90 : 0, 
+                    scale: isOpen ? 1.05 : 1 
+                  }}
+                  transition={{ type: "spring", stiffness: 380, damping: 20 }}
+                  className="relative z-10 flex items-center justify-center select-none"
+                >
+                  {isOpen ? (
+                    <X className="w-5 h-5 text-rose-400 stroke-[2.4]" />
+                  ) : (
+                    <ArrowUp className="w-5 h-5 text-white stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                  )}
+                </motion.div>
+              </button>
+            </MetalFx>
+          ) : (
+            <div
+              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center bg-[#0f0f11] border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+            >
+              <ArrowUp className="w-5 h-5 text-white stroke-[2.4]" />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 4. ORDERS SUBMENU FOR MOBILE: Rendered via Portal into document.body to avoid ancestor CSS transform clipping */}

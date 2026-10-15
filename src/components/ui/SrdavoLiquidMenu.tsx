@@ -771,11 +771,15 @@ export function SrdavoLiquidMenu({
             WebkitUserSelect: "none",
             userSelect: "none",
             WebkitTouchCallout: "none",
+            transformOrigin: "right center",
+            transition: isCollapsed
+              ? "transform 540ms cubic-bezier(0.4, 0, 0.15, 1), opacity 220ms 280ms ease-out"
+              : "transform 580ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease-out",
           }}
-          className={`relative flex-1 min-w-0 flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer origin-right transition-[transform,opacity] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`relative flex-1 min-w-0 flex items-center h-[58px] px-1 rounded-full select-none cursor-pointer ${
             isCollapsed
-              ? "opacity-0 scale-x-0 scale-y-75 translate-x-4 pointer-events-none"
-              : "opacity-100 scale-100 translate-x-0 pointer-events-auto"
+              ? "scale-x-0 scale-y-[0.35] translate-x-[42px] opacity-0 pointer-events-none"
+              : "scale-100 translate-x-0 opacity-100 pointer-events-auto"
           }`}
         >
           {/* INDICADOR FLOTANTE DE PORCENTAJE (AL LADO IZQUIERDO, ARRIBA DEL PRIMER ÍCONO) */}
@@ -965,9 +969,15 @@ export function SrdavoLiquidMenu({
               border: isSearchActive
                 ? "2px solid rgba(255, 255, 255, 0.9)"
                 : "1px solid rgba(255, 255, 255, 0.76)",
-              transform: isSearchPressed ? "scale(1.08)" : "scale(1)",
+              transform: isSearchPressed
+                ? "scale(1.08)"
+                : isCollapsed
+                ? "scale(1.07)"
+                : "scale(1)",
+              transition:
+                "transform 540ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 400ms ease, background 300ms ease",
             }}
-            className={`relative pointer-events-auto flex items-center justify-center w-[58px] h-[58px] rounded-full overflow-hidden transition-all duration-300 select-none shrink-0 cursor-pointer ${
+            className={`relative pointer-events-auto flex items-center justify-center w-[58px] h-[58px] rounded-full overflow-hidden select-none shrink-0 cursor-pointer ${
               isSearchActive ? "text-white" : "text-zinc-900 dark:text-white"
             } ${isCollapsed ? "shadow-[0_12px_36px_rgba(0,0,0,0.22)] ring-1 ring-black/10 dark:ring-white/20" : ""}`}
             aria-label="Buscar"
