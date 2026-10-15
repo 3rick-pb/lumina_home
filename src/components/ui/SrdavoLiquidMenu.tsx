@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback, useState } from "react";
+import React, { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import { getDisplacementFilter } from "./LiquidGlass";
 
 export interface LiquidTabItem {
   id: string;
@@ -127,6 +128,8 @@ export function SrdavoLiquidMenu({
   const activeIndex = Math.max(0, items.findIndex((i) => i.id === activeId));
   const [bezelMapUrl, setBezelMapUrl] = useState<string>("");
   const [isSearchPressed, setIsSearchPressed] = useState(false);
+  const [trackDims, setTrackDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState<boolean>(true);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const grayWindowRef = useRef<HTMLDivElement>(null);
@@ -169,10 +172,63 @@ export function SrdavoLiquidMenu({
     pointerX: 0,
   });
 
+  // Detectar soporte para filtros SVG en backdrop-filter
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
+      setHasSvgFilterSupport(isChromium);
+    }
+  }, []);
+
   // Generar mapa óptico de cápsula para refracción de bordes
   useEffect(() => {
     setBezelMapUrl(getCapsuleInverseBezelMap());
   }, []);
+
+  // Medir dimensiones del track para alimentar el filtro oficial de srdavo/liquid-glass
+  useEffect(() => {
+    if (!trackRef.current) return;
+    const el = trackRef.current;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.ceil(rect.width);
+      const h = Math.ceil(rect.height);
+      if (w > 0 && h > 0) {
+        setTrackDims((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Filtro Liquid Glass para el cuerpo del menú (con aberración cromática)
+  const barFilterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport || trackDims.width === 0 || trackDims.height === 0) return null;
+    return getDisplacementFilter({
+      width: trackDims.width,
+      height: trackDims.height,
+      radius: 9999,
+      depth: 4,
+      strength: 28,
+      chromaticAberration: 1.6,
+    });
+  }, [hasSvgFilterSupport, trackDims.width, trackDims.height]);
+
+  // Filtro Liquid Glass para la lupa de búsqueda
+  const orbFilterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport) return null;
+    return getDisplacementFilter({
+      width: 58,
+      height: 58,
+      radius: 9999,
+      depth: 4,
+      strength: isSearchPressed ? 36 : 28,
+      chromaticAberration: 1.6,
+    });
+  }, [hasSvgFilterSupport, isSearchPressed]);
 
   // Medir geometría y calcular destino sin destruir la posición actual del resorte
   const updateTargets = useCallback(
@@ -661,8 +717,12 @@ export function SrdavoLiquidMenu({
             style={{
               clipPath: "inset(0 round 9999px)",
               WebkitClipPath: "inset(0 round 9999px)",
-              backdropFilter: "blur(20px) saturate(190%) brightness(1.10)",
-              WebkitBackdropFilter: "blur(20px) saturate(190%) brightness(1.10)",
+              backdropFilter: hasSvgFilterSupport && barFilterUrl
+                ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
+              WebkitBackdropFilter: hasSvgFilterSupport && barFilterUrl
+                ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(240,240,248,0.24) 100%)",
               boxShadow: `
@@ -790,10 +850,14 @@ export function SrdavoLiquidMenu({
               WebkitClipPath: "inset(0 round 9999px)",
               backdropFilter: isSearchActive
                 ? "blur(12px)"
-                : "blur(18px) saturate(190%) brightness(1.10)",
+                : hasSvgFilterSupport && orbFilterUrl
+                ? `blur(0.8px) url('${orbFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(16px) saturate(190%) brightness(1.10)",
               WebkitBackdropFilter: isSearchActive
                 ? "blur(12px)"
-                : "blur(18px) saturate(190%) brightness(1.10)",
+                : hasSvgFilterSupport && orbFilterUrl
+                ? `blur(0.8px) url('${orbFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(16px) saturate(190%) brightness(1.10)",
               background: isSearchActive
                 ? "rgba(224, 122, 63, 0.95)"
                 : isSearchPressed

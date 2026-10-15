@@ -89,7 +89,7 @@ export function getDisplacementFilter({
     chromaticAberration <= 0
       ? `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="displace" x="0" y="0" width="${width}" height="${height}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <filter id="displace" x="-10" y="-10" width="${width + 20}" height="${height + 20}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
         <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
         <feDisplacementMap
           transform-origin="center"
@@ -104,7 +104,7 @@ export function getDisplacementFilter({
   </svg>`
       : `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="displace" x="0" y="0" width="${width}" height="${height}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <filter id="displace" x="-10" y="-10" width="${width + 20}" height="${height + 20}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
         <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
         <feDisplacementMap
           transform-origin="center"
