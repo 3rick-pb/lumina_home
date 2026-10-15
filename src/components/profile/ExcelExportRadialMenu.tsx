@@ -16,11 +16,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import MicrosoftExcel from "@thesvg/react/microsoft-excel";
-import { useMetalBend, BEND } from "metal-fx";
-
-const MetalFx = dynamic(() => import("metal-fx").then((mod) => mod.MetalFx), {
-  ssr: false,
-});
+import { MetalFx, useMetalBend, BEND } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
@@ -116,7 +112,11 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
   const [successExport, setSuccessExport] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(0);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const [hasFinePointer, setHasFinePointer] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(pointer: fine)").matches;
+  });
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -124,26 +124,55 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(pointer: fine)");
+    const handler = (e: MediaQueryListEvent) => setHasFinePointer(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
 
+  // Immediate detection of WebGL canvas attachment
   useEffect(() => {
-    if (!mounted || !metalRef.current) return;
     const check = () => {
       if (metalRef.current?.querySelector("canvas.metal-fx-canvas")) {
-        setCanvasReady((v) => v + 1);
+        setCanvasReady(true);
+        return true;
       }
+      return false;
     };
-    check();
-    const obs = new MutationObserver(check);
-    obs.observe(metalRef.current, { childList: true, subtree: true });
-    return () => obs.disconnect();
-  }, [mounted]);
 
+    if (check()) return;
+
+    let obs: MutationObserver | null = null;
+    if (metalRef.current) {
+      obs = new MutationObserver(() => {
+        if (check() && obs) obs.disconnect();
+      });
+      obs.observe(metalRef.current, { childList: true, subtree: true });
+    }
+
+    const interval = setInterval(() => {
+      if (check()) {
+        clearInterval(interval);
+        if (obs) obs.disconnect();
+      }
+    }, 30);
+
+    return () => {
+      if (obs) obs.disconnect();
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Liquid metal bend effect:
+  // - Immediately active upon entering Mi Perfil when a mouse/cursor is detected
+  // - Deactivated completely when no mouse/cursor is detected (touch screens / mobile / tablets)
   useMetalBend(
     metalRef,
     useCallback(
       () => ({
         ...BEND,
+        enabled: Boolean(hasFinePointer && canvasReady),
         applyTo: "ring" as const,
         strength: 1,
         reach: 26,
@@ -155,63 +184,9 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
         pressGain: 1.0,
         pullGain: 1.2,
       }),
-      [canvasReady]
+      [hasFinePointer, canvasReady]
     )
   );
-
-  // Movimiento orbital autónomo de metal líquido:
-  // Garantiza que la onda de metal líquido fluya de forma continua alrededor del perímetro del botón
-  // en celulares y pantallas táctiles (donde no hay cursor hover constante) y en desktop cuando el mouse está inactivo.
-  useEffect(() => {
-    if (!mounted) return;
-    let rafId: number;
-    let angle = 0;
-    let lastRealPointerTime = 0;
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (e.isTrusted) {
-        lastRealPointerTime = Date.now();
-      }
-    };
-
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-
-    const orbitLoop = () => {
-      const now = Date.now();
-      const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
-      const isIdle = now - lastRealPointerTime > 1200;
-
-      if ((isTouch || isIdle) && metalRef.current) {
-        const rect = metalRef.current.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          const cx = rect.left + rect.width / 2;
-          const cy = rect.top + rect.height / 2;
-          const radius = (rect.width / 2) * 0.96;
-
-          angle += 0.042; // Onda suave y fluida (~2.5s por ciclo)
-          const px = cx + Math.cos(angle) * radius;
-          const py = cy + Math.sin(angle) * radius;
-
-          document.dispatchEvent(
-            new PointerEvent("pointermove", {
-              clientX: px,
-              clientY: py,
-              bubbles: true,
-              cancelable: false,
-            })
-          );
-        }
-      }
-      rafId = requestAnimationFrame(orbitLoop);
-    };
-
-    rafId = requestAnimationFrame(orbitLoop);
-
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      cancelAnimationFrame(rafId);
-    };
-  }, [mounted]);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -987,70 +962,68 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
 
         {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC THINKING ORBS METAL-FX CHROMATIC LIQUID SHADER */}
         <div className="relative inline-flex items-center justify-center shrink-0">
-          {/* Ambient chromatic light spill mirroring Thinking Orbs demo */}
+          {/* Ambient chromatic light spill - highly saturated and vivid in Light Mode, deep celestial aura in Dark Mode */}
           <div 
             aria-hidden="true" 
-            className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-cyan-500/25 via-blue-500/20 to-purple-500/25 blur-xl opacity-70 -z-10 animate-pulse" 
+            className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-tr from-emerald-500/45 via-cyan-500/50 to-blue-600/45 dark:from-cyan-500/30 dark:via-blue-500/25 dark:to-purple-500/30 blur-md sm:blur-lg opacity-90 dark:opacity-70 -z-10" 
+          />
+          <div 
+            aria-hidden="true" 
+            className="pointer-events-none absolute -inset-3.5 rounded-full bg-gradient-to-tr from-cyan-400/40 via-teal-400/35 to-indigo-500/40 dark:from-cyan-500/20 dark:via-blue-500/15 dark:to-purple-500/20 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
           />
 
-          {mounted ? (
-            <MetalFx
-              ref={metalRef}
-              preset="chromatic"
-              variant="circle"
-              theme="dark"
-              innerShadow
-              ringCssPx={3.2}
-              shaderScale={1.6}
-              strength={1}
-              className="relative z-50 shrink-0"
+          <MetalFx
+            ref={metalRef}
+            preset="chromatic"
+            variant="circle"
+            theme="dark"
+            innerShadow
+            ringCssPx={2.8}
+            shaderScale={1.5}
+            strength={1}
+            className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
+            style={{
+              width: isMobile ? 44 : 48,
+              height: isMobile ? 44 : 48,
+              borderRadius: "9999px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleToggleMenu}
+              aria-label="Exportar datos a Excel"
+              title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
               style={{
-                borderRadius: "9999px",
+                background: "transparent",
               }}
             >
-              <button
-                type="button"
-                onClick={handleToggleMenu}
-                aria-label="Exportar datos a Excel"
-                title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
-                style={{
-                  background: "transparent",
-                }}
-              >
-                {/* Pulse wave on open */}
-                {isOpen && (
-                  <motion.div 
-                    initial={{ scale: 0.8, opacity: 0.8 }}
-                    animate={{ scale: 1.3, opacity: 0 }}
-                    transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
-                    className="pointer-events-none absolute inset-0 rounded-full border-2 border-rose-400"
-                  />
-                )}
+              {/* Pulse wave on open */}
+              {isOpen && (
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0.8 }}
+                  animate={{ scale: 1.3, opacity: 0 }}
+                  transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
+                  className="pointer-events-none absolute inset-0 rounded-full border-2 border-rose-400"
+                />
+              )}
 
-                <motion.div
-                  animate={{ 
-                    rotate: isOpen ? 90 : 0, 
-                    scale: isOpen ? 1.05 : 1 
-                  }}
-                  transition={{ type: "spring", stiffness: 380, damping: 20 }}
-                  className="relative z-10 flex items-center justify-center select-none"
-                >
-                  {isOpen ? (
-                    <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-                  ) : (
-                    <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
-                  )}
-                </motion.div>
-              </button>
-            </MetalFx>
-          ) : (
-            <div
-              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center bg-[#0d0e12] border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
-            >
-              <MicrosoftExcel className="w-5 h-5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
-            </div>
-          )}
+              <motion.div
+                animate={{ 
+                  rotate: isOpen ? 90 : 0, 
+                  scale: isOpen ? 1.05 : 1 
+                }}
+                transition={{ type: "spring", stiffness: 380, damping: 20 }}
+                className="relative z-10 flex items-center justify-center select-none"
+              >
+                {isOpen ? (
+                  <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                ) : (
+                  <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
+                )}
+              </motion.div>
+            </button>
+          </MetalFx>
         </div>
       </div>
 
