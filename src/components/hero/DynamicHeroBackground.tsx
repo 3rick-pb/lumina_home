@@ -16,7 +16,7 @@ export interface DynamicHeroBackgroundProps {
  * 1. Cero descarga de imagen errónea en SSR (no monta <img> en SSR ni antes de hidratación)
  * 2. Decodificación GPU (img.decode()) previa con revelado sincronizado al título caligráfico
  * 3. Doble buffer con crossfade cinematográfico de 700ms (previousPeriod de fondo, displayedPeriod al frente)
- * 4. Lumina Brand Gradient Overlay original garantizado sobre todas las capas
+ * 4. Tono neutro piedra cálido #191715 sin ningún destello verde antes de la carga de la imagen
  */
 export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   activePhaseId,
@@ -28,13 +28,12 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   const effectivePeriod = displayedPeriod !== undefined ? displayedPeriod : activePhaseId;
   const prevPeriod = previousPeriod ?? null;
 
-  // Si no está listo o no hay temporalidad resuelta en cliente, mantenemos el fondo oscuro de marca
-  // para evitar descargar imágenes equivocadas en SSR
+  // Si no está listo o no hay temporalidad resuelta en cliente, mantenemos el fondo piedra cálido neutro
   const activePhase = isHeroReady && effectivePeriod ? HERO_PHASES[effectivePeriod] : null;
   const prevPhase = prevPeriod ? HERO_PHASES[prevPeriod] : null;
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-brand-900">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-[#191715]">
       {/* 1. Capa de Fondo (Doble Buffer - Imagen Anterior durante transición) */}
       {prevPhase && (
         <div
@@ -69,8 +68,8 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
         </motion.div>
       )}
 
-      {/* 3. Original Lumina Brand Gradient Overlay (matches Original.png 100%) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent pointer-events-none z-20" />
+      {/* 3. Lumina Warm Stone Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#191715]/90 via-[#191715]/40 to-transparent pointer-events-none z-20" />
     </div>
   );
 });

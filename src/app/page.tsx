@@ -8,13 +8,13 @@ import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
-import { useScrollAmbient } from "@/lib/useScrollAmbient";
 import { supabase } from "@/lib/supabase";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
-import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
+import { BackToTopButton } from "@/components/ui/BackToTopButton";
 import { HandwrittenHeroTitle } from "@/components/home/HandwrittenHeroTitle";
 import { useHeroTimePhase } from "@/hooks/useHeroTimePhase";
 import { DynamicHeroBackground } from "@/components/hero/DynamicHeroBackground";
+import { LuminaBootOrchestrator } from "@/components/home/LuminaBootOrchestrator";
 
 const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
@@ -149,14 +149,15 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState("Todos");
   const [trustBadges, setTrustBadges] = useState<TrustBadgeItem[]>(DEFAULT_TRUST_BADGES);
   const [categoryMeta, setCategoryMeta] = useState<Record<string, { subtitle?: string; description?: string }>>({});
+  
+  // Sincronización precisa de la animación caligráfica con el fade-out del splash
+  const [startHeroAnimation, setStartHeroAnimation] = useState(false);
 
   const heroRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
 
-  // Derive the 2 mobile pages of trust badges (2 badges per page)
-  // Página 1: "Envíos nacionales" + "Sigue tu paquete"
-  // Página 2: "Devoluciones 10 días" + "Pagos seguros"
+  // Derive the 2 mobile pages of trust badges
   const mobileBadgePages = useMemo(() => {
     const envios = trustBadges.find(b => b.title.toLowerCase().includes("env")) || trustBadges[0];
     const tracking = trustBadges.find(b => 
@@ -196,17 +197,15 @@ export default function Home() {
 
     if (Math.abs(diffX) > Math.abs(diffY) * 1.2 && Math.abs(diffX) > 25) {
       if (diffX > 0 && mobileBadgePage < mobileBadgePages.length - 1) {
-        // Swiped right-to-left -> Next page
         setMobileBadgePage([mobileBadgePage + 1, 1]);
       } else if (diffX < 0 && mobileBadgePage > 0) {
-        // Swiped left-to-right -> Previous page
         setMobileBadgePage([mobileBadgePage - 1, -1]);
       }
     }
     badgeTouchStartRef.current = null;
   };
 
-  // Derive dynamic category cards strictly from active categories in store
+  // Derive dynamic category cards
   const dynamicCategories = useMemo(() => {
     return categories.map((catName) => {
       const norm = normalizeText(catName);
@@ -238,7 +237,6 @@ export default function Home() {
   useEffect(() => {
     setIsMounted(true);
 
-    // 1. Fetch trust badges from Supabase store_trust_badges table
     const fetchTrustBadges = async () => {
       try {
         const { data, error } = await supabase
@@ -255,17 +253,14 @@ export default function Home() {
             const lowerId = (item.id || "").toLowerCase();
             const lowerTitle = (item.title || "").toLowerCase();
 
-            // 1. Soporte VIP must NOT exist: completely eliminate
             if (lowerId === 'support' || lowerTitle.includes('soporte') || lowerTitle.includes('vip')) {
               continue;
             }
 
-            // 2. Skip legacy warranty badge to prevent duplicating tracking
             if (lowerId === 'warranty' || lowerTitle.includes('garant')) {
               continue;
             }
 
-            // 3. Resolve badge details and icons
             let title = item.title;
             let subtitle = item.subtitle || "";
             let iconComponent = TRUST_ICON_MAP[item.icon_name] || ShieldCheck;
@@ -292,7 +287,6 @@ export default function Home() {
               iconComponent = Lock;
             }
 
-            // 4. Deduplicate by title: always preserve ONLY the 1st occurrence
             const normTitle = normalizeText(title);
             if (!seenTitles.has(normTitle)) {
               seenTitles.add(normTitle);
@@ -313,7 +307,6 @@ export default function Home() {
       }
     };
 
-    // 2. Fetch category metadata from Supabase categories table
     const fetchCategoriesMeta = async () => {
       try {
         const { data, error } = await supabase
@@ -336,7 +329,6 @@ export default function Home() {
     fetchCategoriesMeta();
   }, []);
 
-  // Desktop pointer hover handlers (strictly bypassed on mobile/touch screens to prevent lag & confusion)
   const handlePointerEnterCategory = (catName: string) => {
     if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
       setCategoryTheme(catName);
@@ -356,17 +348,19 @@ export default function Home() {
     ? displayProducts
     : displayProducts.filter(p => normalizeText(p.category) === normalizeText(activeFilter));
 
-  // Native mobile/touch scroll-driven ambient theme transition (IntersectionObserver + rAF off-main-thread)
-  useScrollAmbient("[data-ambient-category]", [isMounted, dynamicCategories, filteredProducts]);
+  const activeHeroImageUrl = heroTime.currentPhase?.imageSrc || "/images/hero/Medio_Dia.jpg";
 
   return (
-    <>
-      {/* Hero Section */}
+    <LuminaBootOrchestrator
+      activeHeroImageUrl={activeHeroImageUrl}
+      onReadyToAnimateText={() => setStartHeroAnimation(true)}
+    >
+      {/* Hero Section - Piedra cálido neutro #191715 sin ningún destello verde */}
       <section 
         id="hero-section" 
         ref={heroRef} 
         data-ambient-category="default"
-        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
+        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-[#191715]"
       >
         <DynamicHeroBackground 
           activePhaseId={heroTime.phaseId}
@@ -377,52 +371,48 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-4 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex-1 flex flex-col justify-between sm:justify-center">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-3xl transform-gpu flex-1 flex flex-col justify-between sm:justify-center"
           >
-            {/* Bloque superior (Píldora de Categoría + Control de Iluminación Hero, Título, Subtítulo) */}
+            {/* Bloque superior */}
             <div className="flex flex-col justify-center my-auto sm:my-0">
-              {/* Tag Pill + Hero Ambient Time Pill */}
               <div className="flex items-center gap-2 mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 flex-wrap">
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-                  className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white shadow-sm [isolation:isolate] transform-gpu select-none"
+                  transition={{ duration: 0.4, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white shadow-sm [isolation:isolate] transform-gpu select-none bg-white/10"
                 >
-                  <div 
-                    className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
-                    style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
-                  />
                   <span className="relative z-10">Artículos premium para tu hogar</span>
                 </motion.div>
               </div>
 
-              <HandwrittenHeroTitle isReady={heroTime.isHeroReady} />
+              {/* Título Caligráfico sincronizado exactamente con la apertura del telón */}
+              <HandwrittenHeroTitle isReady={startHeroAnimation && heroTime.isHeroReady} />
               
               <p className="mt-3 sm:mt-2.5 [@media(min-height:760px)]:mt-4 [@media(min-height:860px)]:mt-6 text-sm sm:text-xs md:text-base [@media(min-height:760px)]:md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
                 Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
               </p>
             </div>
             
-            {/* Bloque inferior de botones: Más abajo, apegados a la barra de garantías, gruesos como antes */}
-            <div className="mt-auto sm:mt-4 [@media(min-height:760px)]:mt-6 [@media(min-height:860px)]:mt-8 pb-3 sm:pb-0 flex flex-col sm:flex-row gap-2.5 sm:gap-2.5 sm:gap-3.5">
+            {/* Bloque inferior de botones */}
+            <div className="mt-auto sm:mt-4 [@media(min-height:760px)]:mt-6 [@media(min-height:860px)]:mt-8 pb-3 sm:pb-0 flex flex-col sm:flex-row gap-2.5 sm:gap-3.5">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-4 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[50px] sm:min-h-0"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/35 hover:bg-white/45 active:bg-white/55 border border-white/60 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-transform duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[48px] sm:min-h-0"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
+                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-xs">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-4 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[50px] sm:min-h-0"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[48px] sm:min-h-0"
               >
-                <span className="relative z-10 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
+                <span className="relative z-10 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-xs">
                   Filtrar por categoría
                 </span>
               </a>
@@ -431,7 +421,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Badges Bar (Centered exactly at 50% across the division seam on all devices) */}
+      {/* Trust Badges Bar */}
       <div
         id="envios-garantias"
         className="relative z-30 -translate-y-1/2 -mb-8 sm:-mb-10 lg:-mb-10 container mx-auto px-4 sm:px-6 md:px-8 scroll-mt-36"
@@ -440,12 +430,11 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: false, amount: 0.1 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] py-4 px-3 sm:py-5 sm:px-4 md:py-4.5 md:px-5 lg:py-4 lg:px-4"
         >
-
-          {/* ── Mobile / Pantallas pequeñas (< lg): 2 badges por página con paginación manual 100% y separador ── */}
+          {/* Mobile badges */}
           <div 
             className="lg:hidden select-none touch-pan-y"
             onTouchStart={handleBadgeTouchStart}
@@ -491,7 +480,6 @@ export default function Home() {
               </AnimatePresence>
             </div>
 
-            {/* Separador de página / Dots Indicator (Mismo diseño que la barra de secciones de Mi Perfil) */}
             <div className="flex items-center justify-center gap-1.5 pt-2.5 pb-0.5 pointer-events-auto">
               {mobileBadgePages.map((_, idx) => (
                 <button
@@ -513,7 +501,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ── Desktop / Pantallas normales (≥ lg): Todas las 5 garantías de la manera normal ── */}
+          {/* Desktop badges */}
           <div className="hidden lg:grid lg:grid-cols-5 items-center">
             {trustBadges.map((badge, idx) => (
               <div
@@ -540,22 +528,21 @@ export default function Home() {
         </motion.div>
       </div>
 
+      {/* Catalog Sections Wrapper */}
+      <div className="relative bg-transparent">
 
-      {/* Immersive Background Wrapper for Catalog Sections */}
-      <div className="relative overflow-hidden bg-transparent">
-
-        {/* Categories Section */}
+        {/* Categories Section (Bento superior) */}
         <section 
           id="catalog-categories" 
           ref={categoriesRef} 
-          className="py-24 relative z-10 scroll-mt-36"
+          className="py-20 sm:py-24 relative z-10 scroll-mt-36"
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.1 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform, opacity" }}
               className="flex items-end justify-between mb-8 sm:mb-12 transform-gpu"
             >
@@ -576,11 +563,11 @@ export default function Home() {
                 <motion.div
                   key={idx}
                   data-ambient-category={cat.name.toLowerCase()}
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.1 }}
-                  transition={{ duration: 0.45, delay: idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ willChange: "transform, opacity" }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 0.35, delay: Math.min(idx * 0.03, 0.12), ease: [0.22, 1, 0.36, 1] }}
+                  style={{ contain: "layout paint", willChange: "transform, opacity" }}
                   className="transform-gpu"
                 >
                   <Link 
@@ -591,9 +578,17 @@ export default function Home() {
                     }}
                     onMouseEnter={() => handlePointerEnterCategory(cat.name)}
                     onMouseLeave={() => handlePointerLeaveCategory("default")}
-                    className="group relative h-[240px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+                    className="group relative h-[240px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-xs border border-black/5 transition-transform duration-300 ease-out hover:-translate-y-1 transform-gpu"
                   >
-                    <Image src={cat.img} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
+                    <Image 
+                      src={cat.img} 
+                      fill 
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" 
+                      loading="lazy"
+                      decoding="async"
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] transform-gpu" 
+                      alt={cat.name} 
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                     <div className="absolute bottom-0 left-0 w-full p-3 sm:p-5 flex items-end justify-between">
                       <div>
@@ -601,7 +596,7 @@ export default function Home() {
                         <h3 className="text-white font-medium text-base sm:text-lg leading-tight">{cat.name}</h3>
                         <p className="text-white/80 text-xs font-light mt-0.5 sm:mt-1">{cat.price}</p>
                       </div>
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 ml-2">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/30 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 ml-2">
                         <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
                     </div>
@@ -619,51 +614,57 @@ export default function Home() {
           className="py-16 sm:py-20 relative z-10 scroll-mt-36"
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
+            {/* Header: Título y descripción en 1 sola línea, con la barra de nichos en una capa/nivel inferior */}
             <motion.div 
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.1 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform, opacity" }}
-              className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 sm:mb-12 gap-4 sm:gap-6 transform-gpu"
+              className="flex flex-col mb-8 sm:mb-10 gap-4 sm:gap-5 transform-gpu"
             >
               <div>
-                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 dark:text-gray-100 mb-1">
+                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 dark:text-gray-100 mb-1 whitespace-nowrap">
                   Productos <span className="font-display italic text-accent-700 dark:text-[#8c9276]">Populares</span>
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Selección destacada para transformar cada espacio.</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm whitespace-nowrap">
+                  Selección destacada para transformar cada espacio.
+                </p>
               </div>
 
-              {/* Dynamic Interactive Filter Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 w-full lg:w-auto hide-scrollbar">
-                {["Todos", ...categories].map((filter) => {
-                  const isActive = activeFilter === filter;
-                  return (
-                    <button 
-                      key={filter}
-                      onClick={() => {
-                        setActiveFilter(filter);
-                        if (filter === "Todos") resetTheme();
-                        else setCategoryTheme(filter);
-                      }}
-                      onMouseEnter={() => {
-                        if (filter !== "Todos") handlePointerEnterCategory(filter);
-                      }}
-                      className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${
-                        isActive 
-                          ? 'bg-white/60 dark:bg-white/15 backdrop-blur-xl border border-white/80 dark:border-white/20 text-gray-900 dark:text-gray-100 shadow-md shadow-black/5' 
-                          : 'bg-white/20 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  );
-                })}
+              {/* Barra de Filtros / Nichos en un nivel inferior con scroll suave y sin cortes */}
+              <div className="relative w-full overflow-hidden">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap px-1 py-1 w-full">
+                  {["Todos", ...categories].map((filter) => {
+                    const isActive = activeFilter === filter;
+                    return (
+                      <button 
+                        key={filter}
+                        type="button"
+                        onClick={() => {
+                          setActiveFilter(filter);
+                          if (filter === "Todos") resetTheme();
+                          else setCategoryTheme(filter);
+                        }}
+                        onMouseEnter={() => {
+                          if (filter !== "Todos") handlePointerEnterCategory(filter);
+                        }}
+                        className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-transform duration-200 ease-out cursor-pointer ${
+                          isActive 
+                            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs' 
+                            : 'bg-white dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {filter}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
             
             {filteredProducts.length === 0 ? (
-              <div className="text-center py-16 bg-white/30 dark:bg-white/5 backdrop-blur-md rounded-3xl border border-white/50 dark:border-white/10">
+              <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-3xl border border-black/5 dark:border-white/10 shadow-xs">
                 <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">No hay productos en esta categoría por el momento.</p>
               </div>
             ) : (
@@ -672,11 +673,11 @@ export default function Home() {
                   <motion.div 
                     key={product.id}
                     data-ambient-category={product.category.toLowerCase()}
-                    initial={{ opacity: 0, y: 28 }}
+                    initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: false, amount: 0.1 }}
-                    transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ willChange: "transform, opacity" }}
+                    viewport={{ once: true, amount: 0.1 }}
+                    transition={{ duration: 0.35, delay: Math.min((idx % 4) * 0.03, 0.12), ease: [0.22, 1, 0.36, 1] }}
+                    style={{ contain: "layout paint", willChange: "transform, opacity" }}
                     className="transform-gpu"
                     onMouseEnter={() => handlePointerEnterCategory(product.category)}
                     onMouseLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
@@ -690,13 +691,13 @@ export default function Home() {
         </section>
       </div>
 
-      {/* Rare UI Proximity Sidebar (Lateral derecho para desktop) */}
+      {/* Rare UI Proximity Sidebar (Desktop) */}
       <div className="hidden lg:block fixed right-3 xl:right-6 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">
         <ProximitySidebar sections={HOME_SECTIONS} side="right" />
       </div>
 
-      {/* Floating Centered Scroll-To-Top Button for Catalog */}
-      <CatalogScrollToTopButton threshold={450} className="bottom-6 sm:bottom-8" />
-    </>
+      {/* Botón flotante '+ Volver arriba' aislado en la raíz del viewport */}
+      <BackToTopButton threshold={600} />
+    </LuminaBootOrchestrator>
   );
 }
