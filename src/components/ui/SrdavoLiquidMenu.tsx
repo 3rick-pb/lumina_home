@@ -320,8 +320,8 @@ export function SrdavoLiquidMenu({
             edgeEnteredTime.current = now;
           } else {
             const dwellTime = now - edgeEnteredTime.current;
-            if (dwellTime >= 760) {
-              const scrollSpeed = 240; // px/segundo constante, aún más ágil y fluido
+            if (dwellTime >= 500) {
+              const scrollSpeed = 300; // px/segundo constante, más ágil y fluido
               const delta = scrollSpeed * dt;
 
               if (activeEdge === "right") {

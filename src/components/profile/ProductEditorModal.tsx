@@ -29,7 +29,7 @@ import {
   ChevronRight,
   TrendingDown
 } from "lucide-react";
-import { CatalogProduct, ProductCombo } from "@/lib/catalogStore";
+import { CatalogProduct, ProductCombo, LandingSpec, LandingReview, LandingBenefit, LandingBundle } from "@/lib/catalogStore";
 import { FloatingGalleryPhotoPicker } from "./FloatingGalleryPhotoPicker";
 import { ColorVariantsManager, ColorVariant } from "../admin/ColorVariantsManager";
 import { ProductCombosManager } from "./ProductCombosManager";
@@ -45,6 +45,102 @@ const spaceMono = Space_Mono({
 });
 
 export type ProductEditorTab = 'esenciales' | 'fotos' | 'presentacion' | 'ficha';
+
+// Helper de Autocompletado inteligente para bloques según descripción y título del producto
+export function getAutoFillData(currentTitle: string, currentCategory: string, currentDesc: string) {
+  const prodTitle = currentTitle.trim() || "Pieza de Diseño Lumina";
+  const cat = currentCategory.trim() || "Iluminación";
+  const descInfo = currentDesc.trim() ? currentDesc.trim() : `Pieza icónica de ${cat.toLowerCase()} Lumina`;
+
+  const specs: LandingSpec[] = [
+    {
+      title: "Chasis Aeroespacial Anodizado",
+      description: `Estructura forjada de alta precisión tratada térmicamente para máxima durabilidad en ${prodTitle.toLowerCase()} (${descInfo.slice(0, 40)}...).`,
+      side: "left",
+      pinX: 26,
+      pinY: 30,
+    },
+    {
+      title: "Óptica Difusa de Cristal Puro",
+      description: "Dispersión volumétrica homogénea de 360° con recubrimiento que previene deslumbramientos.",
+      side: "left",
+      pinX: 28,
+      pinY: 65,
+    },
+    {
+      title: "Módulo Térmico Silencioso",
+      description: "Disipación pasiva silenciosa que prolonga la vida útil de los componentes por más de 50.000 horas.",
+      side: "left",
+      pinX: 30,
+      pinY: 82,
+    },
+    {
+      title: "Sensor Táctil Capacitivo",
+      description: "Control continuo milimétrico y ajuste instantáneo de temperatura con respuesta inmediata.",
+      side: "right",
+      pinX: 74,
+      pinY: 28,
+    },
+    {
+      title: "Conectividad Ultra Rápida USB-C",
+      description: "Protocolo reversible de carga y alimentación con microcontrolador de protección contra sobretensión.",
+      side: "right",
+      pinX: 72,
+      pinY: 66,
+    },
+    {
+      title: "Base Amortiguada Antideslizante",
+      description: "Apoyo en corcho natural de alta densidad para máxima estabilidad sin marcar superficies delicadas.",
+      side: "right",
+      pinX: 68,
+      pinY: 84,
+    },
+  ];
+
+  const reviews: LandingReview[] = [
+    {
+      author: "Valentina Montes",
+      role: "Arquitecta de Interiores",
+      rating: 5,
+      comment: `La presencia de ${prodTitle} en el espacio es sublime. La textura y calidez de los acabados superaron con creces nuestras expectativas.`,
+    },
+    {
+      author: "Carlos E. Salgado",
+      role: "Comprador Verificado",
+      rating: 5,
+      comment: "Llegó al día siguiente perfectamente blindado. El peso, la solidez y el tacto mate transmiten una calidad de primer nivel.",
+    },
+    {
+      author: "Sofía R. Delgado",
+      role: "Diseñadora de Iluminación",
+      rating: 5,
+      comment: "Cuidaron hasta el último milímetro: la temperatura de color y el difusor no cansan la vista durante jornadas de trabajo intenso.",
+    },
+    {
+      author: "Mateo Villagómez",
+      role: "Coleccionista de Diseño",
+      rating: 5,
+      comment: "Una inversión impecable. Combina funcionalidad cotidiana con una estética arquitectónica y sobria.",
+    },
+  ];
+
+  const benefits: LandingBenefit[] = [
+    {
+      title: "Artesanía & Precisión Industrial",
+      description: `Cada unidad de ${prodTitle} es ensamblada e inspeccionada bajo tolerancias milimétricas antes de ser sellada.`,
+    },
+    {
+      title: "Sostenibilidad & Trazabilidad Ética",
+      description: "Materiales nobles 100% reciclables con cero emisiones tóxicas y embalaje de pulpa vegetal biodegradable.",
+    },
+    {
+      title: "2 Años de Garantía Lumina Care",
+      description: "Sustitución directa y soporte técnico prioritario sin formularios tediosos ni complicaciones.",
+    },
+  ];
+
+  return { specs, reviews, benefits };
+}
 
 interface ProductEditorModalProps {
   open: boolean;
@@ -114,6 +210,14 @@ export function ProductEditorModal({
   const [careInstructions, setCareInstructions] = useState("");
   const [combos, setCombos] = useState<ProductCombo[]>([]);
 
+  // Datos dinámicos para plantillas de alta conversión (01 Estudio, 02 Landing, 03 Lookbook, 04 Bento)
+  const [landingSpecs, setLandingSpecs] = useState<LandingSpec[]>([]);
+  const [landingReviews, setLandingReviews] = useState<LandingReview[]>([]);
+  const [landingBenefits, setLandingBenefits] = useState<LandingBenefit[]>([]);
+  const [landingBundle, setLandingBundle] = useState<LandingBundle>({ enabled: true, mode: 'volume_tiers', discountPercentage: 15 });
+  const [landingAnatomyImage, setLandingAnatomyImage] = useState<string>("");
+  const [autoFillNotice, setAutoFillNotice] = useState<string | null>(null);
+
   const prevOpenRef = useRef(false);
   const prevProductIdRef = useRef<string | null>(null);
 
@@ -129,6 +233,7 @@ export function ProductEditorModal({
 
     setFormError(null);
     setFormSuccess(null);
+    setAutoFillNotice(null);
     setActiveTab('esenciales');
 
     if (mode === 'edit' && product) {
@@ -186,6 +291,13 @@ export function ProductEditorModal({
       setPackageContents(product.packageContents || "");
       setCareInstructions(product.careInstructions || "");
       setCombos(product.combos || []);
+
+      // Contenido Dinámico de Plantilla
+      setLandingSpecs(product.landingSpecs || []);
+      setLandingReviews(product.landingReviews || []);
+      setLandingBenefits(product.landingBenefits || []);
+      setLandingBundle(product.landingBundle || { enabled: true, mode: 'volume_tiers', discountPercentage: 15 });
+      setLandingAnatomyImage(product.landingAnatomyImage || "");
     } else {
       // Modo Crear
       setTitle("");
@@ -212,8 +324,28 @@ export function ProductEditorModal({
       setPackageContents("");
       setCareInstructions("");
       setCombos([]);
+      setLandingSpecs([]);
+      setLandingReviews([]);
+      setLandingBenefits([]);
+      setLandingBundle({ enabled: true, mode: 'volume_tiers', discountPercentage: 15 });
+      setLandingAnatomyImage("");
     }
   }, [open, mode, product, categories]);
+
+  // Autocompletar dinámico de bloques según descripción y datos comerciales
+  const handleAutoFillTemplate = () => {
+    const data = getAutoFillData(title, category, description);
+    setLandingSpecs(data.specs);
+    setLandingReviews(data.reviews);
+    setLandingBenefits(data.benefits);
+    if (!landingAnatomyImage && selectedPhotos.length > 1) {
+      setLandingAnatomyImage(selectedPhotos[1]);
+    } else if (!landingAnatomyImage && selectedPhotos.length > 0) {
+      setLandingAnatomyImage(selectedPhotos[0]);
+    }
+    setAutoFillNotice("¡Bloques autocompletados con éxito según la información del producto!");
+    setTimeout(() => setAutoFillNotice(null), 4000);
+  };
 
   // Recalcular descuento
   const handlePriceUpdate = (newPrice: string, newOldPrice: string, discActive: boolean) => {
@@ -347,6 +479,11 @@ export function ProductEditorModal({
         packageContents: packageContents.trim() || undefined,
         careInstructions: careInstructions.trim() || undefined,
         combos: combos.length > 0 ? combos : undefined,
+        landingSpecs: landingSpecs.length > 0 ? landingSpecs : undefined,
+        landingReviews: landingReviews.length > 0 ? landingReviews : undefined,
+        landingBenefits: landingBenefits.length > 0 ? landingBenefits : undefined,
+        landingBundle: landingBundle ? landingBundle : undefined,
+        landingAnatomyImage: landingAnatomyImage.trim() || undefined,
       };
 
       await onSave(payload);
@@ -422,7 +559,7 @@ export function ProductEditorModal({
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
                 )}
               >
-                1. Esenciales *
+                1. Plantilla & Esenciales *
               </button>
               <button
                 type="button"
@@ -446,14 +583,14 @@ export function ProductEditorModal({
                 type="button"
                 onClick={() => setActiveTab('presentacion')}
                 className={cn(
-                  "px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 active:scale-95 whitespace-nowrap",
+                  "px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95 whitespace-nowrap",
                   activeTab === 'presentacion'
                     ? "bg-white text-zinc-950 dark:bg-zinc-800 dark:text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
                 )}
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>3. UX</span>
+                <span>3. Contenido de Plantilla</span>
               </button>
               <button
                 type="button"
@@ -505,9 +642,125 @@ export function ProductEditorModal({
                 className="h-full w-full overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
               >
             
-            {/* PESTAÑA 1: ESENCIALES (Solo lo verdaderamente importante) */}
+            {/* PESTAÑA 1: PLANTILLA & ESENCIALES (Solo lo verdaderamente importante) */}
             {activeTab === 'esenciales' && (
               <div className="space-y-4 sm:space-y-5 animate-fade-in">
+                {/* 1. Selector de Arquitectura de Presentación (Layout de Página) */}
+                <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3 sm:space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span>Formato de Presentación en Tienda (Layout de Página) *</span>
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        Elige cómo vivirán los clientes la experiencia al abrir este producto en la tienda.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-900 w-fit">
+                      PASO 1 • SELECCIÓN
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+                    {/* Opción 1: Estudio Minimalista */}
+                    <div
+                      onClick={() => setLayoutType('standard')}
+                      className={cn(
+                        "p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
+                        layoutType === 'standard'
+                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
+                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
+                      )}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase">01 // CLÁSICO</span>
+                          {layoutType === 'standard' && <Check className="w-4 h-4 text-blue-600" />}
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                          Estudio Minimalista
+                        </h4>
+                        <p className="text-[10px] sm:text-[11px] text-zinc-500 leading-relaxed">
+                          3 secciones limpias: Buy Box 2 col con tira vertical y zoom, bloque 50/50 con pestañas y productos relacionados.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Opción 2: Editorial Landing */}
+                    <div
+                      onClick={() => setLayoutType('landing')}
+                      className={cn(
+                        "p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
+                        layoutType === 'landing'
+                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
+                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
+                      )}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase">02 // KEYNOTE</span>
+                          {layoutType === 'landing' && <Check className="w-4 h-4 text-blue-600" />}
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                          Landing Editorial
+                        </h4>
+                        <p className="text-[10px] sm:text-[11px] text-zinc-500 leading-relaxed">
+                          6 secciones: Hero con volumen 1/2/3 uds, combo bundle, anatomía 360° con 6 pines, carrusel UGC 9:16 y zig-zag 1-2-3.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Opción 3: Lookbook Cinemático */}
+                    <div
+                      onClick={() => setLayoutType('cinematic')}
+                      className={cn(
+                        "p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
+                        layoutType === 'cinematic'
+                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
+                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
+                      )}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase">03 // INMERSIVO</span>
+                          {layoutType === 'cinematic' && <Check className="w-4 h-4 text-blue-600" />}
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                          Lookbook Cinemático
+                        </h4>
+                        <p className="text-[10px] sm:text-[11px] text-zinc-500 leading-relaxed">
+                          Fotografía monumental, iluminación ambiental de fondo y tipografía editorial de gran impacto visual.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Opción 4: Bento Hardware Showcase */}
+                    <div
+                      onClick={() => setLayoutType('bento')}
+                      className={cn(
+                        "p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
+                        layoutType === 'bento'
+                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
+                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
+                      )}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase">04 // BENTO</span>
+                          {layoutType === 'bento' && <Check className="w-4 h-4 text-blue-600" />}
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                          Bento Showcase
+                        </h4>
+                        <p className="text-[10px] sm:text-[11px] text-zinc-500 leading-relaxed">
+                          Mosaico interactivo Bento con tarjetas modulares de macro zoom, especificaciones técnicas y compra rápida.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Nombre y Subtítulo */}
                 <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3 sm:space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -824,230 +1077,676 @@ export function ProductEditorModal({
               </div>
             )}
 
-            {/* PESTAÑA 3: EXPERIENCIA VISUAL & CREATIVIDAD (Formatos únicos de presentación) */}
+            {/* PESTAÑA 3: CONTENIDO DE PLANTILLA DINÁMICA */}
             {activeTab === 'presentacion' && (
-              <div className="space-y-6 animate-fade-in">
-                {/* 1. Selector de Arquitectura de Presentación */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
+              <div className="space-y-5 animate-fade-in">
+                {/* 1. Header con Indicador de Plantilla y Botón de Autocompletado */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span>Formato de Presentación en Tienda (Layout de Página)</span>
-                    </h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      Elige cómo vivirán los clientes la experiencia al entrar a este producto. No somos una tienda más del montón.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                    {/* Opción 1: Estándar Estudio */}
-                    <div
-                      onClick={() => setLayoutType('standard')}
-                      className={cn(
-                        "p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
-                        layoutType === 'standard'
-                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
-                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
-                      )}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-zinc-400 uppercase">01 // CLÁSICO</span>
-                          {layoutType === 'standard' && <Check className="w-4 h-4 text-blue-600" />}
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                          Estudio Minimalista
-                        </h4>
-                        <p className="text-[11px] text-zinc-500 leading-relaxed">
-                          Ficha limpia inspirada en Apple Store, con galería a la izquierda y ficha flotante a la derecha.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Opción 2: Editorial Landing */}
-                    <div
-                      onClick={() => setLayoutType('landing')}
-                      className={cn(
-                        "p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
-                        layoutType === 'landing'
-                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
-                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
-                      )}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-zinc-400 uppercase">02 // KEYNOTE</span>
-                          {layoutType === 'landing' && <Check className="w-4 h-4 text-blue-600" />}
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                          Landing Editorial
-                        </h4>
-                        <p className="text-[11px] text-zinc-500 leading-relaxed">
-                          Página completa de lanzamiento con anatomía con pines interactivos, reviews y ofertas en bundle.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Opción 3: Lookbook Cinemático */}
-                    <div
-                      onClick={() => setLayoutType('cinematic')}
-                      className={cn(
-                        "p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
-                        layoutType === 'cinematic'
-                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
-                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
-                      )}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-zinc-400 uppercase">03 // INMERSIVO</span>
-                          {layoutType === 'cinematic' && <Check className="w-4 h-4 text-blue-600" />}
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                          Lookbook Cinemático
-                        </h4>
-                        <p className="text-[11px] text-zinc-500 leading-relaxed">
-                          Fotografía monumental, iluminación ambiental de fondo, modo noche e impacto visual de lujo.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Opción 4: Bento Hardware Showcase */}
-                    <div
-                      onClick={() => setLayoutType('bento')}
-                      className={cn(
-                        "p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]",
-                        layoutType === 'bento'
-                          ? "border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20"
-                          : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-[#14141c]"
-                      )}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-zinc-400 uppercase">04 // BENTO</span>
-                          {layoutType === 'bento' && <Check className="w-4 h-4 text-blue-600" />}
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                          Bento Showcase
-                        </h4>
-                        <p className="text-[11px] text-zinc-500 leading-relaxed">
-                          Mosaico interactivo Bento con tarjetas de macro zoom, especificaciones de ingeniería y compra rápida.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. Selector de Estilo de Galería Multimedia */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-blue-500" />
-                      <span>Estilo Interactivo de la Galería Multimedia</span>
-                    </h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      Cómo interactúan los visitantes con las fotos de esta pieza.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div
-                      onClick={() => setGalleryStyle('traditional')}
-                      className={cn(
-                        "p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
-                        galleryStyle === 'traditional'
-                          ? "border-blue-600 bg-blue-50/15 dark:bg-blue-950/20 shadow-sm"
-                          : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c]"
-                      )}
-                    >
-                      <div>
-                        <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Galería Estudio (Tradicional)</h4>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Miniaturas táctiles y visor de gran formato.</p>
-                      </div>
-                      {galleryStyle === 'traditional' && <Check className="w-4 h-4 text-blue-600" />}
-                    </div>
-
-                    <div
-                      onClick={() => setGalleryStyle('isometric_3d')}
-                      className={cn(
-                        "p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
-                        galleryStyle === 'isometric_3d'
-                          ? "border-blue-600 bg-blue-50/15 dark:bg-blue-950/20 shadow-sm"
-                          : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c]"
-                      )}
-                    >
-                      <div>
-                        <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">3D Isométrica (Instagram)</h4>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Cubo 3D giratorio con profundidad espacial interactiva.</p>
-                      </div>
-                      {galleryStyle === 'isometric_3d' && <Check className="w-4 h-4 text-blue-600" />}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Colores y Acabados */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
-                      Variantes de Acabado y Colores
-                    </span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">
-                      {colorVariants.length} acabados activos
-                    </span>
-                  </div>
-                  <ColorVariantsManager
-                    colors={colorVariants}
-                    onChange={setColorVariants}
-                  />
-                </div>
-
-                {/* 4. Tallas y Tamaños */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
-                      Tallas o Medidas (Opcional)
-                    </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-zinc-500">¿Aplica medidas?</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = !hasSizes;
-                          setHasSizes(next);
-                          if (!next) setSizes("");
-                        }}
-                        className={cn(
-                          "w-10 h-5 rounded-full relative transition-colors cursor-pointer",
-                          hasSizes ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700"
-                        )}
-                      >
-                        <span className={cn(
-                          "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-xs",
-                          hasSizes ? "left-5" : "left-1"
-                        )} />
-                      </button>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                        {layoutType === 'standard'
+                          ? "01 // ESTUDIO MINIMALISTA"
+                          : layoutType === 'landing'
+                          ? "02 // LANDING EDITORIAL"
+                          : layoutType === 'cinematic'
+                          ? "03 // LOOKBOOK CINEMÁTICO"
+                          : "04 // BENTO SHOWCASE"}
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
+                      Campos Dinámicos de la Plantilla
+                    </h3>
+                    <p className="text-xs text-zinc-500">
+                      Personaliza los bloques específicos de esta plantilla para maximizar la conversión en la tienda.
+                    </p>
                   </div>
 
-                  {hasSizes ? (
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        Tallas o Dimensiones Disponibles (Separadas por comas)
-                      </label>
-                      <input
-                        type="text"
-                        value={sizes}
-                        onChange={(e) => setSizes(e.target.value)}
-                        placeholder="Ej: Chico (25cm), Mediano (45cm), Grande (60cm)"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-xs text-zinc-500 italic">
-                      Producto de dimensión estándar única (sin selector de tallas).
-                    </p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleAutoFillTemplate}
+                    className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                    title="Rellena automáticamente los campos con base en el título y descripción"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>Autocompletar bloques según descripción</span>
+                  </button>
                 </div>
+
+                {/* Banner de Feedback de Autocompletado */}
+                {autoFillNotice && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>{autoFillNotice}</span>
+                  </div>
+                )}
+
+                {/* ================================================================= */}
+                {/* PLANTILLA 01: ESTUDIO MINIMALISTA                                */}
+                {/* ================================================================= */}
+                {layoutType === 'standard' && (
+                  <div className="space-y-5 animate-fade-in">
+                    <div className="p-4 rounded-2xl bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40">
+                      <p className="text-xs text-blue-900 dark:text-blue-300 leading-relaxed">
+                        <strong className="font-bold">Estructura Fija de 3 Secciones:</strong> Esta plantilla renderiza limpiamente 
+                        (1) Buy Box de 2 columnas con galería vertical de miniaturas y zoom en foto principal, 
+                        (2) Bloque 50/50 editorial con 4 pestañas interactivas (Detalles, Materiales, Dimensiones, Envío y Garantía) y foto macro, 
+                        y (3) Cuadrícula de 4 productos relacionados (&ldquo;También te podría interesar&rdquo;).
+                      </p>
+                    </div>
+
+                    {/* Selector de Estilo de Galería Multimedia */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div>
+                        <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider">
+                          <Layers className="w-4 h-4 text-blue-500" />
+                          <span>Estilo de Galería Multimedia</span>
+                        </h4>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                          Selecciona cómo interactuarán los clientes con la galería de fotos.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div
+                          onClick={() => setGalleryStyle('traditional')}
+                          className={cn(
+                            "p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between",
+                            galleryStyle === 'traditional'
+                              ? "border-blue-600 bg-blue-50/15 dark:bg-blue-950/20 shadow-xs"
+                              : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c]"
+                          )}
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Galería Estudio (Tira Vertical + Zoom)</p>
+                            <p className="text-[10px] text-zinc-500">Columna de 4 miniaturas y visor vertical de alta resolución.</p>
+                          </div>
+                          {galleryStyle === 'traditional' && <Check className="w-4 h-4 text-blue-600" />}
+                        </div>
+
+                        <div
+                          onClick={() => setGalleryStyle('isometric_3d')}
+                          className={cn(
+                            "p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between",
+                            galleryStyle === 'isometric_3d'
+                              ? "border-blue-600 bg-blue-50/15 dark:bg-blue-950/20 shadow-xs"
+                              : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c]"
+                          )}
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">3D Isométrica Interactiva</p>
+                            <p className="text-[10px] text-zinc-500">Cubo tridimensional giratorio con profundidad espacial.</p>
+                          </div>
+                          {galleryStyle === 'isometric_3d' && <Check className="w-4 h-4 text-blue-600" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Colores y Acabados */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Variantes de Acabado y Colores
+                        </span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">
+                          {colorVariants.length} acabados activos
+                        </span>
+                      </div>
+                      <ColorVariantsManager colors={colorVariants} onChange={setColorVariants} />
+                    </div>
+
+                    {/* Tallas y Medidas */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Tallas o Medidas (Opcional)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !hasSizes;
+                            setHasSizes(next);
+                            if (!next) setSizes("");
+                          }}
+                          className={cn(
+                            "w-10 h-5 rounded-full relative transition-colors cursor-pointer",
+                            hasSizes ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-xs",
+                              hasSizes ? "left-5" : "left-1"
+                            )}
+                          />
+                        </button>
+                      </div>
+
+                      {hasSizes ? (
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                            Tallas o Medidas Disponibles (Separadas por comas)
+                          </label>
+                          <input
+                            type="text"
+                            value={sizes}
+                            onChange={(e) => setSizes(e.target.value)}
+                            placeholder="Ej: S, M, L o Estándar, Grande (60cm)"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">
+                          Producto de formato estándar único (sin selector de medidas).
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ================================================================= */}
+                {/* PLANTILLA 02: LANDING EDITORIAL (6 SECCIONES DE ALTA CONVERSIÓN) */}
+                {/* ================================================================= */}
+                {layoutType === 'landing' && (
+                  <div className="space-y-5 animate-fade-in">
+                    <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40">
+                      <p className="text-xs text-amber-900 dark:text-amber-300 leading-relaxed">
+                        <strong className="font-bold">Estructura Fija de 6 Secciones:</strong> Esta plantilla renderiza
+                        (1) Hero con selector de volumen (1 ud, 2 uds &ldquo;Más Popular&rdquo;, 3 uds &ldquo;Mejor Valor&rdquo;), 
+                        (2) Combo bundle &ldquo;Comprados frecuentemente juntos&rdquo;, 
+                        (3) Diagrama de Anatomía Técnica 360° con 6 puntos explicativos y pines interactivos, 
+                        (4) Carrusel de historias UGC en tarjetas 9:16, 
+                        (5) Cuadrícula de 3 columnas de productos en tendencia, 
+                        y (6) Filas zig-zag de beneficios 1-2-3.
+                      </p>
+                    </div>
+
+                    {/* SECCIÓN 2: Configuración del Combo Bundle */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <div>
+                          <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                            Sección 2 • Combo Bundle (&ldquo;Comprados frecuentemente juntos&rdquo;)
+                          </span>
+                          <p className="text-[11px] text-zinc-500">Ofrece un lote con descuento con artículos de la misma categoría.</p>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                          {landingBundle.discountPercentage || 15}% Descuento
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                            Título del Combo / Bundle
+                          </label>
+                          <input
+                            type="text"
+                            value={landingBundle.customTitle || ""}
+                            onChange={(e) => setLandingBundle({ ...landingBundle, customTitle: e.target.value })}
+                            placeholder="Ej: Pack Dúo Comprados Juntos"
+                            className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                            Porcentaje de Descuento del Paquete (%)
+                          </label>
+                          <input
+                            type="number"
+                            min="5"
+                            max="50"
+                            value={landingBundle.discountPercentage || 15}
+                            onChange={(e) => setLandingBundle({ ...landingBundle, discountPercentage: parseInt(e.target.value, 10) || 15 })}
+                            className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECCIÓN 3: Anatomía Técnica 360° (6 Puntos Explicativos) */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <div>
+                          <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                            Sección 3 • Diagrama Radial de Anatomía 360° (6 Puntos & Pines)
+                          </span>
+                          <p className="text-[11px] text-zinc-500">
+                            6 especificaciones de ingeniería con pines interactivos posicionados sobre el producto.
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 w-fit">
+                          {landingSpecs.length || 6} Puntos
+                        </span>
+                      </div>
+
+                      {/* Imagen dedicada de Anatomía */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                          Imagen para el Diagrama de Anatomía (URL)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={landingAnatomyImage}
+                            onChange={(e) => setLandingAnatomyImage(e.target.value)}
+                            placeholder="URL de fotografía limpia (por defecto usa la 2da foto de la galería)"
+                            className="flex-1 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                          />
+                          {selectedPhotos.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setLandingAnatomyImage(selectedPhotos[1])}
+                              className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 shrink-0"
+                            >
+                              Usar Foto #2
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Lista de 6 Puntos Anatómicos */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        {Array.from({ length: 6 }).map((_, idx) => {
+                          const currentSpec = landingSpecs[idx] || {
+                            title: `Punto Anatómico 0${idx + 1}`,
+                            description: "Descripción técnica de ingeniería de alta precisión.",
+                            pinX: idx < 3 ? 28 : 72,
+                            pinY: idx === 0 || idx === 3 ? 30 : idx === 1 || idx === 4 ? 65 : 82,
+                          };
+
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-2"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 text-white">
+                                  Punto 0{idx + 1}
+                                </span>
+                                <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
+                                  <span>Pin X: {currentSpec.pinX}%</span>
+                                  <span>•</span>
+                                  <span>Pin Y: {currentSpec.pinY}%</span>
+                                </div>
+                              </div>
+
+                              <input
+                                type="text"
+                                value={currentSpec.title}
+                                onChange={(e) => {
+                                  const updated = [...(landingSpecs.length > 0 ? landingSpecs : getAutoFillData(title, category, description).specs)];
+                                  updated[idx] = { ...currentSpec, title: e.target.value };
+                                  setLandingSpecs(updated);
+                                }}
+                                placeholder="Título del punto"
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c] text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                              />
+
+                              <textarea
+                                rows={2}
+                                value={currentSpec.description}
+                                onChange={(e) => {
+                                  const updated = [...(landingSpecs.length > 0 ? landingSpecs : getAutoFillData(title, category, description).specs)];
+                                  updated[idx] = { ...currentSpec, description: e.target.value };
+                                  setLandingSpecs(updated);
+                                }}
+                                placeholder="Descripción del componente"
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c] text-[11px] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-blue-500 resize-none"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* SECCIÓN 4: Carrusel UGC (4 Historias / Testimonios en formato 9:16) */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <div>
+                          <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                            Sección 4 • Carrusel de 4 Historias UGC (Tarjetas 9:16)
+                          </span>
+                          <p className="text-[11px] text-zinc-500">4 testimonios con estética de historias / reels.</p>
+                        </div>
+                        <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                          4 Reseñas Verificadas
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {Array.from({ length: 4 }).map((_, idx) => {
+                          const currentRev = landingReviews[idx] || {
+                            author: idx === 0 ? "Valentina M." : idx === 1 ? "Carlos E." : idx === 2 ? "Sofía R." : "Mateo V.",
+                            role: idx === 0 ? "Arquitecta de Interiores" : idx === 1 ? "Comprador Verificado" : idx === 2 ? "Diseñadora de Iluminación" : "Coleccionista",
+                            rating: 5,
+                            comment: "La calidad de los acabados es insuperable. Ilumina con calidez mágica cualquier espacio.",
+                          };
+
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-2"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                                  Historia #{idx + 1}
+                                </span>
+                                <div className="flex text-amber-400 text-xs">★★★★★</div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={currentRev.author}
+                                  onChange={(e) => {
+                                    const updated = [...(landingReviews.length > 0 ? landingReviews : getAutoFillData(title, category, description).reviews)];
+                                    updated[idx] = { ...currentRev, author: e.target.value };
+                                    setLandingReviews(updated);
+                                  }}
+                                  placeholder="Nombre cliente"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c] text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                                />
+                                <input
+                                  type="text"
+                                  value={currentRev.role || ""}
+                                  onChange={(e) => {
+                                    const updated = [...(landingReviews.length > 0 ? landingReviews : getAutoFillData(title, category, description).reviews)];
+                                    updated[idx] = { ...currentRev, role: e.target.value };
+                                    setLandingReviews(updated);
+                                  }}
+                                  placeholder="Rol o Profesión"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c] text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-blue-500"
+                                />
+                              </div>
+
+                              <textarea
+                                rows={2}
+                                value={currentRev.comment}
+                                onChange={(e) => {
+                                  const updated = [...(landingReviews.length > 0 ? landingReviews : getAutoFillData(title, category, description).reviews)];
+                                  updated[idx] = { ...currentRev, comment: e.target.value };
+                                  setLandingReviews(updated);
+                                }}
+                                placeholder="Cita o testimonio"
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c] text-[11px] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-blue-500 resize-none"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* SECCIÓN 6: Filas Zig-zag de Beneficios 1-2-3 */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <div>
+                          <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                            Sección 6 • Filas Zig-zag de Beneficios 1-2-3
+                          </span>
+                          <p className="text-[11px] text-zinc-500">3 capítulos editoriales con alternancia de imagen y copy.</p>
+                        </div>
+                        <span className="text-xs font-bold text-purple-600 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
+                          3 Capítulos
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {Array.from({ length: 3 }).map((_, idx) => {
+                          const currentBen = landingBenefits[idx] || {
+                            title: idx === 0 ? "Artesanía & Precisión Industrial" : idx === 1 ? "Sostenibilidad & Trazabilidad Ética" : "2 Años de Garantía Lumina Care",
+                            description: "Materiales nobles certificados con inspección individual antes de embalaje.",
+                          };
+
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/40 space-y-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black px-2 py-0.5 rounded bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-mono">
+                                  0{idx + 1}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={currentBen.title}
+                                  onChange={(e) => {
+                                    const updated = [...(landingBenefits.length > 0 ? landingBenefits : getAutoFillData(title, category, description).benefits)];
+                                    updated[idx] = { ...currentBen, title: e.target.value };
+                                    setLandingBenefits(updated);
+                                  }}
+                                  placeholder="Título del beneficio"
+                                  className="flex-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c] text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                                />
+                              </div>
+                              <textarea
+                                rows={2}
+                                value={currentBen.description}
+                                onChange={(e) => {
+                                  const updated = [...(landingBenefits.length > 0 ? landingBenefits : getAutoFillData(title, category, description).benefits)];
+                                  updated[idx] = { ...currentBen, description: e.target.value };
+                                  setLandingBenefits(updated);
+                                }}
+                                placeholder="Descripción del beneficio"
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#14141c] text-[11px] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-blue-500 resize-none"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Colores y Acabados */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Variantes de Acabado y Colores
+                        </span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">
+                          {colorVariants.length} acabados activos
+                        </span>
+                      </div>
+                      <ColorVariantsManager colors={colorVariants} onChange={setColorVariants} />
+                    </div>
+
+                    {/* Tallas y Medidas */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Tallas o Medidas (Opcional)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !hasSizes;
+                            setHasSizes(next);
+                            if (!next) setSizes("");
+                          }}
+                          className={cn(
+                            "w-10 h-5 rounded-full relative transition-colors cursor-pointer",
+                            hasSizes ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-xs",
+                              hasSizes ? "left-5" : "left-1"
+                            )}
+                          />
+                        </button>
+                      </div>
+
+                      {hasSizes ? (
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                            Tallas o Medidas Disponibles (Separadas por comas)
+                          </label>
+                          <input
+                            type="text"
+                            value={sizes}
+                            onChange={(e) => setSizes(e.target.value)}
+                            placeholder="Ej: Chico (25cm), Mediano (45cm), Grande (60cm)"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">
+                          Producto de formato estándar único (sin selector de medidas).
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ================================================================= */}
+                {/* PLANTILLA 03: LOOKBOOK CINEMÁTICO                                */}
+                {/* ================================================================= */}
+                {layoutType === 'cinematic' && (
+                  <div className="space-y-5 animate-fade-in">
+                    <div className="p-4 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40">
+                      <p className="text-xs text-purple-900 dark:text-purple-300 leading-relaxed">
+                        <strong className="font-bold">Lookbook Cinemático de Pantalla Completa:</strong> Esta plantilla renderiza
+                        una vista inmersiva cinematográfica con iluminación reactiva ambiental, ambientación de día y noche, 
+                        fotografía de gran escala e interacción táctil.
+                      </p>
+                    </div>
+
+                    {/* Colores y Acabados */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Variantes de Acabado y Colores
+                        </span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">
+                          {colorVariants.length} acabados activos
+                        </span>
+                      </div>
+                      <ColorVariantsManager colors={colorVariants} onChange={setColorVariants} />
+                    </div>
+
+                    {/* Tallas y Medidas */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Tallas o Medidas (Opcional)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !hasSizes;
+                            setHasSizes(next);
+                            if (!next) setSizes("");
+                          }}
+                          className={cn(
+                            "w-10 h-5 rounded-full relative transition-colors cursor-pointer",
+                            hasSizes ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-xs",
+                              hasSizes ? "left-5" : "left-1"
+                            )}
+                          />
+                        </button>
+                      </div>
+
+                      {hasSizes ? (
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                            Tallas o Medidas Disponibles (Separadas por comas)
+                          </label>
+                          <input
+                            type="text"
+                            value={sizes}
+                            onChange={(e) => setSizes(e.target.value)}
+                            placeholder="Ej: Chico (25cm), Mediano (45cm), Grande (60cm)"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">
+                          Producto de formato estándar único (sin selector de medidas).
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ================================================================= */}
+                {/* PLANTILLA 04: BENTO HARDWARE SHOWCASE                             */}
+                {/* ================================================================= */}
+                {layoutType === 'bento' && (
+                  <div className="space-y-5 animate-fade-in">
+                    <div className="p-4 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40">
+                      <p className="text-xs text-emerald-900 dark:text-emerald-300 leading-relaxed">
+                        <strong className="font-bold">Mosaico Bento Hardware Showcase:</strong> Esta plantilla organiza
+                        el producto en una cuadrícula bento interactiva con tarjetas modulares de zoom macro, ingeniería y especificaciones.
+                      </p>
+                    </div>
+
+                    {/* Colores y Acabados */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Variantes de Acabado y Colores
+                        </span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">
+                          {colorVariants.length} acabados activos
+                        </span>
+                      </div>
+                      <ColorVariantsManager colors={colorVariants} onChange={setColorVariants} />
+                    </div>
+
+                    {/* Tallas y Medidas */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                          Tallas o Medidas (Opcional)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !hasSizes;
+                            setHasSizes(next);
+                            if (!next) setSizes("");
+                          }}
+                          className={cn(
+                            "w-10 h-5 rounded-full relative transition-colors cursor-pointer",
+                            hasSizes ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-xs",
+                              hasSizes ? "left-5" : "left-1"
+                            )}
+                          />
+                        </button>
+                      </div>
+
+                      {hasSizes ? (
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                            Tallas o Medidas Disponibles (Separadas por comas)
+                          </label>
+                          <input
+                            type="text"
+                            value={sizes}
+                            onChange={(e) => setSizes(e.target.value)}
+                            placeholder="Ej: Chico (25cm), Mediano (45cm), Grande (60cm)"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">
+                          Producto de formato estándar único (sin selector de medidas).
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

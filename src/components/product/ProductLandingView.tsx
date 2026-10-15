@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { 
   ShoppingBag, 
   Heart, 
@@ -18,15 +19,19 @@ import {
   Leaf, 
   Box, 
   Layers,
-  HelpCircle
+  Eye,
+  Play,
+  ArrowRight,
+  Maximize2,
+  X
 } from "lucide-react";
-import { CatalogProduct, ProductCombo } from "@/lib/catalogStore";
+import { CatalogProduct } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { Isometric3DGallery } from "./Isometric3DGallery";
-import { EmbeddedCylinderCarousel } from "./EmbeddedCylinderCarousel";
+import { ProductCard } from "@/components/ui/ProductCard";
 import { flyToCart } from "@/components/ui/FlyToCartAnimation";
 
 interface ProductLandingViewProps {
@@ -45,13 +50,6 @@ interface ProductLandingViewProps {
   isAgotado: boolean;
 }
 
-const DEFAULT_PINS = [
-  { x: 28, y: 32 },
-  { x: 72, y: 28 },
-  { x: 30, y: 70 },
-  { x: 70, y: 68 },
-];
-
 export function ProductLandingView({
   product,
   allProducts,
@@ -68,28 +66,106 @@ export function ProductLandingView({
   isAgotado: isAgotadoProp,
 }: ProductLandingViewProps) {
   const isAgotado = isAgotadoProp || (product.stock !== undefined && product.stock <= 0);
-  const { addItem, addBundle } = useCartStore();
+  const { addItem, addBundle, setIsOpen: setCartOpen } = useCartStore();
   const isInBag = useCartStore((state) =>
     state.items.some((item) => !item.isBundle && (item.productId === product.id || item.product?.id === product.id))
   );
   const { toggleFavorite, isFavorite } = useUserStore();
   const isFav = isFavorite(product.id);
 
-  // Selected combo state in Buy Box (null = standalone item)
-  const [selectedCombo, setSelectedCombo] = useState<ProductCombo | null>(null);
+  // Lightbox / Zoom modal state
+  const [showZoom, setShowZoom] = useState(false);
 
-  // Volume tier selection if in volume_tiers mode
+  // Selected volume tier quantity: 1, 2, or 3
   const [selectedTierQty, setSelectedTierQty] = useState<number>(2);
 
-  // Bundle candidates: prioritize manually configured companionProductIds, then same category
-  const companionCandidates = React.useMemo(() => {
-    if (product.landingBundle?.companionProductIds && product.landingBundle.companionProductIds.length > 0) {
-      const found = allProducts.filter(p => product.landingBundle?.companionProductIds?.includes(p.id));
-      if (found.length > 0) return found;
+  // General quantity selector
+  const [quantity, setQuantity] = useState(1);
+
+  // Active callout spotlight pin index (0 to 5)
+  const [hoveredSpecIndex, setHoveredSpecIndex] = useState<number | null>(null);
+
+  // Feedback states
+  const [isAddingTier, setIsAddingTier] = useState(false);
+  const [tierSuccess, setTierSuccess] = useState(false);
+  const [isAddingBundle, setIsAddingBundle] = useState(false);
+  const [bundleSuccess, setBundleSuccess] = useState(false);
+
+  // Active UGC modal preview
+  const [activeUgcModal, setActiveUgcModal] = useState<number | null>(null);
+
+  // Volume tier discounts & pricing
+  const tierDiscounts: Record<number, number> = { 1: 0, 2: 15, 3: 25 };
+  const currentTierDiscount = tierDiscounts[selectedTierQty] || 0;
+  const singleUnitPrice = product.price;
+  const tierUnitPrice = Number((singleUnitPrice * (1 - currentTierDiscount / 100)).toFixed(2));
+  const tierTotalPrice = Number((tierUnitPrice * selectedTierQty * quantity).toFixed(2));
+  const rawTierTotal = singleUnitPrice * selectedTierQty * quantity;
+  const tierSavings = Number((rawTierTotal - tierTotalPrice).toFixed(2));
+
+  // Handle Add Volume Tier to Cart
+  const handleAddTierToCart = (e?: React.MouseEvent) => {
+    if (isAgotado) return;
+    flyToCart(e?.currentTarget, images[0] || product.imageUrl);
+    setIsAddingTier(true);
+
+    if (currentTierDiscount > 0) {
+      const tierItems = [];
+      for (let i = 0; i < selectedTierQty; i++) {
+        tierItems.push({
+          product,
+          color: product.colors?.[activeColor]?.name,
+          size: activeSize || undefined,
+        });
+      }
+      for (let q = 0; q < quantity; q++) {
+        addBundle({
+          bundleName: `Pack Ahorro x${selectedTierQty} Piezas`,
+          bundleBadge: `-${currentTierDiscount}% EXTRA`,
+          bundleDiscountPercent: currentTierDiscount,
+          bundleCustomPrice: tierUnitPrice * selectedTierQty,
+          products: tierItems,
+        });
+      }
+    } else {
+      for (let i = 0; i < selectedTierQty * quantity; i++) {
+        addItem(product, 1, product.colors?.[activeColor]?.name, activeSize || undefined);
+      }
     }
-    const sameCategory = allProducts.filter(p => p.id !== product.id && p.category === product.category);
-    if (sameCategory.length > 0) return sameCategory.slice(0, 2);
-    return allProducts.filter(p => p.id !== product.id).slice(0, 2);
+
+    setTimeout(() => {
+      setIsAddingTier(false);
+      setTierSuccess(true);
+      setTimeout(() => setTierSuccess(false), 2500);
+    }, 800);
+  };
+
+  // Handle Buy Now (adds to cart & opens cart drawer immediately)
+  const handleBuyNow = (e?: React.MouseEvent) => {
+    if (isAgotado) return;
+    handleAddTierToCart(e);
+    setTimeout(() => {
+      setCartOpen(true);
+    }, 400);
+  };
+
+  // =========================================================================
+  // SECTION 2: BUNDLE COMPANION CANDIDATES (Always 2 companions => 3 items)
+  // =========================================================================
+  const companionCandidates = useMemo(() => {
+    let list: CatalogProduct[] = [];
+    if (product.landingBundle?.companionProductIds && product.landingBundle.companionProductIds.length > 0) {
+      list = allProducts.filter(p => product.landingBundle?.companionProductIds?.includes(p.id));
+    }
+    if (list.length < 2) {
+      const sameCategory = allProducts.filter(p => p.id !== product.id && p.category === product.category && !list.some(item => item.id === p.id));
+      list = [...list, ...sameCategory];
+    }
+    if (list.length < 2) {
+      const others = allProducts.filter(p => p.id !== product.id && !list.some(item => item.id === p.id));
+      list = [...list, ...others];
+    }
+    return list.slice(0, 2);
   }, [allProducts, product.id, product.category, product.landingBundle?.companionProductIds]);
 
   const [selectedBundleIds, setSelectedBundleIds] = useState<string[]>(() =>
@@ -100,117 +176,6 @@ export function ProductLandingView({
     setSelectedBundleIds(companionCandidates.map((c) => c.id));
   }, [companionCandidates]);
 
-  const [isAddingBundle, setIsAddingBundle] = useState(false);
-  const [bundleSuccess, setBundleSuccess] = useState(false);
-
-  // Quantity state
-  const [quantity, setQuantity] = useState(1);
-
-  // Active callout spotlight pin
-  const [hoveredSpecIndex, setHoveredSpecIndex] = useState<number | null>(null);
-
-  // Dedicated anatomy image for Block 3 (defaults to second gallery image or current main image)
-  const anatomyImage = (product.landingAnatomyImage && product.landingAnatomyImage.trim())
-    ? normalizeImageUrl(product.landingAnatomyImage.trim())
-    : (images[1] || currentImage);
-
-  // Fallback defaults for landing specs if not set in product
-  const defaultSpecs = [
-    {
-      title: "Chasis de Aluminio y Acabado Mate",
-      description: "Estructura aeroespacial ultraligera anodizada resistente a corrosión y marcas de huellas.",
-      side: "left" as const,
-      pinX: 28,
-      pinY: 32,
-    },
-    {
-      title: "Óptica Difusa 360°",
-      description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme sin deslumbramiento.",
-      side: "left" as const,
-      pinX: 30,
-      pinY: 70,
-    },
-    {
-      title: "Gestión Térmica & Consumo Inteligente",
-      description: "Disipación pasiva silenciosa que prolonga la vida útil de los componentes por más de 50.000 horas.",
-      side: "right" as const,
-      pinX: 72,
-      pinY: 28,
-    },
-    {
-      title: "Conectividad & Carga Ultra Rápida",
-      description: "Protocolo USB-C PD universal integrado con selector touch de 4 temperaturas de luz.",
-      side: "right" as const,
-      pinX: 70,
-      pinY: 68,
-    },
-  ];
-
-  const specs = (product.landingSpecs && product.landingSpecs.length > 0)
-    ? product.landingSpecs
-    : defaultSpecs;
-
-  const leftSpecs = specs.filter((s, idx) => (s.side ? s.side === "left" : idx % 2 === 0));
-  const rightSpecs = specs.filter((s, idx) => (s.side ? s.side === "right" : idx % 2 !== 0));
-
-  // Fallback reviews
-  const defaultReviews = [
-    {
-      author: "Valentina M.",
-      role: "Arquitecta de Interiores",
-      rating: 5,
-      comment: "La calidad de los acabados es sencillamente insuperable. Transforma cualquier rincón y la iluminación es de una calidez excepcional.",
-    },
-    {
-      author: "Carlos E.",
-      role: "Comprador Verificado",
-      rating: 5,
-      comment: "El empaque llegó blindado en 24 horas. El diseño en persona impresiona todavía más que en las fotos. Compra 10 de 10.",
-    },
-    {
-      author: "Sofía R.",
-      role: "Diseñadora de Iluminación",
-      rating: 5,
-      comment: "Lumina cuida los detalles mínimos: el peso, el tacto mate, la temperatura de color. Ya es la pieza central de mi estudio.",
-    },
-  ];
-
-  const reviews = (product.landingReviews && product.landingReviews.length > 0)
-    ? product.landingReviews
-    : defaultReviews;
-
-  // Fallback benefits
-  const defaultBenefits = [
-    {
-      title: "Materiales Sostenibles Certificados",
-      description: "Trazabilidad mineral y aleaciones reciclables con cero emisiones netas en proceso de fundición.",
-      icon: Leaf,
-    },
-    {
-      title: "2 Años de Garantía Lumina Care",
-      description: "Cobertura completa ante cualquier anomalía de funcionamiento con sustitución directa y sin trámites.",
-      icon: Award,
-    },
-    {
-      title: "Eficiencia Energética Superior",
-      description: "Controladores LED de última generación que ahorran hasta un 85% de energía comparado con estándares tradicionales.",
-      icon: Zap,
-    },
-    {
-      title: "Ingeniería Sonora Silenciosa",
-      description: "Componentes electrónicos libres de zumbidos de alta frecuencia probados en cámaras anecoicas.",
-      icon: Sparkles,
-    },
-  ];
-
-  const benefits = (product.landingBenefits && product.landingBenefits.length > 0)
-    ? product.landingBenefits.map((b, i) => ({
-        ...b,
-        icon: defaultBenefits[i % defaultBenefits.length].icon,
-      }))
-    : defaultBenefits;
-
-  // Bundle calculations (Companion mode)
   const bundleCompanionProducts = companionCandidates.filter((p) =>
     selectedBundleIds.includes(p.id)
   );
@@ -226,15 +191,16 @@ export function ProductLandingView({
     );
   };
 
-  const handleAddBundleToCart = () => {
+  const handleAddBundleToCart = (e?: React.MouseEvent) => {
     if (isAgotado) return;
+    flyToCart(e?.currentTarget, images[0] || product.imageUrl);
     setIsAddingBundle(true);
 
     const bundleItems = [
       {
         product,
         color: product.colors?.[activeColor]?.name,
-        size: activeSize,
+        size: activeSize || undefined,
       },
       ...bundleCompanionProducts.map((comp) => ({
         product: comp,
@@ -255,112 +221,185 @@ export function ProductLandingView({
       setIsAddingBundle(false);
       setBundleSuccess(true);
       setTimeout(() => setBundleSuccess(false), 3000);
-    }, 1200);
+    }, 1000);
   };
 
-  // Tier pricing calculations
-  const tierDiscounts: Record<number, number> = { 1: 0, 2: 15, 3: 25 };
-  const tierDiscount = tierDiscounts[selectedTierQty] || 0;
-  const rawTierTotal = product.price * selectedTierQty;
-  const finalTierTotal = Number((rawTierTotal * (1 - tierDiscount / 100)).toFixed(2));
-  const tierSavings = Number((rawTierTotal - finalTierTotal).toFixed(2));
+  // =========================================================================
+  // SECTION 3: 6 TECHNICAL SPECS (3 Left, 3 Right) & Central Anatomy Image
+  // =========================================================================
+  const anatomyImage = (product.landingAnatomyImage && product.landingAnatomyImage.trim())
+    ? normalizeImageUrl(product.landingAnatomyImage.trim())
+    : (images[1] || currentImage);
 
-  const handleAddTierToCart = (e?: React.MouseEvent) => {
-    if (isAgotado) return;
-    flyToCart(e?.currentTarget, product.images?.[0] || product.imageUrl);
-    setIsAddingBundle(true);
+  const defaultSpecs = [
+    {
+      title: "CHASIS DE ALUMINIO Y ACABADO MATE",
+      description: "Estructura aeroespacial ultraligera anodizada resistente a corrosión y marcas de huellas.",
+      side: "left" as const,
+      pinX: 25,
+      pinY: 28,
+      icon: ShieldCheck,
+    },
+    {
+      title: "ÓPTICA DIFUSA 360°",
+      description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme sin deslumbramiento.",
+      side: "left" as const,
+      pinX: 20,
+      pinY: 50,
+      icon: Sparkles,
+    },
+    {
+      title: "GESTIÓN TÉRMICA EFICIENTE",
+      description: "Disipación pasiva silenciosa que prolonga la vida útil de los componentes por más de 50.000 horas.",
+      side: "left" as const,
+      pinX: 28,
+      pinY: 74,
+      icon: Leaf,
+    },
+    {
+      title: "CONTROL TÁCTIL INTUITIVO",
+      description: "Sensor capacitivo integrado con regulación suave de intensidad y temperatura lumínica.",
+      side: "right" as const,
+      pinX: 75,
+      pinY: 28,
+      icon: Zap,
+    },
+    {
+      title: "CONECTIVIDAD USB-C PD",
+      description: "Batería de polímero de litio con carga ultra rápida y autonomía de hasta 24 horas continuas.",
+      side: "right" as const,
+      pinX: 80,
+      pinY: 50,
+      icon: Box,
+    },
+    {
+      title: "BASE DE APOYO SOSTENIBLE",
+      description: "Apoyo de alta densidad anti-rayaduras que garantiza máxima estabilidad sobre cualquier superficie.",
+      side: "right" as const,
+      pinX: 72,
+      pinY: 74,
+      icon: Award,
+    },
+  ];
 
-    if (tierDiscount > 0) {
-      const tierItems = [];
-      for (let i = 0; i < selectedTierQty; i++) {
-        tierItems.push({
-          product,
-          color: product.colors?.[activeColor]?.name,
-          size: activeSize,
-        });
-      }
-      addBundle({
-        bundleName: `Pack Ahorro x${selectedTierQty} Piezas`,
-        bundleBadge: `-${tierDiscount}% DTO`,
-        bundleDiscountPercent: tierDiscount,
-        bundleCustomPrice: finalTierTotal,
-        products: tierItems,
-      });
-    } else {
-      for (let i = 0; i < selectedTierQty; i++) {
-        addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
-      }
+  const fullSpecs = useMemo(() => {
+    if (product.landingSpecs && product.landingSpecs.length >= 6) {
+      return product.landingSpecs.slice(0, 6).map((spec, i) => ({
+        ...spec,
+        title: spec.title.toUpperCase(),
+        side: i < 3 ? ("left" as const) : ("right" as const),
+        pinX: spec.pinX ?? defaultSpecs[i].pinX,
+        pinY: spec.pinY ?? defaultSpecs[i].pinY,
+        icon: defaultSpecs[i].icon,
+      }));
     }
-
-    setTimeout(() => {
-      setIsAddingBundle(false);
-      setBundleSuccess(true);
-      setTimeout(() => setBundleSuccess(false), 3000);
-    }, 1200);
-  };
-
-  // Effective price based on selected combo in buy box
-  const currentEffectivePrice = React.useMemo(() => {
-    if (!selectedCombo) return product.price;
-    if (selectedCombo.customPrice) return selectedCombo.customPrice;
-    const companionSum = allProducts
-      .filter(p => selectedCombo.companionProductIds?.includes(p.id))
-      .reduce((acc, p) => acc + p.price, product.price);
-    if (selectedCombo.discountPercentage) {
-      return Number((companionSum * (1 - selectedCombo.discountPercentage / 100)).toFixed(2));
-    }
-    return companionSum;
-  }, [selectedCombo, product.price, allProducts]);
-
-  const handleBuyBoxAction = (e?: React.MouseEvent) => {
-    if (isAgotado) return;
-    if (!selectedCombo && isInBag) return;
-    flyToCart(e?.currentTarget, product.images?.[0] || product.imageUrl);
-    if (selectedCombo) {
-      const companions = allProducts.filter(p => selectedCombo.companionProductIds?.includes(p.id));
-      const comboProductsList = [
-        {
-          product,
-          color: product.colors?.[activeColor]?.name,
-          size: activeSize,
-        },
-        ...companions.map(c => ({
-          product: c,
-          color: c.colors?.[0]?.name,
-          size: c.sizes?.[0] || "Estándar",
-        })),
-      ];
-
-      for (let i = 0; i < quantity; i++) {
-        addBundle({
-          bundleName: selectedCombo.name,
-          bundleBadge: selectedCombo.badge || (selectedCombo.discountPercentage ? `-${selectedCombo.discountPercentage}% DTO` : undefined),
-          bundleDiscountPercent: selectedCombo.discountPercentage,
-          bundleCustomPrice: currentEffectivePrice,
-          products: comboProductsList,
-        });
+    if (product.landingSpecs && product.landingSpecs.length > 0) {
+      const merged = product.landingSpecs.map((s, i) => ({
+        ...s,
+        title: s.title.toUpperCase(),
+        side: i < 3 ? ("left" as const) : ("right" as const),
+        pinX: s.pinX ?? defaultSpecs[i]?.pinX ?? 50,
+        pinY: s.pinY ?? defaultSpecs[i]?.pinY ?? 50,
+        icon: defaultSpecs[i]?.icon || ShieldCheck,
+      }));
+      while (merged.length < 6) {
+        merged.push(defaultSpecs[merged.length]);
       }
-      handleAddToCart();
-    } else {
-      for (let i = 0; i < quantity; i++) {
-        handleAddToCart();
-      }
+      return merged;
     }
-  };
+    return defaultSpecs;
+  }, [product.landingSpecs]);
 
-  const isVolumeTiersMode = product.landingBundle?.mode === 'volume_tiers';
+  const leftSpecs = fullSpecs.slice(0, 3);
+  const rightSpecs = fullSpecs.slice(3, 6);
+
+  // =========================================================================
+  // SECTION 4: UGC STORIES (4 items, 9:16 aspect ratio)
+  // =========================================================================
+  const ugcStories = [
+    {
+      author: "Valentina M.",
+      role: "Arquitecta de Interiores",
+      city: "Madrid, ES",
+      image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=720&q=80",
+      quote: "La calidez lumínica y la pureza del aluminio cambiaron totalmente mi estudio de diseño. Pieza definitiva.",
+      rating: 5,
+    },
+    {
+      author: "Carlos E.",
+      role: "Diseñador Industrial",
+      city: "Buenos Aires, AR",
+      image: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=720&q=80",
+      quote: "Acabado anodizado impecable. Llegó en 24 horas perfectamente protegido. Una compra 10 de 10.",
+      rating: 5,
+    },
+    {
+      author: "Sofía R.",
+      role: "Diseñadora de Iluminación",
+      city: "Ciudad de México, MX",
+      image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=720&q=80",
+      quote: "Lumina cuida los detalles mínimos: el peso, el tacto mate y el confort visual sin deslumbramientos.",
+      rating: 5,
+    },
+    {
+      author: "Julián Morales",
+      role: "Comprador Verificado",
+      city: "Bogotá, CO",
+      image: "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=720&q=80",
+      quote: "Elegí el pack de 2 unidades para las mesas de noche y la sincronización ambiental es maravillosa.",
+      rating: 5,
+    },
+  ];
+
+  // =========================================================================
+  // SECTION 5: TRENDING PRODUCTS (3 items)
+  // =========================================================================
+  const trendingProducts = useMemo(() => {
+    const sameCat = allProducts.filter(p => p.id !== product.id && p.category === product.category);
+    if (sameCat.length >= 3) return sameCat.slice(0, 3);
+    const others = allProducts.filter(p => p.id !== product.id);
+    return others.slice(0, 3);
+  }, [allProducts, product.id, product.category]);
+
+  // =========================================================================
+  // SECTION 6: ZIG-ZAG BENEFITS (3 rows)
+  // =========================================================================
+  const zigZagBenefits = [
+    {
+      number: "01",
+      title: "Manufactura Artesanal & Materiales Nobles",
+      description: "Cada pieza se mecaniza individualmente a partir de aleaciones de aluminio aeroespacial reciclado, complementado con difusores de vidrio soplado artesanal. Diseñado para resistir décadas sin envejecer.",
+      highlights: ["Aleación aeroespacial anticorrosión", "Cero plásticos de un solo uso en empaque"],
+      image: images[0] || product.imageUrl,
+    },
+    {
+      number: "02",
+      title: "Iluminación Circadiana de Alta Fidelidad (CRI 95+)",
+      description: "Nuestra ingeniería óptica recrea la progresión de la luz natural diurna, reduciendo la fatiga ocular y promoviendo el bienestar circadiano. Con regulación táctil ultrasuave y sin parpadeo.",
+      highlights: ["Control táctil intuitivo multifunción", "Espectro continuo con bajo consumo energético"],
+      image: images[1] || images[0] || product.imageUrl,
+    },
+    {
+      number: "03",
+      title: "Garantía Oficial Lumina Care de 2 Años",
+      description: "Tu inversión está blindada por nuestra garantía directa sin intermediarios. Cobertura completa ante cualquier incidencia técnica con sustitución inmediata y asistencia técnica de por vida.",
+      highlights: ["Sustitución directa express sin fricción", "Soporte personalizado por especialistas"],
+      image: images[2] || images[0] || product.imageUrl,
+    },
+  ];
 
   return (
-    <div className="space-y-28 lg:space-y-36">
+    <div className="space-y-24 lg:space-y-32">
+      
       {/* ========================================================================= */}
-      {/* BLOCK 1: HERO BUY BOX (With Combos & Dynamic Pricing)                     */}
+      {/* SECCIÓN 1: HERO DE CONVERSIÓN CON SELECTOR DE PACKS                       */}
       {/* ========================================================================= */}
       <section className="relative">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start">
           
-          {/* Gallery Column */}
-          {product.galleryStyle === "isometric_3d" ? (
-            <div className="lg:col-span-7">
+          {/* Columna Izquierda: Galería con Foto Principal y 4 Miniaturas */}
+          <div className="lg:col-span-7 flex flex-col gap-4">
+            {product.galleryStyle === "isometric_3d" ? (
               <Isometric3DGallery 
                 images={images}
                 title={product.title}
@@ -368,90 +407,101 @@ export function ProductLandingView({
                 autoplay={product.galleryAutoplay ?? true}
                 autoplaySpeed={product.galleryAutoplaySpeed ?? 4}
               />
-            </div>
-          ) : (
-            <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4 h-full">
-              <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-2 md:pb-0 hide-scrollbar w-full md:w-20 shrink-0">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImage(idx)}
-                    className={`relative w-20 h-20 md:w-full md:aspect-square rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${
-                      activeImage === idx
-                        ? "border-gray-950 dark:border-white shadow-md scale-105"
-                        : "border-transparent opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill sizes="80px" quality={90} draggable={false} className="object-cover pointer-events-none select-none" />
-                  </button>
-                ))}
-              </div>
+            ) : (
+              <>
+                {/* Foto Principal Cuadrada/Vertical con botón Zoom y Favorito */}
+                <div className="relative w-full aspect-[4/5] sm:aspect-square rounded-3xl overflow-hidden bg-gradient-to-b from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] border border-black/5 dark:border-white/10 shadow-2xl group flex items-center justify-center">
+                  <Image
+                    src={currentImage}
+                    alt={product.title}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    priority
+                    quality={95}
+                    draggable={false}
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
+                  />
+                  
+                  {/* Badge de Estado */}
+                  {(product.badge || isAgotado) && (
+                    <div className="absolute top-5 left-5 z-10">
+                      <span
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm backdrop-blur-md transition-colors ${
+                          isAgotado
+                            ? "bg-red-50/80 dark:bg-red-950/60 border border-red-300 text-red-600 dark:text-red-400"
+                            : "bg-white/70 dark:bg-black/60 border border-white/60 dark:border-white/20 text-gray-900 dark:text-white"
+                        }`}
+                      >
+                        {isAgotado ? "AGOTADO" : product.badge}
+                      </span>
+                    </div>
+                  )}
 
-              {/* Main Image - Perfectly Squared 1:1 */}
-              <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-gradient-to-b from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] border border-black/5 dark:border-white/10 shadow-2xl group flex items-center justify-center">
-                <Image
-                  src={currentImage}
-                  alt={product.title}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                  quality={95}
-                  draggable={false}
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
-                />
-                
-                {(product.badge || isAgotado) && (
-                  <div className="absolute top-5 left-5 z-10">
-                    <span
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm backdrop-blur-md transition-colors ${
-                        isAgotado
-                          ? "bg-red-50/60 dark:bg-red-950/40 border border-red-300/80 dark:border-red-800/60 text-red-600 dark:text-red-400"
-                          : "bg-white/40 dark:bg-black/40 border border-white/60 dark:border-white/20 text-gray-900 dark:text-white"
+                  {/* Botón Favorito */}
+                  <button
+                    onClick={() => toggleFavorite(product.id)}
+                    className={`absolute top-5 right-5 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 cursor-pointer ${
+                      isFav
+                        ? "bg-red-50 text-red-500 border border-red-200"
+                        : "bg-white/80 dark:bg-[#1a1a1c]/80 text-gray-700 dark:text-gray-200 hover:scale-110 border border-black/5 dark:border-white/10"
+                    }`}
+                    title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+                  >
+                    <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
+                  </button>
+
+                  {/* Botón Lupa Zoom */}
+                  <button
+                    onClick={() => setShowZoom(true)}
+                    className="absolute bottom-5 right-5 z-10 w-11 h-11 rounded-full bg-white/90 dark:bg-[#1a1a1c]/90 text-gray-800 dark:text-white flex items-center justify-center shadow-lg border border-black/5 dark:border-white/10 opacity-90 hover:opacity-100 hover:scale-110 transition-all cursor-pointer"
+                    title="Ampliar fotografía"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Fila Horizontal de 4 Miniaturas */}
+                <div className="grid grid-cols-4 gap-3">
+                  {images.slice(0, 4).map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImage(idx)}
+                      className={`relative aspect-square rounded-2xl overflow-hidden transition-all duration-300 border-2 cursor-pointer ${
+                        activeImage === idx
+                          ? "border-gray-950 dark:border-white shadow-md scale-102"
+                          : "border-transparent opacity-60 hover:opacity-100"
                       }`}
                     >
-                      {isAgotado ? "AGOTADO" : product.badge}
-                    </span>
-                  </div>
-                )}
+                      <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill sizes="120px" quality={90} className="object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
-                <button
-                  onClick={() => toggleFavorite(product.id)}
-                  className={`absolute top-5 right-5 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
-                    isFav
-                      ? "bg-red-50 text-red-500 border border-red-200"
-                      : "bg-white/80 dark:bg-[#1a1a1c]/80 text-gray-700 dark:text-gray-200 hover:scale-110"
-                  }`}
-                  title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
-                >
-                  <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Buy Box Column */}
-          <div className="lg:col-span-5 flex flex-col justify-start pt-1 space-y-6">
+          {/* Columna Derecha: Información, Urgencia, Packs y Acciones */}
+          <div className="lg:col-span-5 flex flex-col justify-start space-y-5">
             
-            {/* Category Breadcrumb */}
-            <div className="flex items-center gap-2">
+            {/* Categoría y Estrellas */}
+            <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
                 {product.category}
               </span>
-              <span className="text-gray-300 dark:text-gray-700">•</span>
               <div className="flex items-center gap-1.5 text-amber-500">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-3.5 h-3.5 fill-current text-amber-400" />
                   ))}
                 </div>
-                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
                   4.9 (142 reseñas)
                 </span>
               </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl text-gray-950 dark:text-white leading-[1.15] tracking-tight font-bold">
+            {/* Título Principal */}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl text-gray-950 dark:text-white leading-[1.12] tracking-tight font-bold">
               <span>{product.title}</span>{" "}
               {product.titleHighlight && (
                 <span className="font-display italic font-medium text-[#8c9276] dark:text-amber-400">
@@ -460,166 +510,168 @@ export function ProductLandingView({
               )}
             </h1>
 
-            {/* Pricing Section */}
-            <div className="flex items-baseline gap-3 pb-2 border-b border-gray-200/80 dark:border-white/10">
-              <span className="text-3xl sm:text-4xl font-black text-gray-950 dark:text-white tracking-tight">
-                ${currentEffectivePrice.toFixed(2)}
+            {/* Texto de Urgencia en Rojo/Ámbar */}
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40 text-xs font-semibold w-fit">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
               </span>
-              {product.oldPrice && product.oldPrice > currentEffectivePrice && (
-                <span className="text-xl text-gray-400 dark:text-gray-500 line-through">
-                  ${Number(product.oldPrice || 0).toFixed(2)}
-                </span>
-              )}
-              {selectedCombo?.badge ? (
-                <span className="px-2.5 py-1 text-xs font-black tracking-wide rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                  {selectedCombo.badge}
-                </span>
-              ) : product.discount ? (
-                <span className="px-2.5 py-1 text-xs font-black tracking-wide rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  {product.discount}
-                </span>
+              {product.stock !== undefined && product.stock <= 5 && product.stock > 0
+                ? `Alta demanda: solo quedan ${product.stock} unidades en stock`
+                : "Alta demanda: últimas unidades en stock para despacho inmediato"}
+            </div>
+
+            {/* Precio con Etiqueta Roja de Ahorro */}
+            <div className="flex items-baseline gap-3 pb-3 border-b border-gray-200/80 dark:border-white/10">
+              <span className="text-3xl sm:text-4xl font-black text-gray-950 dark:text-white tracking-tight">
+                ${tierUnitPrice.toFixed(2)}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">/ unidad</span>
+              {currentTierDiscount > 0 ? (
+                <>
+                  <span className="text-lg text-gray-400 line-through">
+                    ${singleUnitPrice.toFixed(2)}
+                  </span>
+                  <span className="px-2.5 py-1 text-xs font-black tracking-wide rounded-lg bg-red-600 text-white shadow-xs">
+                    {currentTierDiscount}% OFF
+                  </span>
+                </>
+              ) : product.oldPrice && product.oldPrice > product.price ? (
+                <>
+                  <span className="text-lg text-gray-400 line-through">
+                    ${Number(product.oldPrice || 0).toFixed(2)}
+                  </span>
+                  <span className="px-2.5 py-1 text-xs font-black tracking-wide rounded-lg bg-red-600 text-white shadow-xs">
+                    {product.discount || "AHORRO"}
+                  </span>
+                </>
               ) : null}
             </div>
 
-            {/* Disponibilidad en Stock */}
-            <div className="flex flex-col gap-2 pt-1 pb-1">
-              <div className="flex flex-wrap items-center gap-2">
-                {product.stock !== undefined && product.stock <= 5 && product.stock > 0 ? (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/50 shadow-xs">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                    </span>
-                    ¡Solo quedan {product.stock} unidades en inventario!
-                  </span>
-                ) : isAgotado ? (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/50 shadow-xs">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    Agotado temporalmente
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50 shadow-xs">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    En stock ({product.stock ?? 18} unidades disponibles) · Envío inmediato
-                  </span>
-                )}
-              </div>
-              {product.stock !== undefined && product.stock > 0 && product.stock <= 5 && (
-                <div className="w-full max-w-xs bg-amber-100 dark:bg-amber-950/50 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(15, (product.stock / 10) * 100))}%` }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+            {/* Párrafo Corto */}
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
               {product.description ||
                 "Una obra magistral de ingeniería de diseño contemporáneo, concebida para brindar una experiencia sensorial envolvente y enriquecer cualquier entorno con elegancia atemporal."}
             </p>
 
-            {/* COMBOS SELECTION IN BUY BOX */}
-            {product.combos && product.combos.length > 0 && (
-              <div className="space-y-2.5 p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-amber-400" />
-                    Opciones de Paquete & Combos:
-                  </label>
-                  <span className="text-[10px] font-bold text-emerald-600">Ahorro Preferencial</span>
+            {/* SELECTOR VISUAL DE OPCIONES DE PAQUETE / VOLUMEN (3 Tarjetas Verticales) */}
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-amber-400" />
+                  Opciones de Paquete / Volumen:
+                </label>
+                {currentTierDiscount > 0 && (
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    Ahorras ${tierSavings.toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {/* Tarjeta 1: 1 Unidad */}
+                <div
+                  onClick={() => setSelectedTierQty(1)}
+                  className={`p-3 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between text-left ${
+                    selectedTierQty === 1
+                      ? "bg-white dark:bg-[#202022] border-gray-950 dark:border-white shadow-md ring-1 ring-gray-950/20"
+                      : "bg-gray-50/70 dark:bg-white/[0.02] border-gray-200/80 dark:border-white/10 opacity-75 hover:opacity-100"
+                  }`}
+                >
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+                      1 Unidad
+                    </span>
+                    <h3 className="text-sm sm:text-base font-black text-gray-950 dark:text-white">
+                      ${singleUnitPrice.toFixed(2)}
+                    </h3>
+                  </div>
+                  <div className="pt-2 mt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500 font-medium">Estándar</span>
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selectedTierQty === 1 ? 'bg-gray-950 dark:bg-white text-white dark:text-gray-950' : 'border-gray-300'}`}>
+                      {selectedTierQty === 1 && <Check className="w-2.5 h-2.5" />}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  {/* Standalone Option */}
-                  <div
-                    onClick={() => setSelectedCombo(null)}
-                    className={`p-2.5 rounded-xl cursor-pointer flex items-center justify-between text-xs transition-all border ${
-                      selectedCombo === null
-                        ? "bg-white dark:bg-[#202022] border-gray-950 dark:border-white shadow-sm ring-1 ring-gray-950/20 font-bold"
-                        : "border-gray-200 dark:border-white/10 opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                        selectedCombo === null ? 'bg-gray-950 text-white' : 'border-gray-300'
-                      }`}>
-                        {selectedCombo === null && <Check className="w-2.5 h-2.5" />}
-                      </div>
-                      <span>Solo esta pieza</span>
-                    </div>
-                    <span className="font-bold">${Number(product.price || 0).toFixed(2)}</span>
+                {/* Tarjeta 2: Pack de 2 (MÁS POPULAR) */}
+                <div
+                  onClick={() => setSelectedTierQty(2)}
+                  className={`p-3 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between text-left relative ${
+                    selectedTierQty === 2
+                      ? "bg-white dark:bg-[#202022] border-red-600 dark:border-red-500 shadow-md ring-1 ring-red-500/20"
+                      : "bg-gray-50/70 dark:bg-white/[0.02] border-gray-200/80 dark:border-white/10 opacity-75 hover:opacity-100"
+                  }`}
+                >
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-600 text-white shadow-xs">
+                      MÁS POPULAR
+                    </span>
                   </div>
+                  <div className="pt-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 block mb-1">
+                      Pack de 2
+                    </span>
+                    <h3 className="text-sm sm:text-base font-black text-gray-950 dark:text-white">
+                      ${(singleUnitPrice * 0.85).toFixed(2)}
+                      <span className="text-[10px] text-gray-400 font-normal"> /ud</span>
+                    </h3>
+                  </div>
+                  <div className="pt-2 mt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                    <span className="text-[10px] text-red-600 dark:text-red-400 font-bold">-15% OFF</span>
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selectedTierQty === 2 ? 'bg-red-600 text-white' : 'border-gray-300'}`}>
+                      {selectedTierQty === 2 && <Check className="w-2.5 h-2.5" />}
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Configured Combos */}
-                  {product.combos.map((combo) => {
-                    const isSelected = selectedCombo?.id === combo.id;
-                    const companionObjs = allProducts.filter(p => combo.companionProductIds?.includes(p.id));
-                    const calculatedTotal = companionObjs.reduce((acc, p) => acc + p.price, product.price);
-                    const comboFinalPrice = combo.customPrice || (combo.discountPercentage 
-                      ? Number((calculatedTotal * (1 - combo.discountPercentage / 100)).toFixed(2)) 
-                      : calculatedTotal);
-
-                    return (
-                      <div
-                        key={combo.id}
-                        onClick={() => setSelectedCombo(combo)}
-                        className={`p-2.5 rounded-xl cursor-pointer flex items-center justify-between text-xs transition-all border ${
-                          isSelected
-                            ? "bg-white dark:bg-[#202022] border-gray-950 dark:border-white shadow-sm ring-1 ring-gray-950/20 font-bold"
-                            : "border-gray-200 dark:border-white/10 opacity-70 hover:opacity-100"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? 'bg-gray-950 text-white' : 'border-gray-300'
-                          }`}>
-                            {isSelected && <Check className="w-2.5 h-2.5" />}
-                          </div>
-                          <div>
-                            <span>{combo.name}</span>
-                            {combo.badge && (
-                              <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/10 text-emerald-600">
-                                {combo.badge}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold">${comboFinalPrice.toFixed(2)}</span>
-                          {combo.discountPercentage && (
-                            <span className="ml-1 text-[10px] text-emerald-600 font-bold">
-                              (-{combo.discountPercentage}%)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* Tarjeta 3: Pack de 3 */}
+                <div
+                  onClick={() => setSelectedTierQty(3)}
+                  className={`p-3 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between text-left ${
+                    selectedTierQty === 3
+                      ? "bg-white dark:bg-[#202022] border-gray-950 dark:border-white shadow-md ring-1 ring-gray-950/20"
+                      : "bg-gray-50/70 dark:bg-white/[0.02] border-gray-200/80 dark:border-white/10 opacity-75 hover:opacity-100"
+                  }`}
+                >
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-1">
+                      Pack de 3
+                    </span>
+                    <h3 className="text-sm sm:text-base font-black text-gray-950 dark:text-white">
+                      ${(singleUnitPrice * 0.75).toFixed(2)}
+                      <span className="text-[10px] text-gray-400 font-normal"> /ud</span>
+                    </h3>
+                  </div>
+                  <div className="pt-2 mt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">-25% OFF</span>
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selectedTierQty === 3 ? 'bg-gray-950 dark:bg-white text-white dark:text-gray-950' : 'border-gray-300'}`}>
+                      {selectedTierQty === 3 && <Check className="w-2.5 h-2.5" />}
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Variants: Colors */}
+            {/* Variantes: Colores si existen */}
             {product.colors && product.colors.length > 0 && (
-              <div className="space-y-2.5">
+              <div className="space-y-2 pt-1">
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                  Acabado / Color: <span className="font-normal text-gray-500">{product.colors[activeColor]?.name || ''}</span>
+                  Color / Acabado: <span className="font-normal text-gray-500">{product.colors[activeColor]?.name || ''}</span>
                 </label>
                 <div className="flex flex-wrap gap-2.5">
                   {product.colors.map((col, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveColor(idx)}
-                      className={`relative flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                      className={`relative flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                         activeColor === idx
-                          ? "border-gray-950 dark:border-white bg-gray-950/5 dark:bg-white/10 text-gray-950 dark:text-white shadow-sm ring-1 ring-gray-950 dark:ring-white"
+                          ? "border-gray-950 dark:border-white bg-gray-950/5 dark:bg-white/10 text-gray-950 dark:text-white ring-1 ring-gray-950 dark:ring-white"
                           : "border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-400"
                       }`}
                     >
                       <span
-                        className="w-4 h-4 rounded-full border border-black/20 shadow-xs shrink-0"
+                        className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
                         style={{ backgroundColor: col.hex }}
                       />
                       <span>{col.name}</span>
@@ -629,20 +681,20 @@ export function ProductLandingView({
               </div>
             )}
 
-            {/* Variants: Sizes */}
+            {/* Variantes: Tamaños si existen */}
             {product.sizes && product.sizes.length > 0 && (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                  Formato / Dimensiones:
+                  Medidas / Formato:
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((s, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveSize(s)}
-                      className={`px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                         activeSize === s
-                          ? "border-gray-950 dark:border-white bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm"
+                          ? "border-gray-950 dark:border-white bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-xs"
                           : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
                       }`}
                     >
@@ -653,23 +705,24 @@ export function ProductLandingView({
               </div>
             )}
 
-            {/* Quantity + Add to Cart Actions */}
+            {/* Selector de Cantidad (- 1 +) y Dos Botones Lado a Lado */}
             <div className="pt-2 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="flex items-center border border-gray-200 dark:border-white/10 rounded-2xl bg-white/80 dark:bg-[#202022] p-1 shadow-sm">
+                {/* Selector - 1 + */}
+                <div className="flex items-center border border-gray-200 dark:border-white/10 rounded-2xl bg-white/80 dark:bg-[#202022] p-1 shadow-xs shrink-0">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors font-bold"
+                    className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors font-bold cursor-pointer"
                   >
                     -
                   </button>
-                  <span className="w-10 text-center font-bold text-sm text-gray-900 dark:text-white">
+                  <span className="w-9 text-center font-bold text-sm text-gray-900 dark:text-white">
                     {quantity}
                   </span>
                   <button
                     onClick={() => setQuantity((q) => product.stock !== undefined ? Math.min(product.stock, q + 1) : q + 1)}
                     disabled={product.stock !== undefined && quantity >= product.stock}
-                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 transition-colors font-bold ${
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 transition-colors font-bold cursor-pointer ${
                       product.stock !== undefined && quantity >= product.stock
                         ? "opacity-30 cursor-not-allowed"
                         : "hover:bg-gray-100 dark:hover:bg-white/10"
@@ -679,37 +732,50 @@ export function ProductLandingView({
                   </button>
                 </div>
 
-                <button
-                  onClick={handleBuyBoxAction}
-                  disabled={isAgotado}
-                  className={`flex-1 flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl font-bold text-sm sm:text-base tracking-wide transition-all shadow-xl cursor-pointer ${
-                    isAgotado
-                      ? "bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed"
-                      : (!selectedCombo && isInBag) || isAdding
-                      ? "bg-emerald-600 text-white shadow-emerald-500/20"
-                      : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:opacity-90 shadow-gray-950/20 dark:shadow-white/10 active:scale-[0.98]"
-                  }`}
-                >
-                  {(!selectedCombo && isInBag) || isAdding ? (
-                    <>
-                      <Check className="w-5 h-5" />
-                      <span>Se agregó a la bolsa</span>
-                    </>
-                  ) : isAgotado ? (
-                    <span>Agotado Temporalmente</span>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-5 h-5" />
-                      <span>
-                        {selectedCombo ? `Añadir ${selectedCombo.name}` : 'Añadir a la bolsa'} • ${(currentEffectivePrice * quantity).toFixed(2)}
-                      </span>
-                    </>
-                  )}
-                </button>
+                {/* Dos Botones Lado a Lado: "Comprar Ahora" (Sólido) y "Añadir al Carrito" (Borde) */}
+                <div className="flex-1 grid grid-cols-2 gap-2.5">
+                  {/* Botón Comprar Ahora (Sólido) */}
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isAgotado}
+                    className={`py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer ${
+                      isAgotado
+                        ? "bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed"
+                        : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:opacity-90 active:scale-98"
+                    }`}
+                  >
+                    <span>Comprar Ahora</span>
+                  </button>
+
+                  {/* Botón Añadir al Carrito (Borde) */}
+                  <button
+                    onClick={handleAddTierToCart}
+                    disabled={isAgotado}
+                    className={`py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm tracking-wide transition-all border-2 flex items-center justify-center gap-1.5 cursor-pointer ${
+                      isAgotado
+                        ? "border-gray-200 dark:border-white/10 text-gray-400 cursor-not-allowed"
+                        : tierSuccess
+                        ? "border-emerald-600 bg-emerald-600 text-white"
+                        : "border-gray-950 dark:border-white text-gray-950 dark:text-white hover:bg-gray-950/5 dark:hover:bg-white/10 active:scale-98"
+                    }`}
+                  >
+                    {tierSuccess ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>¡Añadido!</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Añadir al Carrito</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100 dark:border-white/5 text-center">
+              {/* Fila de Confianza */}
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100 dark:border-white/5 text-center">
                 <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50/50 dark:bg-white/[0.02]">
                   <Truck className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                   <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Envío 24/48h</span>
@@ -733,333 +799,218 @@ export function ProductLandingView({
       </section>
 
       {/* ========================================================================= */}
-      {/* BLOCK 2: COMPRADOS JUNTOS (Bundle) O PACKS POR VOLUMEN (Tier Pricing)    */}
+      {/* SECCIÓN 2: "COMPRADOS JUNTOS FRECUENTEMENTE" / COMBO BUNDLE               */}
       {/* ========================================================================= */}
-      {isVolumeTiersMode ? (
-        /* MODO ALTERNATIVO: PACKS DE AHORRO POR VOLUMEN (Tiered Pricing) */
-        <motion.section 
-          initial={{ opacity: 0, y: 32 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          style={{ willChange: "transform, opacity" }}
-          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden transform-gpu"
-        >
-          <div className="max-w-5xl mx-auto space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <motion.section 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 0.5 }}
+        className="relative p-6 sm:p-10 rounded-[2.5rem] bg-gray-50/80 dark:bg-[#151517] backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden"
+      >
+        <div className="max-w-5xl mx-auto space-y-8">
+          
+          {/* Cabecera */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
+                02 // Combo Bundle
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight mt-1">
+                Comprados Juntos Frecuentemente
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Ahorra llevando el conjunto completo. Diseñados en perfecta sintonía geométrica y lumínica.
+              </p>
+            </div>
+
+            <div className="shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <Sparkles className="w-3.5 h-3.5" />
+                Ahorras ${bundleSavings.toFixed(2)} en este paquete
+              </span>
+            </div>
+          </div>
+
+          {/* 3 Tarjetas en Fila separadas por signos + */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            
+            <div className="md:col-span-8 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
+              {/* Tarjeta 1: Producto Principal */}
+              <div className="flex-1 min-w-[140px] p-3.5 rounded-2xl bg-white dark:bg-[#1c1c1f] border border-gray-200/80 dark:border-white/10 shadow-sm">
+                <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 dark:bg-white/5">
+                  <Image src={currentImage} alt={product.title} fill sizes="160px" className="object-cover" />
+                </div>
+                <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{product.title}</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${product.price.toFixed(2)}</p>
+                <span className="inline-block mt-1 text-[10px] font-bold text-[#8c9276] dark:text-amber-400">Este artículo</span>
+              </div>
+
+              {/* Signo + */}
+              <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gray-200/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold">
+                <Plus className="w-4 h-4" />
+              </div>
+
+              {/* Tarjeta 2: Companion 1 */}
+              {companionCandidates[0] && (
+                <div 
+                  onClick={() => toggleBundleProduct(companionCandidates[0].id)}
+                  className={`flex-1 min-w-[140px] p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                    selectedBundleIds.includes(companionCandidates[0].id)
+                      ? "bg-white dark:bg-[#1c1c1f] border-gray-950 dark:border-white shadow-sm ring-1 ring-gray-950 dark:ring-white"
+                      : "bg-white/40 dark:bg-white/[0.02] border-gray-200/40 dark:border-white/5 opacity-60"
+                  }`}
+                >
+                  <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 dark:bg-white/5">
+                    <Image src={companionCandidates[0].imageUrl} alt={companionCandidates[0].title} fill sizes="160px" className="object-cover" />
+                    <div className="absolute top-2 right-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedBundleIds.includes(companionCandidates[0].id)}
+                        onChange={() => {}}
+                        className="w-4 h-4 rounded text-gray-900 focus:ring-0 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{companionCandidates[0].title}</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${companionCandidates[0].price.toFixed(2)}</p>
+                  <span className="inline-block mt-1 text-[10px] text-gray-400">Pieza complementaria</span>
+                </div>
+              )}
+
+              {/* Signo + */}
+              <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gray-200/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold">
+                <Plus className="w-4 h-4" />
+              </div>
+
+              {/* Tarjeta 3: Companion 2 */}
+              {companionCandidates[1] && (
+                <div 
+                  onClick={() => toggleBundleProduct(companionCandidates[1].id)}
+                  className={`flex-1 min-w-[140px] p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                    selectedBundleIds.includes(companionCandidates[1].id)
+                      ? "bg-white dark:bg-[#1c1c1f] border-gray-950 dark:border-white shadow-sm ring-1 ring-gray-950 dark:ring-white"
+                      : "bg-white/40 dark:bg-white/[0.02] border-gray-200/40 dark:border-white/5 opacity-60"
+                  }`}
+                >
+                  <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 dark:bg-white/5">
+                    <Image src={companionCandidates[1].imageUrl} alt={companionCandidates[1].title} fill sizes="160px" className="object-cover" />
+                    <div className="absolute top-2 right-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedBundleIds.includes(companionCandidates[1].id)}
+                        onChange={() => {}}
+                        className="w-4 h-4 rounded text-gray-900 focus:ring-0 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{companionCandidates[1].title}</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${companionCandidates[1].price.toFixed(2)}</p>
+                  <span className="inline-block mt-1 text-[10px] text-gray-400">Pieza complementaria</span>
+                </div>
+              )}
+
+            </div>
+
+            {/* Panel de Compra del Bundle */}
+            <div className="md:col-span-4 p-5 rounded-2xl bg-white dark:bg-[#1c1c1f] border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col justify-center space-y-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
-                  Oferta de Ahorro por Volumen
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight mt-1">
-                  Compra más piezas y maximiza tu ahorro
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Ideal para equipar múltiples estancias o regalar. Descuento aplicado automáticamente en el lote.
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Precio total del paquete:</span>
+                <div className="flex items-baseline gap-2.5 mt-0.5">
+                  <span className="text-3xl font-black text-gray-950 dark:text-white">
+                    ${discountedBundleTotal.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-gray-400 line-through">
+                    ${regularBundleTotal.toFixed(2)}
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                  Ahorra llevando el conjunto completo (-{bundleDiscountPct}%)
                 </p>
               </div>
 
-              {tierDiscount > 0 && (
-                <div className="shrink-0">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Ahorras ${tierSavings.toFixed(2)} en este paquete
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* 3 Tier Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Tier 1 */}
-              <div
-                onClick={() => setSelectedTierQty(1)}
-                className={`p-5 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between space-y-4 ${
-                  selectedTierQty === 1
-                    ? "bg-white dark:bg-[#202022] border-gray-950 dark:border-white shadow-xl ring-1 ring-gray-950/20"
-                    : "bg-gray-50/50 dark:bg-white/[0.02] border-gray-200/60 dark:border-white/5 opacity-80"
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">1 Unidad</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-200/60 dark:bg-white/10 text-gray-600 dark:text-gray-300">Estándar</span>
-                  </div>
-                  <h3 className="text-lg font-black text-gray-950 dark:text-white">${Number(product.price || 0).toFixed(2)}</h3>
-                  <p className="text-xs text-gray-500 mt-1">Para uso personal en tu espacio favorito.</p>
-                </div>
-                <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                  <span className="text-xs text-gray-400 font-semibold">${Number(product.price || 0).toFixed(2)} / ud</span>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedTierQty === 1 ? 'bg-gray-950 text-white' : 'border-gray-300'}`}>
-                    {selectedTierQty === 1 && <Check className="w-2.5 h-2.5" />}
-                  </div>
-                </div>
-              </div>
-
-              {/* Tier 2 (Most Popular) */}
-              <div
-                onClick={() => setSelectedTierQty(2)}
-                className={`p-5 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between space-y-4 relative ${
-                  selectedTierQty === 2
-                    ? "bg-white dark:bg-[#202022] border-emerald-600 dark:border-emerald-400 shadow-xl ring-2 ring-emerald-500/20"
-                    : "bg-gray-50/50 dark:bg-white/[0.02] border-gray-200/60 dark:border-white/5 opacity-80"
-                }`}
-              >
-                <div className="absolute -top-3 right-4">
-                  <span className="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-md">
-                    Más Popular • Ahorra 15%
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Pack Duo (2 Uds)</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <h3 className="text-lg font-black text-gray-950 dark:text-white">${(product.price * 2 * 0.85).toFixed(2)}</h3>
-                    <span className="text-xs text-gray-400 line-through">${(product.price * 2).toFixed(2)}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Para parejas o dos ambientes en armonía.</p>
-                </div>
-                <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                  <span className="text-xs text-emerald-600 font-bold">${(product.price * 0.85).toFixed(2)} / ud</span>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedTierQty === 2 ? 'bg-emerald-600 text-white' : 'border-gray-300'}`}>
-                    {selectedTierQty === 2 && <Check className="w-2.5 h-2.5" />}
-                  </div>
-                </div>
-              </div>
-
-              {/* Tier 3 (Best Value) */}
-              <div
-                onClick={() => setSelectedTierQty(3)}
-                className={`p-5 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between space-y-4 relative ${
-                  selectedTierQty === 3
-                    ? "bg-white dark:bg-[#202022] border-blue-600 dark:border-blue-400 shadow-xl ring-2 ring-blue-500/20"
-                    : "bg-gray-50/50 dark:bg-white/[0.02] border-gray-200/60 dark:border-white/5 opacity-80"
-                }`}
-              >
-                <div className="absolute -top-3 right-4">
-                  <span className="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-md">
-                    Mejor Valor • Ahorra 25%
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Pack Master (3 Uds)</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <h3 className="text-lg font-black text-gray-950 dark:text-white">${(product.price * 3 * 0.75).toFixed(2)}</h3>
-                    <span className="text-xs text-gray-400 line-through">${(product.price * 3).toFixed(2)}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Máxima cobertura y mayor ahorro por unidad.</p>
-                </div>
-                <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                  <span className="text-xs text-blue-600 font-bold">${(product.price * 0.75).toFixed(2)} / ud</span>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedTierQty === 3 ? 'bg-blue-600 text-white' : 'border-gray-300'}`}>
-                    {selectedTierQty === 3 && <Check className="w-2.5 h-2.5" />}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="flex justify-end pt-2">
               <button
-                onClick={handleAddTierToCart}
+                onClick={handleAddBundleToCart}
                 disabled={isAddingBundle || bundleSuccess}
-                className={`py-3.5 px-8 rounded-xl font-bold text-sm transition-all shadow-md flex items-center gap-2 ${
+                className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
                   bundleSuccess
                     ? "bg-emerald-600 text-white"
-                    : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:opacity-90"
+                    : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:opacity-90 active:scale-98"
                 }`}
               >
                 {bundleSuccess ? (
                   <>
                     <Check className="w-4 h-4" />
-                    <span>¡Pack añadido a la bolsa!</span>
+                    <span>¡Paquete añadido a la bolsa!</span>
                   </>
                 ) : (
                   <>
                     <ShoppingBag className="w-4 h-4" />
-                    <span>Añadir lote de {selectedTierQty} unidades (${finalTierTotal.toFixed(2)})</span>
+                    <span>Comprar Paquete Completo</span>
                   </>
                 )}
               </button>
             </div>
+
           </div>
-        </motion.section>
-      ) : companionCandidates.length > 0 && (
-        /* MODO ESTÁNDAR: COMPRADOS JUNTOS CON COMPLEMENTOS REALES */
-        <motion.section 
-          initial={{ opacity: 0, y: 32 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          style={{ willChange: "transform, opacity" }}
-          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden transform-gpu"
-        >
-          <div className="max-w-5xl mx-auto space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
-                  Pack Complementario Recomendado
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight mt-1">
-                  Comprados juntos habitualmente
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Combina estas piezas diseñadas en sintonía y ahorra un {bundleDiscountPct}% en el conjunto.
-                </p>
-              </div>
-
-              <div className="shrink-0">
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Ahorras ${bundleSavings.toFixed(2)} al comprar el paquete
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              <div className="md:col-span-8 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
-                {/* Main Product */}
-                <div className="flex-1 min-w-[140px] p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-                  <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 dark:bg-white/5">
-                    <Image src={currentImage} alt={product.title} fill sizes="140px" className="object-cover" />
-                  </div>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{product.title}</p>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${Number(product.price || 0).toFixed(2)}</p>
-                  <span className="inline-block mt-1 text-[10px] font-bold text-[#8c9276] dark:text-amber-400">Este artículo</span>
-                </div>
-
-                {/* Companions */}
-                {companionCandidates.map((comp) => (
-                  <React.Fragment key={comp.id}>
-                    <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold">
-                      <Plus className="w-4 h-4" />
-                    </div>
-
-                    <div 
-                      onClick={() => toggleBundleProduct(comp.id)}
-                      className={`flex-1 min-w-[140px] p-3.5 rounded-2xl cursor-pointer transition-all border ${
-                        selectedBundleIds.includes(comp.id)
-                          ? "bg-gray-50 dark:bg-white/5 border-gray-950 dark:border-white ring-1 ring-gray-950 dark:ring-white"
-                          : "bg-gray-50/40 dark:bg-white/[0.02] border-gray-200/40 dark:border-white/5 opacity-60"
-                      }`}
-                    >
-                      <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 dark:bg-white/5">
-                        <Image src={comp.imageUrl} alt={comp.title} fill sizes="140px" className="object-cover" />
-                        <div className="absolute top-2 right-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedBundleIds.includes(comp.id)}
-                            onChange={() => {}}
-                            className="w-4 h-4 rounded text-gray-900 focus:ring-0 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{comp.title}</p>
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${Number(comp.price || 0).toFixed(2)}</p>
-                      <span className="inline-block mt-1 text-[10px] text-gray-400">Pieza complementaria</span>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
-
-              <div className="md:col-span-4 p-5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex flex-col justify-center space-y-4">
-                <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Precio total del paquete:</span>
-                  <div className="flex items-baseline gap-2.5 mt-0.5">
-                    <span className="text-3xl font-black text-gray-950 dark:text-white">
-                      ${discountedBundleTotal.toFixed(2)}
-                    </span>
-                    <span className="text-sm text-gray-400 line-through">
-                      ${regularBundleTotal.toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-                    Incluye {1 + bundleCompanionProducts.length} artículos seleccionados
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleAddBundleToCart}
-                  disabled={isAddingBundle || bundleSuccess}
-                  className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 ${
-                    bundleSuccess
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:opacity-90 active:scale-98"
-                  }`}
-                >
-                  {bundleSuccess ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>¡Paquete añadido a la bolsa!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4" />
-                      <span>Añadir paquete completo</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </motion.section>
-      )}
+        </div>
+      </motion.section>
 
       {/* ========================================================================= */}
-      {/* BLOCK 3: TECHNICAL ANATOMY / KEY COMPONENTS WITH DYNAMIC PINS             */}
+      {/* SECCIÓN 3: DIAGRAMA RADIAL DE ANATOMÍA / MATERIALES DE LA PIEZA           */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 32 }}
+        initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform, opacity" }}
-        className="relative transform-gpu"
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 0.5 }}
+        className="relative"
       >
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+        <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
-            Ingeniería de Precisión
+            03 // Diagrama Radial de Ingeniería
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
-            Anatomía del Producto
+            Anatomía & Materiales de la Pieza
           </h2>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            Pasa el cursor por las tarjetas o por los pines numerados sobre el producto para explorar cada detalle técnico.
+            Pasa el cursor por los 6 bloques o por los pines numerados para descubrir cada tecnología y material.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center max-w-6xl mx-auto">
           
-          {/* Left Column Specs */}
-          <div className="lg:col-span-4 space-y-6 order-2 lg:order-1">
+          {/* 3 Bloques a la Izquierda (01, 02, 03) */}
+          <div className="lg:col-span-4 space-y-4 order-2 lg:order-1">
             {leftSpecs.map((spec, idx) => {
               const specNumber = `0${idx + 1}`;
               const isHovered = hoveredSpecIndex === idx;
+              const IconComp = spec.icon || ShieldCheck;
               return (
                 <div
                   key={idx}
                   onMouseEnter={() => setHoveredSpecIndex(idx)}
                   onMouseLeave={() => setHoveredSpecIndex(null)}
-                  className={`p-6 rounded-2xl transition-all duration-300 border cursor-pointer ${
+                  className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${
                     isHovered
                       ? "bg-white dark:bg-[#202022] border-gray-950 dark:border-white shadow-xl translate-x-2 ring-1 ring-gray-950/20"
                       : "bg-white/60 dark:bg-[#1a1a1c]/60 border-gray-200/70 dark:border-white/10 hover:border-gray-400"
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 transition-colors ${
-                      isHovered ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950' : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950'
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors shadow-xs ${
+                      isHovered ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950' : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white'
                     }`}>
-                      {specNumber}
-                    </span>
-                    <h3 className="text-base font-bold text-gray-950 dark:text-white">
-                      {spec.title}
-                    </h3>
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-gray-400">{specNumber}</span>
+                      <h3 className="text-xs sm:text-sm font-bold text-gray-950 dark:text-white uppercase tracking-tight">
+                        {spec.title}
+                      </h3>
+                    </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed pl-10">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pl-11">
                     {spec.description}
                   </p>
                 </div>
@@ -1067,27 +1018,33 @@ export function ProductLandingView({
             })}
           </div>
 
-          {/* Center Product Visual with DYNAMIC POSITIONS PINS */}
-          <div className="lg:col-span-4 flex flex-col items-center justify-center order-1 lg:order-2">
-            <div className="relative w-full max-w-[360px] aspect-square sm:aspect-[4/5] rounded-[3rem] overflow-hidden bg-gradient-to-b from-[#8c9276]/10 to-transparent dark:from-amber-400/10 border border-black/5 dark:border-white/10 shadow-2xl p-4 flex items-center justify-center group">
+          {/* Círculo Central con Halo Suave y 6 Pines Conectores */}
+          <div className="lg:col-span-4 flex flex-col items-center justify-center order-1 lg:order-2 my-6 lg:my-0">
+            <div className="relative w-72 h-72 sm:w-80 sm:h-80 rounded-full flex items-center justify-center">
               
-              <div className="absolute inset-8 rounded-full border border-dashed border-[#8c9276]/30 dark:border-amber-400/30 animate-spin-slow pointer-events-none" />
+              {/* Halo Suave */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#8c9276]/20 via-amber-400/15 to-transparent blur-2xl pointer-events-none" />
+              
+              {/* Anillo exterior decorativo */}
+              <div className="absolute inset-0 rounded-full border border-dashed border-[#8c9276]/40 dark:border-amber-400/30 animate-spin-slow pointer-events-none" />
+              <div className="absolute inset-3 rounded-full border border-gray-300/60 dark:border-white/10 pointer-events-none" />
 
-              <div className="relative w-full h-full rounded-[2.5rem] overflow-hidden">
+              {/* Imagen Central en Círculo */}
+              <div className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden shadow-2xl border-4 border-white dark:border-[#202022] group">
                 <Image
                   src={anatomyImage}
                   alt="Anatomía del Producto"
                   fill
-                  sizes="(max-width: 768px) 100vw, 360px"
+                  sizes="260px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                   unoptimized={typeof anatomyImage === 'string' && anatomyImage.startsWith('http')}
                 />
               </div>
 
-              {/* DYNAMIC INTERACTIVE PINS */}
-              {specs.map((spec, idx) => {
-                const posX = spec.pinX ?? DEFAULT_PINS[idx % 4]?.x ?? 50;
-                const posY = spec.pinY ?? DEFAULT_PINS[idx % 4]?.y ?? 50;
+              {/* 6 Pines Conectores Numerados */}
+              {fullSpecs.map((spec, idx) => {
+                const posX = spec.pinX ?? defaultSpecs[idx]?.pinX ?? 50;
+                const posY = spec.pinY ?? defaultSpecs[idx]?.pinY ?? 50;
                 const isHovered = hoveredSpecIndex === idx;
 
                 return (
@@ -1102,7 +1059,7 @@ export function ProductLandingView({
                       <span className={`animate-ping absolute inline-flex h-7 w-7 rounded-full opacity-75 ${
                         isHovered ? 'bg-[#8c9276] dark:bg-amber-400' : 'bg-gray-400'
                       }`} />
-                      <span className={`relative inline-flex rounded-full h-6 w-6 text-[10px] font-black items-center justify-center shadow-2xl border-2 transition-colors ${
+                      <span className={`relative inline-flex rounded-full h-6 w-6 text-[10px] font-black items-center justify-center shadow-xl border-2 transition-colors ${
                         isHovered
                           ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950 border-white'
                           : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950 border-white/80'
@@ -1116,34 +1073,38 @@ export function ProductLandingView({
             </div>
           </div>
 
-          {/* Right Column Specs */}
-          <div className="lg:col-span-4 space-y-6 order-3">
+          {/* 3 Bloques a la Derecha (04, 05, 06) */}
+          <div className="lg:col-span-4 space-y-4 order-3">
             {rightSpecs.map((spec, idx) => {
-              const globalIndex = leftSpecs.length + idx;
+              const globalIndex = idx + 3;
               const specNumber = `0${globalIndex + 1}`;
               const isHovered = hoveredSpecIndex === globalIndex;
+              const IconComp = spec.icon || Zap;
               return (
                 <div
                   key={idx}
                   onMouseEnter={() => setHoveredSpecIndex(globalIndex)}
                   onMouseLeave={() => setHoveredSpecIndex(null)}
-                  className={`p-6 rounded-2xl transition-all duration-300 border cursor-pointer ${
+                  className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${
                     isHovered
                       ? "bg-white dark:bg-[#202022] border-gray-950 dark:border-white shadow-xl -translate-x-2 ring-1 ring-gray-950/20"
                       : "bg-white/60 dark:bg-[#1a1a1c]/60 border-gray-200/70 dark:border-white/10 hover:border-gray-400"
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 transition-colors ${
-                      isHovered ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950' : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950'
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors shadow-xs ${
+                      isHovered ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950' : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white'
                     }`}>
-                      {specNumber}
-                    </span>
-                    <h3 className="text-base font-bold text-gray-950 dark:text-white">
-                      {spec.title}
-                    </h3>
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-gray-400">{specNumber}</span>
+                      <h3 className="text-xs sm:text-sm font-bold text-gray-950 dark:text-white uppercase tracking-tight">
+                        {spec.title}
+                      </h3>
+                    </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed pl-10">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pl-11">
                     {spec.description}
                   </p>
                 </div>
@@ -1155,157 +1116,21 @@ export function ProductLandingView({
       </motion.section>
 
       {/* ========================================================================= */}
-      {/* NEW BLOCK: MASTER SPECIFICATIONS, UNBOXING, MODO DE USO & CUIDADOS        */}
+      {/* SECCIÓN 4: "LO QUE DICEN NUESTROS CLIENTES" - GALERÍA VISUAL UGC 9:16      */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 32 }}
+        initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform, opacity" }}
-        className="relative p-8 sm:p-12 rounded-[3rem] bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl space-y-12 transform-gpu"
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 0.5 }}
+        className="relative"
       >
-        <div className="text-center max-w-2xl mx-auto space-y-3">
+        <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
-            Ficha Técnica Integral
+            04 // Galería Visual UGC
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
-            Especificaciones, Unboxing & Aplicación
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Todo lo que necesitas saber antes y después de recibir tu pedido.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          {/* Card 1: Qué incluye la caja */}
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center">
-                <Box className="w-5 h-5 text-gray-900 dark:text-white" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">¿Qué incluye la caja?</h3>
-                <p className="text-[11px] text-gray-400">Contenido oficial del paquete</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.packageContents || "1x Pieza Principal, 1x Cable trenzado de alimentación, 1x Certificado artesanal numerado, 1x Guía rápida de inicio."}
-            </p>
-          </div>
-
-          {/* Card 2: Modo de uso / Se usa */}
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 flex items-center justify-center">
-                <HelpCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">¿Cómo se usa?</h3>
-                <p className="text-[11px] text-gray-400">Instrucciones de funcionamiento</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.features?.join(". ") || "Conexión directa intuitiva con control táctil multifunción de intensidad y temperatura de luz."}
-            </p>
-          </div>
-
-          {/* Card 3: Materiales Nobles */}
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 flex items-center justify-center">
-                <Layers className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Materiales Nobles</h3>
-                <p className="text-[11px] text-gray-400">Origen y manufactura</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.materials || "Aluminio aeroespacial anodizado de grado militar, cristal opalino soplado artesanalmente y base de corcho natural."}
-            </p>
-          </div>
-
-          {/* Card 4: Envíos y Logística */}
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 flex items-center justify-center">
-                <Truck className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Envío</h3>
-                <p className="text-[11px] text-gray-400">Logística de alta prioridad</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.shipping || "Despacho express 24-48 horas en caja blindada con espuma absorbente. Envío gratis en pedidos superiores a $50."}
-            </p>
-          </div>
-
-          {/* Card 5: Garantía Oficial */}
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/30 text-purple-600 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Garantía Oficial</h3>
-                <p className="text-[11px] text-gray-400">Tranquilidad absoluta</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.warranty || "2 años de cobertura completa ante cualquier anomalía técnica. Sustitución prioritaria y soporte directo."}
-            </p>
-          </div>
-
-          {/* Card 6: Cuidados y Limpieza */}
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 flex items-center justify-center">
-                <RotateCcw className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Mantenimiento & Cuidado</h3>
-                <p className="text-[11px] text-gray-400">Guía de longevidad</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.careInstructions || "Limpiar periódicamente con un paño de microfibra seco. Evitar productos abrasivos o humedad directa prolongada."}
-            </p>
-          </div>
-
-        </div>
-      </motion.section>
-
-      {/* Carrusel Embebido Cilíndrico 3D (Efecto Video Enveding.mp4) */}
-      {product.embeddedCarousel?.enabled !== false && (
-        <EmbeddedCylinderCarousel
-          config={product.embeddedCarousel}
-          productTitle={product.title}
-          category={product.category}
-          productImages={images}
-          className="my-10"
-        />
-      )}
-
-      {/* ========================================================================= */}
-      {/* BLOCK 4: SOCIAL PROOF / WHAT OUR CUSTOMERS SAY                            */}
-      {/* ========================================================================= */}
-      <motion.section 
-        initial={{ opacity: 0, y: 32 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform, opacity" }}
-        className="relative transform-gpu"
-      >
-        <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
-            Experiencias Reales
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
-            Lo que dicen nuestros clientes
+            Lo Que Dicen Nuestros Clientes
           </h2>
           <div className="flex items-center justify-center gap-2 pt-1">
             <div className="flex text-amber-400">
@@ -1314,37 +1139,65 @@ export function ProductLandingView({
               ))}
             </div>
             <span className="text-sm font-bold text-gray-900 dark:text-white">4.9 / 5</span>
-            <span className="text-sm text-gray-400">• Satisfacción garantizada</span>
+            <span className="text-sm text-gray-400">• Galería de historias verificadas</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {reviews.map((rev, idx) => (
+        {/* Carrusel Horizontal de 4 Tarjetas Verticales en Proporción 9:16 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+          {ugcStories.map((story, idx) => (
             <div
               key={idx}
-              className="p-7 rounded-3xl bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-lg flex flex-col justify-between space-y-5 transition-transform duration-300 hover:-translate-y-1"
+              className="relative aspect-[9/16] rounded-3xl overflow-hidden group shadow-lg border border-black/5 dark:border-white/10 bg-gray-900 transition-all duration-300 hover:shadow-2xl"
             >
-              <div className="space-y-3">
-                <div className="flex text-amber-400 gap-1">
-                  {[...Array(rev.rating || 5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-current" />
-                  ))}
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic">
-                  &ldquo;{rev.comment}&rdquo;
-                </p>
+              {/* Foto de ambiente/cliente en formato vertical 9:16 */}
+              <Image
+                src={story.image}
+                alt={story.author}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+
+              {/* Gradiente Oscuro para Legibilidad */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+
+              {/* Botón Circular de Visualización */}
+              <button
+                onClick={() => setActiveUgcModal(idx)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md text-white flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer"
+                title="Ver historia"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+
+              {/* Badge de Verificado Arriba a la Izquierda */}
+              <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white text-[10px] font-semibold">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                <span>{story.city}</span>
               </div>
 
-              <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
-                <div className="w-10 h-10 rounded-full bg-[#8c9276]/20 dark:bg-amber-400/20 text-[#8c9276] dark:text-amber-400 font-black text-sm flex items-center justify-center">
-                  {rev.author.charAt(0)}
+              {/* Información y Cita Abajo */}
+              <div className="absolute bottom-0 inset-x-0 p-5 space-y-2.5 z-10 text-white">
+                <div className="flex text-amber-400 gap-0.5">
+                  {[...Array(story.rating)].map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                  ))}
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-gray-950 dark:text-white">{rev.author}</p>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500/20" />
+                <p className="text-xs text-gray-200 leading-relaxed italic line-clamp-3">
+                  &ldquo;{story.quote}&rdquo;
+                </p>
+                <div className="pt-2 border-t border-white/15 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-white">{story.author}</p>
+                    <p className="text-[10px] text-gray-400">{story.role}</p>
                   </div>
-                  <p className="text-[11px] text-gray-400">{rev.role || "Comprador Verificado"}</p>
+                  <button
+                    onClick={() => setActiveUgcModal(idx)}
+                    className="text-[10px] font-bold text-[#8c9276] dark:text-amber-300 hover:underline cursor-pointer"
+                  >
+                    Ver detalle
+                  </button>
                 </div>
               </div>
             </div>
@@ -1353,54 +1206,256 @@ export function ProductLandingView({
       </motion.section>
 
       {/* ========================================================================= */}
-      {/* BLOCK 5: WHY CHOOSE US / BRAND VALUE PROPOSITIONS                         */}
+      {/* SECCIÓN 5: "PRODUCTOS EN TENDENCIA"                                       */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 32 }}
+        initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform, opacity" }}
-        className="relative p-8 sm:p-14 rounded-[3rem] bg-gradient-to-br from-gray-50 to-white dark:from-[#1a1a1c] dark:to-[#202022] border border-gray-200/80 dark:border-white/10 shadow-2xl transform-gpu"
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 0.5 }}
+        className="relative max-w-6xl mx-auto"
       >
-        <div className="max-w-5xl mx-auto space-y-12">
-          
-          <div className="text-center max-w-2xl mx-auto space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
             <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
-              Compromiso Lumina
+              05 // Catálogo Curado
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
-              ¿Por qué elegir Lumina?
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 dark:text-white tracking-tight mt-1">
+              Productos en Tendencia
             </h2>
-            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-              Diseño sin obsolescencia, servicio sin fricción y una devoción obsesiva por los acabados nobles.
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              Otras piezas icónicas de la colección diseñadas para convivir en armonía.
             </p>
           </div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white hover:text-[#8c9276] dark:hover:text-amber-400 transition-colors"
+          >
+            <span>Ver catálogo completo</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((ben, idx) => {
-              const IconComp = ben.icon || Sparkles;
-              return (
-                <div
-                  key={idx}
-                  className="p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/5 space-y-3.5 transition-all duration-300 hover:shadow-md"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-gray-950 dark:bg-white text-white dark:text-gray-950 flex items-center justify-center shadow-md">
-                    <IconComp className="w-6 h-6" />
+        {/* Grilla de 3 Columnas con Tarjetas de Producto */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {trendingProducts.map((trendProd) => (
+            <ProductCard key={trendProd.id} {...trendProd} />
+          ))}
+        </div>
+      </motion.section>
+
+      {/* ========================================================================= */}
+      {/* SECCIÓN 6: "¿POR QUÉ ELEGIR ESTA PIEZA?" - BENEFICIOS EN ZIG-ZAG 1-2-3     */}
+      {/* ========================================================================= */}
+      <motion.section 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 0.5 }}
+        className="relative max-w-6xl mx-auto space-y-16"
+      >
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
+            06 // Pilares de Excelencia
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
+            ¿Por Qué Elegir Esta Pieza?
+          </h2>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+            Tres razones fundamentales que definen la durabilidad, bienestar y valor de manufactura Lumina.
+          </p>
+        </div>
+
+        {/* 3 Filas Alternadas en Zig-Zag */}
+        <div className="space-y-16 lg:space-y-24">
+          
+          {/* Fila 1: Número 01, Título y Texto a la Izquierda + Imagen Circular con Ondas a la Derecha */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-6 space-y-4">
+              <span className="text-5xl sm:text-6xl font-black text-[#8c9276]/30 dark:text-amber-400/30">
+                {zigZagBenefits[0].number}
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight">
+                {zigZagBenefits[0].title}
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                {zigZagBenefits[0].description}
+              </p>
+              <div className="space-y-2 pt-2">
+                {zigZagBenefits[0].highlights.map((h, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{h}</span>
                   </div>
-                  <h3 className="text-sm font-bold text-gray-950 dark:text-white leading-snug">
-                    {ben.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                    {ben.description}
-                  </p>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-6 flex items-center justify-center">
+              <div className="relative w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-gray-300/50 dark:border-white/10 animate-ping opacity-25" />
+                <div className="absolute inset-3 rounded-full border border-dashed border-[#8c9276]/40 dark:border-amber-400/30 animate-spin-slow pointer-events-none" />
+                <div className="relative w-48 h-48 sm:w-60 sm:h-60 rounded-full overflow-hidden shadow-2xl border-4 border-white dark:border-[#202022] group">
+                  <Image src={zigZagBenefits[0].image} alt={zigZagBenefits[0].title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
                 </div>
-              );
-            })}
+              </div>
+            </div>
+          </div>
+
+          {/* Fila 2: Imagen Circular a la Izquierda + Número 02, Título y Texto a la Derecha */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-6 flex items-center justify-center order-2 lg:order-1">
+              <div className="relative w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-gray-300/50 dark:border-white/10 animate-ping opacity-25" />
+                <div className="absolute inset-3 rounded-full border border-dashed border-[#8c9276]/40 dark:border-amber-400/30 animate-spin-slow pointer-events-none" />
+                <div className="relative w-48 h-48 sm:w-60 sm:h-60 rounded-full overflow-hidden shadow-2xl border-4 border-white dark:border-[#202022] group">
+                  <Image src={zigZagBenefits[1].image} alt={zigZagBenefits[1].title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6 space-y-4 order-1 lg:order-2">
+              <span className="text-5xl sm:text-6xl font-black text-[#8c9276]/30 dark:text-amber-400/30">
+                {zigZagBenefits[1].number}
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight">
+                {zigZagBenefits[1].title}
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                {zigZagBenefits[1].description}
+              </p>
+              <div className="space-y-2 pt-2">
+                {zigZagBenefits[1].highlights.map((h, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{h}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Fila 3: Número 03, Título y Texto a la Izquierda + Imagen Circular a la Derecha */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-6 space-y-4">
+              <span className="text-5xl sm:text-6xl font-black text-[#8c9276]/30 dark:text-amber-400/30">
+                {zigZagBenefits[2].number}
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight">
+                {zigZagBenefits[2].title}
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                {zigZagBenefits[2].description}
+              </p>
+              <div className="space-y-2 pt-2">
+                {zigZagBenefits[2].highlights.map((h, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{h}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-6 flex items-center justify-center">
+              <div className="relative w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-gray-300/50 dark:border-white/10 animate-ping opacity-25" />
+                <div className="absolute inset-3 rounded-full border border-dashed border-[#8c9276]/40 dark:border-amber-400/30 animate-spin-slow pointer-events-none" />
+                <div className="relative w-48 h-48 sm:w-60 sm:h-60 rounded-full overflow-hidden shadow-2xl border-4 border-white dark:border-[#202022] group">
+                  <Image src={zigZagBenefits[2].image} alt={zigZagBenefits[2].title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
       </motion.section>
+
+      {/* ========================================================================= */}
+      {/* MODAL LIGHTBOX DE ZOOM                                                    */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {showZoom && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowZoom(false)}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-10 cursor-zoom-out"
+          >
+            <button
+              onClick={() => setShowZoom(false)}
+              className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="relative w-full max-w-4xl aspect-square max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl">
+              <Image
+                src={currentImage}
+                alt={product.title}
+                fill
+                quality={100}
+                className="object-contain"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* MODAL DETALLE DE HISTORIA UGC                                             */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {activeUgcModal !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setActiveUgcModal(null)}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8"
+          >
+            <button
+              onClick={() => setActiveUgcModal(null)}
+              className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md aspect-[9/16] max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl border border-white/20 bg-black flex flex-col justify-end"
+            >
+              <Image
+                src={ugcStories[activeUgcModal].image}
+                alt={ugcStories[activeUgcModal].author}
+                fill
+                quality={95}
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+              <div className="relative z-10 p-6 space-y-3 text-white">
+                <div className="flex text-amber-400 gap-1">
+                  {[...Array(ugcStories[activeUgcModal].rating)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-current" />
+                  ))}
+                </div>
+                <p className="text-sm text-gray-200 leading-relaxed italic">
+                  &ldquo;{ugcStories[activeUgcModal].quote}&rdquo;
+                </p>
+                <div className="pt-3 border-t border-white/20 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-white">{ugcStories[activeUgcModal].author}</p>
+                    <p className="text-xs text-gray-400">{ugcStories[activeUgcModal].role} • {ugcStories[activeUgcModal].city}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-400 text-xs font-semibold">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Verificado</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

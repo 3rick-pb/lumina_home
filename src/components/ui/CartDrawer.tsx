@@ -1108,56 +1108,56 @@ export function CartDrawer() {
   )}
 
   {items.length === 0 ? (
-  <div className="relative overflow-hidden my-2 sm:my-2.5 sm:mt-1 rounded-[2.5rem] p-6 sm:p-8 lg:p-10 min-h-[420px] sm:min-h-[490px] md:min-h-[520px] lg:min-h-[540px] border-2 border-black/15 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
+  <div className="relative overflow-hidden my-2 sm:my-2.5 sm:mt-1 rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 lg:p-10 min-h-[350px] sm:min-h-[460px] md:min-h-[500px] border-2 border-black/15 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
     {/* 3D Radial Champagne Aura */}
     <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.08] to-amber-400/[0.06] blur-3xl pointer-events-none" />
     <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-black/[0.04] dark:via-white/15 to-transparent pointer-events-none" />
 
     {/* 3D Floating Bag Pedestal */}
-    <div className="relative mb-5 sm:mb-6 group cursor-default">
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 sm:w-36 h-7 sm:h-8 bg-black/[0.06] dark:bg-white/[0.06] rounded-full blur-md" />
+    <div className="relative mb-4 sm:mb-6 group cursor-default">
+      <div className="absolute -bottom-3 sm:-bottom-4 left-1/2 -translate-x-1/2 w-28 sm:w-36 h-6 sm:h-8 bg-black/[0.06] dark:bg-white/[0.06] rounded-full blur-md" />
       
-      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-white via-[#faf7f2] to-[#eee8dd] dark:from-[#2a2a2e] dark:via-[#222226] dark:to-[#1a1a1e] border-2 border-white dark:border-white/20 shadow-[0_16px_36px_rgba(0,0,0,0.06)] flex items-center justify-center transition-transform duration-500 hover:scale-105">
-        <ShoppingBag className="w-9 h-9 sm:w-11 sm:h-11 text-gray-800 dark:text-gray-100 stroke-[1.5]" />
+      <div className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white via-[#faf7f2] to-[#eee8dd] dark:from-[#2a2a2e] dark:via-[#222226] dark:to-[#1a1a1e] border-2 border-white dark:border-white/20 shadow-[0_16px_36px_rgba(0,0,0,0.06)] flex items-center justify-center transition-transform duration-500 hover:scale-105">
+        <ShoppingBag className="w-8 h-8 sm:w-11 sm:h-11 text-gray-800 dark:text-gray-100 stroke-[1.5]" />
       </div>
     </div>
 
     {/* 2IXO Circular Action Feature Discs */}
-    <div className="grid grid-cols-3 gap-3 sm:gap-8 max-w-xs sm:max-w-sm mx-auto mb-5 sm:mb-6">
+    <div className="grid grid-cols-3 gap-2 sm:gap-6 max-w-xs sm:max-w-sm mx-auto mb-4 sm:mb-6">
       <div className="flex flex-col items-center group">
-        <div className="w-11 h-11 sm:w-13 sm:h-13 shrink-0 aspect-square min-w-[44px] min-h-[44px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Package className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 aspect-square min-w-[40px] min-h-[40px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Logística</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-1.5 sm:mt-2 text-center whitespace-nowrap">Logística</span>
       </div>
       <div className="flex flex-col items-center group">
-        <div className="w-11 h-11 sm:w-13 sm:h-13 shrink-0 aspect-square min-w-[44px] min-h-[44px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Truck className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 aspect-square min-w-[40px] min-h-[40px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Despacho</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-1.5 sm:mt-2 text-center whitespace-nowrap">Despacho</span>
       </div>
       <div className="flex flex-col items-center group">
-        <div className="w-11 h-11 sm:w-13 sm:h-13 shrink-0 aspect-square min-w-[44px] min-h-[44px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Navigation className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 aspect-square min-w-[40px] min-h-[40px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Navigation className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Envío</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-1.5 sm:mt-2 text-center whitespace-nowrap">Envío</span>
       </div>
     </div>
 
-    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2 tracking-tight">
+    <h3 className="font-display font-bold text-xl sm:text-2xl md:text-3xl text-gray-950 dark:text-white mb-1.5 sm:mb-2 tracking-tight">
       Tu bolsa de compras está vacía
     </h3>
-    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed mb-6">
+    <p className="text-[11.5px] sm:text-xs md:text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed mb-4 sm:mb-6 px-2">
       <span className="font-semibold text-gray-800 dark:text-gray-200">Dato curioso:</span> Una luz cálida (2700K) reduce el estrés visual y mejora el descanso un 40%.
     </p>
 
     {/* 2IXO Dock Capsule CTA Button */}
     <button 
       onClick={() => { setIsOpen(false); router.push("/shop"); }}
-      className="group relative overflow-hidden rounded-full bg-[#18181b] dark:bg-white text-white dark:text-gray-950 pl-3 pr-6 py-3.5 text-xs sm:text-sm font-semibold flex items-center gap-3 shadow-[0_12px_32px_rgba(0,0,0,0.15)] hover:bg-black dark:hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
+      className="group relative overflow-hidden rounded-full bg-[#18181b] dark:bg-white text-white dark:text-gray-950 pl-3 pr-5 sm:pr-6 py-2.5 sm:py-3.5 text-xs sm:text-sm font-semibold flex items-center gap-2.5 sm:gap-3 shadow-[0_12px_32px_rgba(0,0,0,0.15)] hover:bg-black dark:hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
     >
-      <div className="w-8 h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center text-white dark:text-gray-950 group-hover:translate-x-0.5 transition-transform shrink-0">
-        <ArrowRight className="w-4 h-4" />
+      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center text-white dark:text-gray-950 group-hover:translate-x-0.5 transition-transform shrink-0">
+        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </div>
       <span>Explorar Catálogo Lumina</span>
     </button>
@@ -1707,16 +1707,16 @@ export function CartDrawer() {
  {/* Recommended Pieces Row (Craft Own Furniture Section) */}
  {recommendedProducts.length > 0 && (
  <div className="pt-8 border-t border-gray-100 dark:border-white/5 space-y-4">
- <div className="flex items-center justify-between">
- <div>
- <h3 className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 ">
- Piezas que complementan tu pedido
+ <div className="flex items-center justify-between gap-3">
+ <div className="min-w-0 flex-1">
+ <h3 className="font-display font-bold text-lg sm:text-xl text-gray-900 dark:text-gray-100 truncate">
+ Complementa tu pedido
  </h3>
- <p className="text-xs text-gray-500 dark:text-gray-400">Diseñadas para armonizar en iluminación y estética.</p>
+ <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">Diseñadas para armonizar en iluminación y estética.</p>
  </div>
  <button 
  onClick={() => { setIsOpen(false); router.push("/shop"); }}
- className="text-xs font-semibold text-blue-600 hover:underline"
+ className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline shrink-0 whitespace-nowrap ml-2 cursor-pointer"
  >
  Ver catálogo completo &rarr;
  </button>

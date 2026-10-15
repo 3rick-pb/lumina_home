@@ -2,42 +2,25 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
-  Server,
   Mail,
   Copy,
   Check,
   ExternalLink,
   Send,
-  KeyRound,
   Sparkles,
-  AlertTriangle,
   CreditCard,
   Eye,
   EyeOff,
   RefreshCw,
-  Truck,
   Trash2,
   Plus,
-  CheckCircle2,
-  Info,
   Download,
-  Terminal,
   Database,
   Cloud,
   Globe,
   Smartphone,
-  FileCode,
   ChevronDown,
   Layers,
-  ShieldCheck,
-  Zap,
-  AtSign,
-  Hash,
-  User,
-  Activity,
-  Cpu,
-  Radio,
-  Sliders,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -98,185 +81,8 @@ interface ServiceConfigStatus {
 }
 
 // ============================================================================
-// HARDWARE DOT-MATRIX GRAPHICS (TAL CUAL Desing.jpg)
+// HARDWARE DOT-MATRIX GRAPHICS
 // ============================================================================
-
-/**
- * 01. Audio / Signal Waveform made of glowing LED dots
- * Inspired by Card 01 of Desing.jpg
- */
-function DotWaveformVisualizer({ active = true }: { active?: boolean }) {
-  // Height levels of dots per column (1 to 6)
-  const columns = [
-    1, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 4, 3, 5, 4, 2, 3, 1, 2, 1,
-  ];
-
-  return (
-    <div className="flex items-center justify-center gap-1.5 py-3 px-2">
-      {columns.map((height, colIdx) => {
-        const isCenter = colIdx >= 7 && colIdx <= 12;
-        return (
-          <div key={colIdx} className="flex flex-col items-center gap-1">
-            {Array.from({ length: 6 }).map((_, dotIdx) => {
-              const invertedDotIdx = 5 - dotIdx;
-              const isDotLit = invertedDotIdx < height;
-
-              let dotClass = "w-1.5 h-1.5 rounded-full transition-colors duration-300 ";
-              if (!isDotLit) {
-                dotClass += "bg-white/[0.06]";
-              } else if (isCenter) {
-                dotClass += active
-                  ? "bg-[#ff5500] shadow-[0_0_6px_#ff5500]"
-                  : "bg-amber-500/60";
-              } else {
-                dotClass += active
-                  ? "bg-zinc-200 shadow-[0_0_4px_rgba(255,255,255,0.4)]"
-                  : "bg-zinc-500";
-              }
-
-              return <span key={dotIdx} className={dotClass} />;
-            })}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * Telemetry Avatar Face made of white dots with glowing red LED eyes
- * Inspired by Card 01 of Desing.jpg
- */
-function DotAvatarFace({ online = true }: { online?: boolean }) {
-  return (
-    <div className="relative w-14 h-14 mx-auto flex items-center justify-center">
-      {/* Outer ring of dots */}
-      <svg className="w-14 h-14" viewBox="0 0 56 56">
-        {Array.from({ length: 16 }).map((_, i) => {
-          const angle = (i * 360) / 16;
-          const rad = (angle * Math.PI) / 180;
-          const cx = 28 + 22 * Math.cos(rad);
-          const cy = 28 + 22 * Math.sin(rad);
-          return (
-            <circle
-              key={i}
-              cx={cx}
-              cy={cy}
-              r="1.4"
-              className={online ? "fill-zinc-300" : "fill-zinc-600"}
-            />
-          );
-        })}
-        {/* Left eye dot (red glowing LED) */}
-        <circle
-          cx="22"
-          cy="26"
-          r="2.4"
-          className={online ? "fill-[#ff3b30] filter drop-shadow-[0_0_4px_#ff3b30]" : "fill-zinc-600"}
-        />
-        {/* Right eye dot (red glowing LED) */}
-        <circle
-          cx="34"
-          cy="26"
-          r="2.4"
-          className={online ? "fill-[#ff3b30] filter drop-shadow-[0_0_4px_#ff3b30]" : "fill-zinc-600"}
-        />
-      </svg>
-    </div>
-  );
-}
-
-/**
- * 02. Vertical Equalizer / Bar Graph of LED dots
- * Inspired by Card 02 of Desing.jpg
- */
-function DotBarEqualizer({ count = 0, max = 7 }: { count: number; max?: number }) {
-  const bars = [3, 5, 2, 6, 4, 3, 5, 7];
-
-  return (
-    <div className="flex items-end justify-center gap-2 py-2">
-      {bars.map((maxDots, colIdx) => {
-        const isPeak = colIdx === 7 || colIdx === 3;
-        const activeLevel = Math.min(
-          maxDots,
-          Math.max(1, Math.round((count / max) * maxDots) + (colIdx % 2))
-        );
-
-        return (
-          <div key={colIdx} className="flex flex-col items-center gap-1">
-            {Array.from({ length: 7 }).map((_, dotIdx) => {
-              const inverted = 6 - dotIdx;
-              const isLit = inverted < activeLevel;
-              const isTopActiveDot = inverted === activeLevel - 1;
-
-              let dotClass = "w-1.5 h-1.5 rounded-full transition-all ";
-              if (!isLit) {
-                dotClass += "bg-white/[0.06]";
-              } else if (isTopActiveDot && isPeak) {
-                dotClass += "bg-[#ff5500] shadow-[0_0_6px_#ff5500]";
-              } else if (isPeak) {
-                dotClass += "bg-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.5)]";
-              } else {
-                dotClass += "bg-zinc-300";
-              }
-
-              return <span key={dotIdx} className={dotClass} />;
-            })}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * 03. Circular Dot Dial Gauge
- * Inspired by Card 03 of Desing.jpg
- */
-function CircularDotDial({ percent = 96, label = "HEALTH" }: { percent?: number; label?: string }) {
-  // Arc of 26 dots spanning 300 degrees, opening at bottom
-  const totalDots = 26;
-  const startAngle = 120; // Starts bottom-left
-  const sweepAngle = 300;
-
-  return (
-    <div className="relative w-28 h-28 flex items-center justify-center">
-      <svg className="w-28 h-28" viewBox="0 0 112 112">
-        {Array.from({ length: totalDots }).map((_, i) => {
-          const angle = startAngle + (i * sweepAngle) / (totalDots - 1);
-          const rad = (angle * Math.PI) / 180;
-          const cx = 56 + 44 * Math.cos(rad);
-          const cy = 56 + 44 * Math.sin(rad);
-          const litThreshold = Math.round((percent / 100) * totalDots);
-          const isLit = i <= litThreshold;
-
-          return (
-            <circle
-              key={i}
-              cx={cx}
-              cy={cy}
-              r="2"
-              className={
-                isLit
-                  ? "fill-zinc-200 filter drop-shadow-[0_0_2px_rgba(255,255,255,0.7)]"
-                  : "fill-white/[0.08]"
-              }
-            />
-          );
-        })}
-      </svg>
-      {/* Center Digital Telemetry */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="font-mono text-xl font-bold tracking-tight text-white">
-          {percent}%
-        </span>
-        <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-400">
-          {label}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 /**
  * 04. Dot-Matrix ECG / Pulse Line
@@ -399,7 +205,7 @@ export function IntegrationsTab() {
     }
     return "http://localhost:3000/api/admin/google-drive/callback";
   });
-  const [googleEncryptionKey, setGoogleEncryptionKey] = useState("");
+  const [googleEncryptionKey] = useState("");
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
 
   // ==========================================
@@ -430,6 +236,67 @@ export function IntegrationsTab() {
   const [walletSecretKey, setWalletSecretKey] = useState("");
   const [googleWalletIssuerId, setGoogleWalletIssuerId] = useState("");
   const [googleWalletClientEmail, setGoogleWalletClientEmail] = useState("");
+  const [showWalletSecret, setShowWalletSecret] = useState(false);
+
+  // Computed infrastructure status (Vercel / Stripe Style)
+  const infraServices = useMemo(() => {
+    const isSmtpOnline = Boolean(servicesStatus?.smtp?.configured || (smtpUser && smtpPass));
+    const isSupabaseOnline = Boolean(servicesStatus?.supabase?.configured || (supabaseUrl && supabaseAnonKey));
+    const isGoogleOnline = Boolean(servicesStatus?.googleDrive?.configured || (googleClientId && googleClientSecret));
+    const isPayphoneOnline = Boolean(servicesStatus?.payphone?.configured || (payphoneToken && payphoneAppId));
+    const isWalletOnline = Boolean(servicesStatus?.wallets?.configured || (walletSecretKey || googleWalletIssuerId));
+
+    return [
+      {
+        id: "smtp",
+        name: "SMTP Correo",
+        isOnline: isSmtpOnline,
+        detail: smtpProvider === "gmail" ? "Gmail TLS (587)" : `${smtpHost}:${smtpPort}`,
+      },
+      {
+        id: "supabase",
+        name: "Supabase DB",
+        isOnline: isSupabaseOnline,
+        detail: "PostgreSQL Cloud",
+      },
+      {
+        id: "google",
+        name: "Google Drive API",
+        isOnline: isGoogleOnline,
+        detail: "OAuth 2.0 Storage",
+      },
+      {
+        id: "payphone",
+        name: "PayPhone Pagos",
+        isOnline: isPayphoneOnline,
+        detail: payphoneEnv === "production" ? "Producción" : "Sandbox / Pruebas",
+      },
+      {
+        id: "wallets",
+        name: "Google Wallet",
+        isOnline: isWalletOnline,
+        detail: "Passes API v1",
+      },
+    ];
+  }, [
+    servicesStatus,
+    smtpUser,
+    smtpPass,
+    smtpProvider,
+    smtpHost,
+    smtpPort,
+    supabaseUrl,
+    supabaseAnonKey,
+    googleClientId,
+    googleClientSecret,
+    payphoneToken,
+    payphoneAppId,
+    payphoneEnv,
+    walletSecretKey,
+    googleWalletIssuerId,
+  ]);
+
+  const configuredCount = infraServices.filter((s) => s.isOnline).length;
 
   // Random 32-byte generator
   const generateRandomHexKey = () => {
@@ -939,17 +806,17 @@ export function IntegrationsTab() {
       {/* ==================================================================== */}
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-white/[0.08]">
         <div>
-          {/* LED Status line with pulsing amber indicator */}
-          <div className="font-mono text-xs uppercase tracking-[0.25em] text-amber-500 font-bold mb-2 flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_8px_#ff5500] animate-pulse" />
-            <span>ALL SYSTEMS OPERATIONAL</span>
+          {/* LED Status line with pulsing indicator */}
+          <div className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-400 font-bold mb-2 flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" />
+            <span>INFRAESTRUCTURA DE SERVICIOS</span>
           </div>
 
           <h1 className="font-mono text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white">
-            LUMINA CLOUD
+            Infraestructura y Variables de Entorno (.ENV)
           </h1>
           <p className="font-mono text-xs text-zinc-400 tracking-wider mt-1">
-            INFRASTRUCTURE & .ENV TELEMETRY ENGINE
+            ESTADO DE SERVICIOS EN TIEMPO REAL &amp; BOOTSTRAP DE CONFIGURACIÓN
           </p>
 
           <div className="mt-3">
@@ -1014,7 +881,7 @@ export function IntegrationsTab() {
             <label className="text-[11px] font-mono font-bold tracking-widest text-zinc-400 uppercase">
               MODULO DE TELEMETRÍA:
             </label>
-            <span className="text-[10px] font-mono text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25">
+            <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
               FILTRAR MODULO
             </span>
           </div>
@@ -1023,10 +890,10 @@ export function IntegrationsTab() {
             type="button"
             onClick={() => setIsComboboxOpen((prev) => !prev)}
             whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-[#141419]/90 hover:bg-[#1b1b22]/90 backdrop-blur-2xl border border-white/10 hover:border-amber-500/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_10px_25px_rgba(0,0,0,0.5)] text-xs font-mono font-semibold text-white transition-all cursor-pointer group"
+            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-[#141419]/90 hover:bg-[#1b1b22]/90 backdrop-blur-2xl border border-white/10 hover:border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_10px_25px_rgba(0,0,0,0.5)] text-xs font-mono font-semibold text-white transition-all cursor-pointer group"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 text-zinc-300 flex items-center justify-center shrink-0">
                 <SelectedIcon className="w-4 h-4" />
               </div>
               <div className="flex flex-col text-left min-w-0">
@@ -1072,13 +939,13 @@ export function IntegrationsTab() {
                         }}
                         className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-mono transition-colors cursor-pointer ${
                           isSelected
-                            ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/35"
+                            ? "bg-white/10 text-white font-bold border border-white/20"
                             : "text-zinc-300 hover:bg-white/5"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
-                            isSelected ? "bg-amber-500 text-stone-950 border-amber-400" : "bg-white/5 text-zinc-400 border-white/10"
+                            isSelected ? "bg-white/15 text-white border-white/25" : "bg-white/5 text-zinc-400 border-white/10"
                           }`}>
                             <Icon className="w-3.5 h-3.5" />
                           </div>
@@ -1087,7 +954,7 @@ export function IntegrationsTab() {
                             <span className="text-[10px] text-zinc-500 truncate">{cat.desc}</span>
                           </div>
                         </div>
-                        {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0 stroke-[2.5]" />}
+                        {isSelected && <Check className="w-4 h-4 text-zinc-200 shrink-0 stroke-[2.5]" />}
                       </button>
                     );
                   })}
@@ -1099,122 +966,54 @@ export function IntegrationsTab() {
       </div>
 
       {/* ==================================================================== */}
-      {/* TELEMETRY BENTO ROW: 01, 02, 03 (TAL CUAL Desing.jpg)                */}
+      {/* BARRA DE ESTADO DE INFRAESTRUCTURA (ESTILO VERCEL / STRIPE)          */}
       {/* ==================================================================== */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-        
-        {/* CARD 01: AGENT / SMTP STATUS */}
-        <div className="relative overflow-hidden rounded-[28px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
-                01 SMTP STATUS
-              </span>
-              <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_8px_#ff5500] animate-pulse" />
-            </div>
-
-            <h3 className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">
-              {servicesStatus?.smtp?.configured ? "CONNECTED..." : "STANDBY..."}
-            </h3>
-
-            {/* Dot avatar face with LED eyes */}
-            <DotAvatarFace online={Boolean(servicesStatus?.smtp?.configured)} />
-
-            {/* Glowing Dot Waveform visualizer */}
-            <DotWaveformVisualizer active={Boolean(servicesStatus?.smtp?.configured)} />
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 pt-4 mt-2 border-t border-white/[0.06] text-center font-mono">
-            <div>
-              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">PORT</span>
-              <span className="text-xs font-bold text-white block mt-0.5">{smtpPort}</span>
-            </div>
-            <div>
-              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">SECURITY</span>
-              <span className="text-xs font-bold text-white block mt-0.5">TLS 1.3</span>
-            </div>
-            <div>
-              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">HEALTH</span>
-              <span className="text-xs font-bold text-[#ff5500] block mt-0.5">100%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* CARD 02: CLOUD DISPATCH (BODEGAS) */}
-        <div className="relative overflow-hidden rounded-[28px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
-                02 CLOUD DISPATCH
-              </span>
-              <span className="font-mono text-[10px] text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25">
-                MAX 7
-              </span>
-            </div>
-
-            <div className="font-mono text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              {dispatchRecipients.length}/7
-            </div>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500 block mb-2">
-              BODEGAS CONECTADAS
-            </span>
-
-            {/* Vertical Dot Equalizer */}
-            <DotBarEqualizer count={dispatchRecipients.length} max={7} />
-          </div>
-
-          <div className="flex items-center justify-between pt-4 mt-2 border-t border-white/[0.06] font-mono">
-            <div>
-              <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">RECIPIENTS</span>
-              <span className="text-xs font-bold text-white block mt-0.5">{dispatchRecipients.length} ACTIVOS</span>
-            </div>
-            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#ff5500]/15 text-[#ff5500] border border-[#ff5500]/30">
-              +{Math.round((dispatchRecipients.length / 7) * 100)}%
+      <div className="relative z-10 rounded-2xl bg-[#111113] border border-white/[0.08] p-4 sm:p-5 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+            <span className="font-mono text-xs font-bold tracking-wider uppercase text-zinc-200">
+              Barra de Estado de Infraestructura
             </span>
           </div>
+          <span className="font-mono text-[11px] text-zinc-400">
+            {configuredCount === 5 ? "5 de 5 servicios verificados" : `${configuredCount} de 5 servicios activos`}
+          </span>
         </div>
 
-        {/* CARD 03: SYSTEM TELEMETRY */}
-        <div className="relative overflow-hidden rounded-[28px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
-                03 SYSTEM TELEMETRY
-              </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              {/* Circular Dot Dial */}
-              <CircularDotDial percent={96} label="ONLINE" />
-
-              {/* Status List with glowing LED dots */}
-              <div className="space-y-2.5 font-mono text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />
-                  <span className="text-zinc-300 font-bold">ONLINE</span>
-                  <span className="text-zinc-500 ml-auto">96%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-zinc-500" />
-                  <span className="text-zinc-400">OFFLINE</span>
-                  <span className="text-zinc-500 ml-auto">4%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_6px_#ff5500]" />
-                  <span className="text-[#ff5500] font-bold">ALERTS</span>
-                  <span className="text-zinc-400 ml-auto">0</span>
-                </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          {infraServices.map((svc) => (
+            <div
+              key={svc.id}
+              className="flex flex-col justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors"
+            >
+              <div className="flex items-center justify-between gap-1 mb-2">
+                <span className="font-mono text-xs font-semibold text-zinc-200 truncate">
+                  {svc.name}
+                </span>
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    svc.isOnline
+                      ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]"
+                      : "bg-zinc-600"
+                  }`}
+                />
+              </div>
+              <div className="flex items-baseline justify-between gap-1 pt-1 border-t border-white/[0.04]">
+                <span className="text-[10px] text-zinc-500 font-mono truncate">
+                  {svc.detail}
+                </span>
+                <span
+                  className={`text-[10px] font-mono font-medium ${
+                    svc.isOnline ? "text-emerald-400" : "text-zinc-500"
+                  }`}
+                >
+                  {svc.isOnline ? "Operativo" : "Standby"}
+                </span>
               </div>
             </div>
-          </div>
-
-          <div className="pt-4 mt-2 border-t border-white/[0.06] flex items-center justify-between font-mono text-[11px]">
-            <span className="text-zinc-400">STATUS: ACTIVE</span>
-            <span className="text-emerald-400 font-bold">VERIFIED ●</span>
-          </div>
+          ))}
         </div>
-
       </div>
 
       {/* ==================================================================== */}
@@ -1227,17 +1026,17 @@ export function IntegrationsTab() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             
             {/* TILE 04: SMTP CREDENTIALS VAULT */}
-            <div className="rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-5">
+            <div className="rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-5">
               <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
                 <div>
-                  <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                     04 SMTP CREDENTIALS
                   </span>
                   <h3 className="font-mono text-base sm:text-lg font-bold text-white mt-0.5">
                     Bóveda de Servidor Transaccional
                   </h3>
                 </div>
-                <span className="font-mono text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                <span className="font-mono text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/5 text-zinc-300 border border-white/10">
                   AES-256 VAULT
                 </span>
               </div>
@@ -1254,7 +1053,7 @@ export function IntegrationsTab() {
                   }}
                   className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex items-center justify-between ${
                     smtpProvider === "gmail"
-                      ? "bg-amber-500/15 border-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                      ? "bg-white/10 border-white/25 text-white shadow-sm"
                       : "bg-[#18181f] border-white/5 text-zinc-400 hover:text-white"
                   }`}
                 >
@@ -1262,7 +1061,7 @@ export function IntegrationsTab() {
                     <span className="text-xs font-bold block">GMAIL CLOUD</span>
                     <span className="text-[10px] text-zinc-400 block mt-0.5">STARTTLS 587</span>
                   </div>
-                  {smtpProvider === "gmail" && <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_6px_#ff5500]" />}
+                  {smtpProvider === "gmail" && <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" />}
                 </button>
 
                 <button
@@ -1270,7 +1069,7 @@ export function IntegrationsTab() {
                   onClick={() => setSmtpProvider("custom")}
                   className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex items-center justify-between ${
                     smtpProvider === "custom"
-                      ? "bg-amber-500/15 border-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                      ? "bg-white/10 border-white/25 text-white shadow-sm"
                       : "bg-[#18181f] border-white/5 text-zinc-400 hover:text-white"
                   }`}
                 >
@@ -1278,7 +1077,7 @@ export function IntegrationsTab() {
                     <span className="text-xs font-bold block">CUSTOM RELAY</span>
                     <span className="text-[10px] text-zinc-400 block mt-0.5">HOSTING PROPIO</span>
                   </div>
-                  {smtpProvider === "custom" && <span className="w-2 h-2 rounded-full bg-[#ff5500] shadow-[0_0_6px_#ff5500]" />}
+                  {smtpProvider === "custom" && <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" />}
                 </button>
               </div>
 
@@ -1287,10 +1086,10 @@ export function IntegrationsTab() {
                 <button
                   type="button"
                   onClick={() => setShowGoogleGuide((prev) => !prev)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 text-xs text-amber-400 font-bold transition-all cursor-pointer"
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-zinc-300" />
                     <span>CÓMO GENERAR CONTRASEÑA DE APP (16 LETRAS)</span>
                   </div>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showGoogleGuide ? "rotate-180" : ""}`} />
@@ -1306,19 +1105,19 @@ export function IntegrationsTab() {
                     >
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
                         <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
-                          <span className="text-[#ff5500] font-bold block">01 VERIFICACIÓN</span>
+                          <span className="text-zinc-200 font-bold block">01 VERIFICACIÓN</span>
                           <span className="text-zinc-400">Activa verificación en 2 pasos en tu cuenta Google.</span>
                         </div>
                         <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
-                          <span className="text-[#ff5500] font-bold block">02 CONTRASEÑAS</span>
+                          <span className="text-zinc-200 font-bold block">02 CONTRASEÑAS</span>
                           <span className="text-zinc-400">Busca &quot;Contraseñas de aplicaciones&quot; en Seguridad.</span>
                         </div>
                         <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
-                          <span className="text-[#ff5500] font-bold block">03 CREAR</span>
+                          <span className="text-zinc-200 font-bold block">03 CREAR</span>
                           <span className="text-zinc-400">Nombra la app &quot;{brand.name}&quot; y genera la clave.</span>
                         </div>
                         <div className="p-3 rounded-xl bg-[#16161c] border border-white/5">
-                          <span className="text-[#ff5500] font-bold block">04 PEGAR</span>
+                          <span className="text-zinc-200 font-bold block">04 PEGAR</span>
                           <span className="text-zinc-400">Pega las 16 letras en el campo SMTP_PASS abajo.</span>
                         </div>
                       </div>
@@ -1326,7 +1125,7 @@ export function IntegrationsTab() {
                         href="https://myaccount.google.com/apppasswords"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[11px] text-amber-400 hover:underline pt-1"
+                        className="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 hover:text-white hover:underline pt-1"
                       >
                         <span>Abrir Seguridad de Cuenta Google</span>
                         <ExternalLink className="w-3 h-3" />
@@ -1347,7 +1146,7 @@ export function IntegrationsTab() {
                         value={smtpHost}
                         onChange={(e) => setSmtpHost(e.target.value)}
                         placeholder="mail.tudominio.com"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1357,7 +1156,7 @@ export function IntegrationsTab() {
                         value={smtpPort}
                         onChange={(e) => setSmtpPort(Number(e.target.value))}
                         placeholder="587"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                       />
                     </div>
                   </div>
@@ -1370,7 +1169,7 @@ export function IntegrationsTab() {
                     value={smtpUser}
                     onChange={(e) => setSmtpUser(e.target.value)}
                     placeholder="contacto@luminahome.com"
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                   />
                 </div>
 
@@ -1380,7 +1179,7 @@ export function IntegrationsTab() {
                     <button
                       type="button"
                       onClick={() => setShowSmtpPass(!showSmtpPass)}
-                      className="text-zinc-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer"
+                      className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                     >
                       {showSmtpPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
@@ -1390,7 +1189,7 @@ export function IntegrationsTab() {
                     value={smtpPass}
                     onChange={(e) => setSmtpPass(e.target.value)}
                     placeholder="••••••••••••••••"
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                   />
                 </div>
 
@@ -1401,7 +1200,7 @@ export function IntegrationsTab() {
                     value={senderName}
                     onChange={(e) => setSenderName(e.target.value)}
                     placeholder={brand.name}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                   />
                 </div>
               </div>
@@ -1415,7 +1214,7 @@ export function IntegrationsTab() {
                     const snippet = `SMTP_HOST="${smtpProvider === "gmail" ? "smtp.gmail.com" : smtpHost}"\nSMTP_PORT="${smtpProvider === "gmail" ? "587" : smtpPort}"\nSMTP_SECURE="${smtpSecure ? "true" : "false"}"\nSMTP_USER="${smtpUser}"\nSMTP_PASS="${smtpPass}"\nSMTP_FROM="${senderName} <${smtpUser}>"`;
                     markCopied("smtp_snip", snippet);
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-400 text-xs font-bold transition-all border border-amber-500/25 flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold transition-all border border-white/10 flex items-center gap-1.5 cursor-pointer"
                 >
                   {copiedKey === "smtp_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>COPIAR SMTP</span>
@@ -1427,10 +1226,10 @@ export function IntegrationsTab() {
             <div className="space-y-6">
               
               {/* TILE 05: SMTP TEST LAB */}
-              <div className="rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+              <div className="rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                   <div>
-                    <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400 font-bold block">
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                       05 REALTIME DIAGNOSTIC
                     </span>
                     <h3 className="font-mono text-base font-bold text-white mt-0.5">
@@ -1449,13 +1248,13 @@ export function IntegrationsTab() {
                     value={testEmail}
                     onChange={(e) => setTestEmail(e.target.value)}
                     placeholder="correo_destinatario@gmail.com"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                   />
                   <button
                     type="button"
                     onClick={handleTestSmtpConnection}
                     disabled={isTestingSmtp}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 border border-white/10"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{isTestingSmtp ? "PROBANDO..." : "LANZAR TEST"}</span>
@@ -1478,17 +1277,17 @@ export function IntegrationsTab() {
               </div>
 
               {/* TILE 06: BODEGAS DISPATCH RECIPIENTS */}
-              <div className="rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+              <div className="rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                   <div>
-                    <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                       06 DISPATCH RECIPIENTS
                     </span>
                     <h3 className="font-mono text-base font-bold text-white mt-0.5">
                       Bodegas de Despacho
                     </h3>
                   </div>
-                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-white/5 text-zinc-300 border border-white/10">
                     {dispatchRecipients.length}/7 CUPOS
                   </span>
                 </div>
@@ -1505,7 +1304,7 @@ export function IntegrationsTab() {
                         key={em}
                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#181822] border border-white/10 text-xs font-mono text-zinc-200"
                       >
-                        <span className="w-4 h-4 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold flex items-center justify-center">
+                        <span className="w-4 h-4 rounded bg-white/10 text-zinc-300 text-[10px] font-bold flex items-center justify-center">
                           B{idx + 1}
                         </span>
                         <span>{em}</span>
@@ -1534,13 +1333,13 @@ export function IntegrationsTab() {
                       }
                     }}
                     placeholder="bodega_norte@luminahome.com"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                   />
                   <button
                     type="button"
                     onClick={handleAddRecipient}
                     disabled={dispatchRecipients.length >= 7 || !recipientInput.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 shrink-0"
+                    className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 shrink-0 border border-white/10"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>AGREGAR</span>
@@ -1555,7 +1354,7 @@ export function IntegrationsTab() {
                     disabled={isTestingDispatch || dispatchRecipients.length === 0}
                     className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 font-bold transition-all border border-white/10 flex items-center gap-2 cursor-pointer disabled:opacity-40"
                   >
-                    <Send className="w-3.5 h-3.5 text-amber-500" />
+                    <Send className="w-3.5 h-3.5 text-zinc-400" />
                     <span>{isTestingDispatch ? "ENVIANDO..." : "PROBAR ALERTA BODEGAS"}</span>
                   </button>
                   <span className="text-[10px] text-zinc-500">DESPACHO A TODAS</span>
@@ -1579,14 +1378,14 @@ export function IntegrationsTab() {
       {/* 07: SUPABASE DATABASE MODULE                                         */}
       {/* ==================================================================== */}
       {(activeSection === "all" || activeSection === "supabase") && (
-        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+        <div className="relative z-10 rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.1] text-zinc-300 flex items-center justify-center">
                 <Database className="w-4 h-4" />
               </div>
               <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400 font-bold block">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                   07 SUPABASE DATABASE
                 </span>
                 <h3 className="font-mono text-base font-bold text-white mt-0.5">
@@ -1598,7 +1397,7 @@ export function IntegrationsTab() {
               href="https://supabase.com/dashboard"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-xs text-emerald-400 hover:underline flex items-center gap-1"
+              className="font-mono text-xs text-zinc-400 hover:text-white hover:underline flex items-center gap-1"
             >
               <span>DASHBOARD</span>
               <ExternalLink className="w-3 h-3" />
@@ -1613,7 +1412,7 @@ export function IntegrationsTab() {
                 value={supabaseUrl}
                 onChange={(e) => setSupabaseUrl(e.target.value)}
                 placeholder="https://tu-proyecto.supabase.co"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1">
@@ -1622,7 +1421,7 @@ export function IntegrationsTab() {
                 rows={2}
                 value={supabaseAnonKey}
                 onChange={(e) => setSupabaseAnonKey(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500 resize-none break-all"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30 resize-none break-all"
               />
             </div>
             <div className="space-y-1">
@@ -1631,7 +1430,7 @@ export function IntegrationsTab() {
                 <button
                   type="button"
                   onClick={() => setShowSupabaseServiceKey(!showSupabaseServiceKey)}
-                  className="text-zinc-400 hover:text-emerald-400 flex items-center gap-1 cursor-pointer"
+                  className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                 >
                   {showSupabaseServiceKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                 </button>
@@ -1641,7 +1440,7 @@ export function IntegrationsTab() {
                 value={supabaseServiceRoleKey}
                 onChange={(e) => setSupabaseServiceRoleKey(e.target.value)}
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
           </div>
@@ -1653,7 +1452,7 @@ export function IntegrationsTab() {
                 const snip = `NEXT_PUBLIC_SUPABASE_URL="${supabaseUrl}"\nNEXT_PUBLIC_SUPABASE_ANON_KEY="${supabaseAnonKey}"\nSUPABASE_SERVICE_ROLE_KEY="${supabaseServiceRoleKey}"`;
                 markCopied("supabase_snip", snip);
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-emerald-400 text-xs font-bold border border-emerald-500/25 flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold border border-white/10 flex items-center gap-1.5 cursor-pointer"
             >
               {copiedKey === "supabase_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>COPIAR SUPABASE</span>
@@ -1666,14 +1465,14 @@ export function IntegrationsTab() {
       {/* 08: GOOGLE CLOUD & DRIVE API MODULE                                  */}
       {/* ==================================================================== */}
       {(activeSection === "all" || activeSection === "google") && (
-        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+        <div className="relative z-10 rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.1] text-zinc-300 flex items-center justify-center">
                 <Cloud className="w-4 h-4" />
               </div>
               <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-sky-400 font-bold block">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                   08 GOOGLE CLOUD ENGINE
                 </span>
                 <h3 className="font-mono text-base font-bold text-white mt-0.5">
@@ -1685,7 +1484,7 @@ export function IntegrationsTab() {
               href="https://console.cloud.google.com/apis/credentials"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-xs text-sky-400 hover:underline flex items-center gap-1"
+              className="font-mono text-xs text-zinc-400 hover:text-white hover:underline flex items-center gap-1"
             >
               <span>GCP CONSOLE</span>
               <ExternalLink className="w-3 h-3" />
@@ -1700,7 +1499,7 @@ export function IntegrationsTab() {
                 value={googleClientId}
                 onChange={(e) => setGoogleClientId(e.target.value)}
                 placeholder="tu_client_id.apps.googleusercontent.com"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-sky-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1">
@@ -1709,7 +1508,7 @@ export function IntegrationsTab() {
                 <button
                   type="button"
                   onClick={() => setShowGoogleSecret(!showGoogleSecret)}
-                  className="text-zinc-400 hover:text-sky-400 flex items-center gap-1 cursor-pointer"
+                  className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                 >
                   {showGoogleSecret ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                 </button>
@@ -1719,7 +1518,7 @@ export function IntegrationsTab() {
                 value={googleClientSecret}
                 onChange={(e) => setGoogleClientSecret(e.target.value)}
                 placeholder="GOCSPX-••••••••"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-sky-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1 sm:col-span-2">
@@ -1729,12 +1528,12 @@ export function IntegrationsTab() {
                   type="text"
                   value={googleRedirectUri}
                   onChange={(e) => setGoogleRedirectUri(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-sky-500"
+                  className="flex-1 px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                 />
                 <button
                   type="button"
                   onClick={() => markCopied("redir_uri", googleRedirectUri)}
-                  className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sky-400 font-bold border border-sky-500/25 cursor-pointer"
+                  className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 font-bold border border-white/10 cursor-pointer"
                 >
                   {copiedKey === "redir_uri" ? <Check className="w-3.5 h-3.5" /> : "COPIAR"}
                 </button>
@@ -1749,7 +1548,7 @@ export function IntegrationsTab() {
                 const snip = `GOOGLE_CLIENT_ID="${googleClientId}"\nGOOGLE_CLIENT_SECRET="${googleClientSecret}"\nGOOGLE_REDIRECT_URI="${googleRedirectUri}"`;
                 markCopied("gcloud_snip", snip);
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-sky-400 text-xs font-bold border border-sky-500/25 flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold border border-white/10 flex items-center gap-1.5 cursor-pointer"
             >
               {copiedKey === "gcloud_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>COPIAR GOOGLE CLOUD</span>
@@ -1762,14 +1561,14 @@ export function IntegrationsTab() {
       {/* 09: PAYPHONE ECUADOR PAYMENT GATEWAY MODULE                          */}
       {/* ==================================================================== */}
       {(activeSection === "all" || activeSection === "payphone") && (
-        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+        <div className="relative z-10 rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.1] text-zinc-300 flex items-center justify-center">
                 <CreditCard className="w-4 h-4" />
               </div>
               <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                   09 PAYPHONE ECUADOR
                 </span>
                 <h3 className="font-mono text-base font-bold text-white mt-0.5">
@@ -1784,7 +1583,7 @@ export function IntegrationsTab() {
                 type="button"
                 onClick={() => handleSavePayphoneMode("box")}
                 className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  payphoneMode === "box" ? "bg-amber-500 text-stone-950 font-bold shadow-xs" : "text-zinc-400 hover:text-white"
+                  payphoneMode === "box" ? "bg-white/15 text-white font-bold shadow-xs border border-white/20" : "text-zinc-400 hover:text-white"
                 }`}
               >
                 Cajita Embebida
@@ -1793,7 +1592,7 @@ export function IntegrationsTab() {
                 type="button"
                 onClick={() => handleSavePayphoneMode("redirect")}
                 className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  payphoneMode === "redirect" ? "bg-amber-500 text-stone-950 font-bold shadow-xs" : "text-zinc-400 hover:text-white"
+                  payphoneMode === "redirect" ? "bg-white/15 text-white font-bold shadow-xs border border-white/20" : "text-zinc-400 hover:text-white"
                 }`}
               >
                 Redirección 3D
@@ -1816,7 +1615,7 @@ export function IntegrationsTab() {
                 <button
                   type="button"
                   onClick={() => setShowPayphoneToken(!showPayphoneToken)}
-                  className="text-zinc-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer"
+                  className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                 >
                   {showPayphoneToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                 </button>
@@ -1826,7 +1625,7 @@ export function IntegrationsTab() {
                 value={payphoneToken}
                 onChange={(e) => setPayphoneToken(e.target.value)}
                 placeholder="eyJhbGciOiJSUzI1Ni..."
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1">
@@ -1836,7 +1635,7 @@ export function IntegrationsTab() {
                 value={payphoneStoreId}
                 onChange={(e) => setPayphoneStoreId(e.target.value)}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1">
@@ -1846,7 +1645,7 @@ export function IntegrationsTab() {
                 value={payphoneAppId}
                 onChange={(e) => setPayphoneAppId(e.target.value)}
                 placeholder="app_id_payphone"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1">
@@ -1854,7 +1653,7 @@ export function IntegrationsTab() {
               <select
                 value={payphoneEnv}
                 onChange={(e) => setPayphoneEnv(e.target.value as "sandbox" | "production")}
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               >
                 <option value="sandbox">Sandbox (Pruebas)</option>
                 <option value="production">Producción (Cobros Reales)</option>
@@ -1869,7 +1668,7 @@ export function IntegrationsTab() {
                 const snip = `PAYPHONE_TOKEN="${payphoneToken}"\nNEXT_PUBLIC_PAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_STORE_ID="${payphoneStoreId}"\nPAYPHONE_ENV="${payphoneEnv}"\nPAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                 markCopied("payphone_snip", snip);
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-400 text-xs font-bold border border-amber-500/25 flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold border border-white/10 flex items-center gap-1.5 cursor-pointer"
             >
               {copiedKey === "payphone_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>COPIAR PAYPHONE</span>
@@ -1882,14 +1681,14 @@ export function IntegrationsTab() {
       {/* 10: HOSTING, DOMAIN & MAPBOX MODULE                                  */}
       {/* ==================================================================== */}
       {(activeSection === "all" || activeSection === "hosting") && (
-        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+        <div className="relative z-10 rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.1] text-zinc-300 flex items-center justify-center">
                 <Globe className="w-4 h-4" />
               </div>
               <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-indigo-400 font-bold block">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                   10 HOSTING & MAPBOX
                 </span>
                 <h3 className="font-mono text-base font-bold text-white mt-0.5">
@@ -1907,7 +1706,7 @@ export function IntegrationsTab() {
                 value={siteUrl}
                 onChange={(e) => setSiteUrl(e.target.value)}
                 placeholder="https://tudominio.com"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1">
@@ -1917,7 +1716,7 @@ export function IntegrationsTab() {
                 value={mapboxToken}
                 onChange={(e) => setMapboxToken(e.target.value)}
                 placeholder="pk.eyJ1Ijoi..."
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="space-y-1 sm:col-span-2">
@@ -1927,7 +1726,7 @@ export function IntegrationsTab() {
                 value={masterAdminEmail}
                 onChange={(e) => setMasterAdminEmail(e.target.value)}
                 placeholder="admin@luminahome.com"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
           </div>
@@ -1939,7 +1738,7 @@ export function IntegrationsTab() {
                 const snip = `NEXT_PUBLIC_SITE_URL="${siteUrl}"\nNEXT_PUBLIC_APP_URL="${siteUrl}"\nNEXT_PUBLIC_MAPBOX_TOKEN="${mapboxToken}"\nMASTER_ADMIN_EMAIL="${masterAdminEmail}"`;
                 markCopied("host_snip", snip);
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-indigo-400 text-xs font-bold border border-indigo-500/25 flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold border border-white/10 flex items-center gap-1.5 cursor-pointer"
             >
               {copiedKey === "host_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>COPIAR HOSTING</span>
@@ -1952,14 +1751,14 @@ export function IntegrationsTab() {
       {/* 11: GOOGLE WALLET DIGITAL PASSES MODULE                              */}
       {/* ==================================================================== */}
       {(activeSection === "all" || activeSection === "wallets") && (
-        <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+        <div className="relative z-10 rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.1] text-zinc-300 flex items-center justify-center">
                 <Smartphone className="w-4 h-4" />
               </div>
               <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-rose-400 font-bold block">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                   11 GOOGLE WALLET PASSES
                 </span>
                 <h3 className="font-mono text-base font-bold text-white mt-0.5">
@@ -1973,20 +1772,29 @@ export function IntegrationsTab() {
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-zinc-400 text-[10px] uppercase">WALLET_SECRET_KEY</label>
-                <button
-                  type="button"
-                  onClick={() => setWalletSecretKey(generateRandomHexKey())}
-                  className="text-rose-400 hover:underline cursor-pointer"
-                >
-                  GENERAR CLAVE 32 BYTES
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowWalletSecret(!showWalletSecret)}
+                    className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                  >
+                    {showWalletSecret ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWalletSecretKey(generateRandomHexKey())}
+                    className="text-zinc-400 hover:text-white hover:underline cursor-pointer text-[10px]"
+                  >
+                    GENERAR CLAVE 32 BYTES
+                  </button>
+                </div>
               </div>
               <input
-                type="text"
+                type={showWalletSecret ? "text" : "password"}
                 value={walletSecretKey}
                 onChange={(e) => setWalletSecretKey(e.target.value)}
                 placeholder="clave_secreta_anti_enumeracion"
-                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-rose-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1997,7 +1805,7 @@ export function IntegrationsTab() {
                   value={googleWalletIssuerId}
                   onChange={(e) => setGoogleWalletIssuerId(e.target.value)}
                   placeholder="3388000000022XXXXXX"
-                  className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-rose-500"
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                 />
               </div>
               <div className="space-y-1">
@@ -2007,7 +1815,7 @@ export function IntegrationsTab() {
                   value={googleWalletClientEmail}
                   onChange={(e) => setGoogleWalletClientEmail(e.target.value)}
                   placeholder="wallet@proyecto.iam.gserviceaccount.com"
-                  className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-rose-500"
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161c] border border-white/10 text-white outline-none focus:border-white/30"
                 />
               </div>
             </div>
@@ -2020,7 +1828,7 @@ export function IntegrationsTab() {
                 const snip = `WALLET_SECRET_KEY="${walletSecretKey}"\nGOOGLE_WALLET_ISSUER_ID="${googleWalletIssuerId}"\nGOOGLE_WALLET_CLIENT_EMAIL="${googleWalletClientEmail}"`;
                 markCopied("wallet_snip", snip);
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-rose-400 text-xs font-bold border border-rose-500/25 flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold border border-white/10 flex items-center gap-1.5 cursor-pointer"
             >
               {copiedKey === "wallet_snip" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>COPIAR WALLET</span>
@@ -2032,16 +1840,16 @@ export function IntegrationsTab() {
       {/* ==================================================================== */}
       {/* 12: MASTER .ENV TERMINAL (FULL CODE VIEW WITH RARE-UI CODEBLOCK)     */}
       {/* ==================================================================== */}
-      <div className="relative z-10 rounded-[30px] bg-[#121217]/95 border border-white/[0.08] p-5 sm:p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_18px_40px_rgba(0,0,0,0.6)] space-y-4">
+      <div className="relative z-10 rounded-2xl bg-[#111113] border border-white/[0.08] p-5 sm:p-7 shadow-lg space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 mr-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 ring-1 ring-red-400/30" />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 ring-1 ring-amber-400/30" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 ring-1 ring-emerald-400/30" />
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-400" />
             </div>
             <div>
-              <span className="font-mono text-[11px] uppercase tracking-wider text-amber-500 font-bold block">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">
                 12 MASTER .ENV TERMINAL
               </span>
               <h3 className="font-mono text-base font-bold text-white mt-0.5">
@@ -2054,7 +1862,7 @@ export function IntegrationsTab() {
             <button
               type="button"
               onClick={() => markCopied("master_all", computedMasterEnv)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#ff5500] hover:bg-[#ff691e] text-white font-bold transition-all cursor-pointer shadow-[0_0_15px_rgba(255,85,0,0.3)] flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all cursor-pointer border border-white/10 flex items-center gap-1.5"
             >
               {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>COPIAR TODO</span>

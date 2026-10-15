@@ -15,7 +15,6 @@ import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButt
 import { HandwrittenHeroTitle } from "@/components/home/HandwrittenHeroTitle";
 import { useHeroTimePhase } from "@/hooks/useHeroTimePhase";
 import { DynamicHeroBackground } from "@/components/hero/DynamicHeroBackground";
-import { HeroTimePill } from "@/components/hero/HeroTimePill";
 
 const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
@@ -399,15 +398,6 @@ export default function Home() {
                   />
                   <span className="relative z-10">Artículos premium para tu hogar</span>
                 </motion.div>
-
-                <HeroTimePill
-                  phaseId={heroTime.phaseId}
-                  isAuto={heroTime.isAuto}
-                  formattedTime={heroTime.formattedTime}
-                  onSelectPhase={heroTime.setPhase}
-                  phases={heroTime.phases}
-                  phaseOrder={heroTime.phaseOrder}
-                />
               </div>
 
               <HandwrittenHeroTitle isReady={heroTime.isHeroReady} />
