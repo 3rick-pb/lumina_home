@@ -1618,18 +1618,59 @@ const handleConfirmDeleteNiche = async () => {
       />
     </Link>
 
-    {/* Center: beUI Arc Picker (Media Luna en modo "Top") */}
-    <div className="hidden md:flex items-center justify-center flex-1 max-w-[340px] lg:max-w-[420px] h-12 relative px-2">
-      <ArcPicker
-        options={arcPickerOptions}
-        value={activeTab}
-        onValueChange={(val) => setActiveTab(val as ProfileTab)}
-        side="top"
-        radius={220}
-        itemHeight={40}
-        visibleCount={5}
-        className="h-12"
-      />
+    {/* Center: beUI Arc Picker con Cyber Gaming HUD Deck */}
+    <div className="hidden md:flex items-center justify-center flex-1 max-w-[360px] lg:max-w-[440px] relative px-1">
+      <div className="relative w-full h-13 sm:h-14 rounded-2xl bg-[#0f0f13]/85 dark:bg-[#0c0c10]/90 backdrop-blur-2xl border border-amber-500/30 dark:border-amber-500/40 shadow-[0_4px_24px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.1),0_0_18px_rgba(245,158,11,0.1)] flex items-center justify-center overflow-hidden transition-all duration-300">
+        {/* Ambient cyber neon glow behind active selection */}
+        <div 
+          aria-hidden="true" 
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-8 rounded-full bg-amber-500/15 blur-xl -z-0"
+        />
+
+        {/* Micro Tech HUD corner telemetry accents */}
+        <div aria-hidden="true" className="pointer-events-none absolute top-1.5 left-2.5 text-[8px] font-mono font-bold text-amber-500/50 dark:text-amber-400/50 select-none tracking-widest flex items-center gap-1">
+          <span className="w-1 h-1 rounded-full bg-amber-400/80 animate-pulse" />
+          SYS.POS
+        </div>
+        <div aria-hidden="true" className="pointer-events-none absolute top-1.5 right-2.5 text-[8px] font-mono font-bold text-amber-500/50 dark:text-amber-400/50 select-none tracking-widest">
+          NAV // 01
+        </div>
+
+        {/* Arc trajectory curved guide */}
+        <svg 
+          aria-hidden="true" 
+          className="pointer-events-none absolute inset-x-0 bottom-0 w-full h-7 opacity-25 dark:opacity-30" 
+          viewBox="0 0 360 28" 
+          fill="none"
+        >
+          <path 
+            d="M 10 25 Q 180 8 350 25" 
+            stroke="url(#arc-track-grad)" 
+            strokeWidth="1.2" 
+            strokeDasharray="4 4" 
+          />
+          <defs>
+            <linearGradient id="arc-track-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0" />
+              <stop offset="50%" stopColor="#f59e0b" stopOpacity="1" />
+              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        {/* ArcPicker with Gaming Percentage */}
+        <ArcPicker
+          options={arcPickerOptions}
+          value={activeTab}
+          onValueChange={(val) => setActiveTab(val as ProfileTab)}
+          side="top"
+          radius={220}
+          itemHeight={40}
+          visibleCount={5}
+          showPercentage
+          className="h-full w-full"
+        />
+      </div>
     </div>
 
     {/* Right Search Input, Ver Tienda Button & Profile Badge (Desktop) */}
