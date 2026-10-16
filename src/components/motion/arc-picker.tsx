@@ -58,9 +58,8 @@ export type ArcPickerProps = Omit<
   name?: string;
   /** Whether to play crisp mechanical detent sounds during scrolling and selection. Defaults to true. */
   sound?: boolean;
-  /** Whether to render a cyber-gaming percentage indicator that tracks wheel position. Defaults to false. */
+  /** Whether to render percentage indicator below selected section. Defaults to false. */
   showPercentage?: boolean;
-  percentageClassName?: string;
 };
 
 // A short velocity projection lets a flick coast through several detents
@@ -74,75 +73,6 @@ const BRACKET_GAP = 4;
 const BRACKET_EXPANSION = 6;
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
-
-/**
- * High-End Cyber Gaming Percentage Indicator:
- * - Monospace bold gaming HUD font
- * - Always visible percentage readout
- * - Kinetic spring jump ("salto") whenever the number increases or decreases
- * - Micro status LED and cyber brackets [ 00% ]
- */
-export function GamingPercentageIndicator({
-  percentage,
-  direction = 1,
-  className,
-}: {
-  percentage: number;
-  direction?: 1 | -1;
-  className?: string;
-}) {
-  return (
-    <div 
-      className={cn(
-        "inline-flex items-center justify-center gap-1 select-none pointer-events-none",
-        className
-      )}
-      title="Indicador de Navegación"
-      aria-label={`Porcentaje actual: ${percentage}%`}
-    >
-      {/* Gaming Micro Status LED */}
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-300 shadow-[0_0_8px_#f59e0b] animate-pulse shrink-0" />
-      
-      {/* Gaming Bracket Left */}
-      <span className="text-[11px] font-mono font-black text-amber-500/80 dark:text-amber-400/80 select-none">
-        [
-      </span>
-
-      {/* Jumping Gaming Number */}
-      <div className="relative inline-flex items-center justify-center min-w-[28px] overflow-visible">
-        <motion.span
-          key={percentage}
-          initial={{
-            y: direction > 0 ? 8 : -8,
-            scale: 1.35,
-            opacity: 0.45,
-            filter: "brightness(2) drop-shadow(0 0 10px rgba(245,158,11,0.9))",
-          }}
-          animate={{
-            y: [direction > 0 ? 8 : -8, direction > 0 ? -2.5 : 2.5, 0],
-            scale: [1.35, 0.95, 1],
-            opacity: 1,
-            filter: "brightness(1) drop-shadow(0 0 5px rgba(245,158,11,0.6))",
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 550,
-            damping: 17,
-            mass: 0.45,
-          }}
-          className="inline-block font-mono font-black tabular-nums tracking-wider text-xs sm:text-[13px] text-amber-400 dark:text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.85)] select-none"
-        >
-          {percentage}%
-        </motion.span>
-      </div>
-
-      {/* Gaming Bracket Right */}
-      <span className="text-[11px] font-mono font-black text-amber-500/80 dark:text-amber-400/80 select-none">
-        ]
-      </span>
-    </div>
-  );
-}
 
 function ArcOption({
   option,
@@ -209,12 +139,12 @@ function ArcOption({
         if (!event.defaultPrevented) onSelect();
       }}
       className={cn(
-        "absolute rounded-md px-2 py-1 text-xs sm:text-sm font-mono whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-35 transition-colors",
+        "absolute rounded-md px-2 py-1 text-xs sm:text-sm font-mono whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-[#e07a3f] disabled:cursor-not-allowed disabled:opacity-35 transition-colors",
         horizontal && "text-center",
         !horizontal && (side === "left" ? "text-right" : "text-left"),
         selected
-          ? "text-amber-400 dark:text-amber-300 font-black tracking-wide drop-shadow-[0_0_10px_rgba(245,158,11,0.6)]"
-          : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium",
+          ? "text-[#e07a3f] dark:text-[#f59e0b] font-bold"
+          : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white",
       )}
       style={{
         top: horizontal ? (side === "top" ? 36 : "calc(100% - 36px)") : "50%",
@@ -246,12 +176,16 @@ function ArcSelectionFrame({
   side,
   verticalAnchor,
   visible,
+  percentage,
+  direction = 1,
 }: {
   width: MotionValue<number>;
   expansion: MotionValue<number>;
   side: ArcPickerSide;
   verticalAnchor: number | string;
   visible: boolean;
+  percentage?: number;
+  direction?: 1 | -1;
 }) {
   const horizontal = side === "top" || side === "bottom";
   const leading = useTransform<number, string>(
@@ -270,13 +204,13 @@ function ArcSelectionFrame({
       return `translate3d(${extent + gap}px, -50%, 0) scaleY(${1 - clamp(amount, 0, 1) * 0.08})`;
     },
   );
-  const opacity = useTransform(width, (size) => (size > 0 ? 0.9 : 0));
+  const opacity = useTransform(width, (size) => (size > 0 ? 0.85 : 0));
 
   return (
     <div
       aria-hidden="true"
       data-slot="arc-picker-selection-frame"
-      className="pointer-events-none absolute h-0 w-0 text-sm font-black text-amber-500 dark:text-amber-400 font-mono drop-shadow-[0_0_8px_rgba(245,158,11,0.7)]"
+      className="pointer-events-none absolute h-0 w-0 text-sm font-bold text-[#e07a3f] dark:text-[#f59e0b] font-mono"
       style={{
         top: horizontal ? (side === "top" ? 36 : "calc(100% - 36px)") : "50%",
         left: horizontal ? "50%" : verticalAnchor,
@@ -299,6 +233,33 @@ function ArcSelectionFrame({
       >
         ]
       </motion.span>
+
+      {percentage !== undefined && (
+        <span className="absolute left-1/2 -translate-x-1/2 top-4 flex items-center justify-center text-[10px] sm:text-[11px] font-mono font-bold text-[#e07a3f] dark:text-[#f59e0b] select-none pointer-events-none tabular-nums tracking-tight">
+          <motion.span
+            key={percentage}
+            initial={{
+              y: (direction ?? 1) > 0 ? 3 : -3,
+              scale: 1.18,
+              opacity: 0.65,
+            }}
+            animate={{
+              y: 0,
+              scale: 1,
+              opacity: 1,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 18,
+              mass: 0.4,
+            }}
+            className="inline-block"
+          >
+            {percentage}%
+          </motion.span>
+        </span>
+      )}
     </div>
   );
 }
@@ -319,7 +280,6 @@ export function ArcPicker({
   name,
   sound = true,
   showPercentage = false,
-  percentageClassName,
   className,
   style,
   onKeyDown,
@@ -1062,6 +1022,8 @@ export function ArcPicker({
         side={side}
         verticalAnchor={verticalAnchor}
         visible={selectedValue !== undefined}
+        percentage={showPercentage ? progressPercent : undefined}
+        direction={percentDirection}
       />
       {!options.length && (
         <span className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">

@@ -66,7 +66,7 @@ import {
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
-import { ArcPicker, GamingPercentageIndicator, type ArcPickerOption } from "@/components/motion/arc-picker";
+import { ArcPicker, type ArcPickerOption } from "@/components/motion/arc-picker";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import {
   CatalogTabSkeleton,
@@ -630,37 +630,6 @@ export default function ProfilePage() {
       label: t.label,
     }));
   }, [topNavTabs]);
-
-  // Real-time navigation percentage tracking for Gaming Percentage HUD
-  const currentTabIndex = useMemo(() => {
-    const idx = topNavTabs.findIndex((t) => t.id === activeTab);
-    return Math.max(0, idx);
-  }, [topNavTabs, activeTab]);
-
-  const targetTabPercent = useMemo(() => {
-    const max = Math.max(1, topNavTabs.length - 1);
-    return Math.round((currentTabIndex / max) * 100);
-  }, [currentTabIndex, topNavTabs.length]);
-
-  const [activeTabPercent, setActiveTabPercent] = useState(targetTabPercent);
-  const [tabDirection, setTabDirection] = useState<1 | -1>(1);
-  const prevTabPercentRef = useRef(targetTabPercent);
-
-  useEffect(() => {
-    if (targetTabPercent !== prevTabPercentRef.current) {
-      setTabDirection(targetTabPercent >= prevTabPercentRef.current ? 1 : -1);
-      prevTabPercentRef.current = targetTabPercent;
-      setActiveTabPercent(targetTabPercent);
-    }
-  }, [targetTabPercent]);
-
-  const handleArcProgressChange = useCallback((p: number) => {
-    if (p !== prevTabPercentRef.current) {
-      setTabDirection(p >= prevTabPercentRef.current ? 1 : -1);
-      prevTabPercentRef.current = p;
-      setActiveTabPercent(p);
-    }
-  }, []);
 
   const TABS_PER_PAGE = 2;
   const tabPages = useMemo(() => {
@@ -1649,30 +1618,19 @@ const handleConfirmDeleteNiche = async () => {
       />
     </Link>
 
-    {/* Center: beUI Arc Picker con Indicador de Porcentaje Gaming (Limpio, Sin Cuadros) */}
-    <div className="hidden md:flex flex-col items-center justify-center flex-1 max-w-[340px] lg:max-w-[420px] relative select-none">
-      {/* Indicador de Porcentaje Gaming (Siempre Visible, Letras Gaming, Salto Kinético) */}
-      <div className="flex items-center justify-center mb-0.5 z-20">
-        <GamingPercentageIndicator
-          percentage={activeTabPercent}
-          direction={tabDirection}
-        />
-      </div>
-
-      {/* Rueda de Navegación ArcPicker - Completamente limpia y flotante */}
-      <div className="w-full flex items-center justify-center overflow-visible">
-        <ArcPicker
-          options={arcPickerOptions}
-          value={activeTab}
-          onValueChange={(val) => setActiveTab(val as ProfileTab)}
-          onProgressChange={handleArcProgressChange}
-          side="top"
-          radius={220}
-          itemHeight={40}
-          visibleCount={5}
-          className="h-10 w-full"
-        />
-      </div>
+    {/* Center: beUI Arc Picker (Media Luna en modo "Top") */}
+    <div className="hidden md:flex items-center justify-center flex-1 max-w-[340px] lg:max-w-[420px] h-12 relative px-2">
+      <ArcPicker
+        options={arcPickerOptions}
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as ProfileTab)}
+        side="top"
+        radius={220}
+        itemHeight={40}
+        visibleCount={5}
+        showPercentage
+        className="h-12"
+      />
     </div>
 
     {/* Right Search Input, Ver Tienda Button & Profile Badge (Desktop) */}
