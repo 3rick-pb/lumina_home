@@ -94,25 +94,22 @@ export function GamingPercentageIndicator({
   return (
     <div 
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full",
-        "bg-black/75 dark:bg-black/90 border border-amber-500/40 dark:border-amber-400/50",
-        "shadow-[0_0_12px_rgba(245,158,11,0.25),inset_0_1px_1px_rgba(255,255,255,0.12)]",
-        "backdrop-blur-md select-none pointer-events-none transition-shadow duration-300",
+        "inline-flex items-center justify-center gap-1 select-none pointer-events-none",
         className
       )}
       title="Indicador de Navegación"
       aria-label={`Porcentaje actual: ${percentage}%`}
     >
       {/* Gaming Micro Status LED */}
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-300 shadow-[0_0_6px_#f59e0b] animate-pulse shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-300 shadow-[0_0_8px_#f59e0b] animate-pulse shrink-0" />
       
       {/* Gaming Bracket Left */}
-      <span className="text-[10px] font-mono font-black text-amber-500/80 dark:text-amber-400/80 select-none">
+      <span className="text-[11px] font-mono font-black text-amber-500/80 dark:text-amber-400/80 select-none">
         [
       </span>
 
       {/* Jumping Gaming Number */}
-      <div className="relative inline-flex items-center justify-center min-w-[32px] overflow-visible">
+      <div className="relative inline-flex items-center justify-center min-w-[28px] overflow-visible">
         <motion.span
           key={percentage}
           initial={{
@@ -125,7 +122,7 @@ export function GamingPercentageIndicator({
             y: [direction > 0 ? 8 : -8, direction > 0 ? -2.5 : 2.5, 0],
             scale: [1.35, 0.95, 1],
             opacity: 1,
-            filter: "brightness(1) drop-shadow(0 0 4px rgba(245,158,11,0.5))",
+            filter: "brightness(1) drop-shadow(0 0 5px rgba(245,158,11,0.6))",
           }}
           transition={{
             type: "spring",
@@ -133,14 +130,14 @@ export function GamingPercentageIndicator({
             damping: 17,
             mass: 0.45,
           }}
-          className="inline-block font-mono font-black tabular-nums tracking-wider text-xs sm:text-[12.5px] text-amber-400 dark:text-amber-300 select-none"
+          className="inline-block font-mono font-black tabular-nums tracking-wider text-xs sm:text-[13px] text-amber-400 dark:text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.85)] select-none"
         >
-          {String(percentage).padStart(2, "0")}%
+          {percentage}%
         </motion.span>
       </div>
 
       {/* Gaming Bracket Right */}
-      <span className="text-[10px] font-mono font-black text-amber-500/80 dark:text-amber-400/80 select-none">
+      <span className="text-[11px] font-mono font-black text-amber-500/80 dark:text-amber-400/80 select-none">
         ]
       </span>
     </div>
@@ -160,7 +157,6 @@ function ArcOption({
   disabled,
   setRef,
   onSelect,
-  showPercentage,
 }: {
   option: ArcPickerOption;
   index: number;
@@ -174,7 +170,6 @@ function ArcOption({
   disabled: boolean;
   setRef: (element: HTMLButtonElement | null) => void;
   onSelect: () => void;
-  showPercentage?: boolean;
 }) {
   const horizontal = side === "top" || side === "bottom";
   const transform = useTransform(position, (at) => {
@@ -222,7 +217,7 @@ function ArcOption({
           : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium",
       )}
       style={{
-        top: horizontal ? (side === "top" ? (showPercentage ? 38 : 36) : "calc(100% - 36px)") : "50%",
+        top: horizontal ? (side === "top" ? 36 : "calc(100% - 36px)") : "50%",
         left: horizontal ? "50%" : verticalAnchor,
         transformOrigin: horizontal
           ? "center"
@@ -251,14 +246,12 @@ function ArcSelectionFrame({
   side,
   verticalAnchor,
   visible,
-  showPercentage,
 }: {
   width: MotionValue<number>;
   expansion: MotionValue<number>;
   side: ArcPickerSide;
   verticalAnchor: number | string;
   visible: boolean;
-  showPercentage?: boolean;
 }) {
   const horizontal = side === "top" || side === "bottom";
   const leading = useTransform<number, string>(
@@ -285,7 +278,7 @@ function ArcSelectionFrame({
       data-slot="arc-picker-selection-frame"
       className="pointer-events-none absolute h-0 w-0 text-sm font-black text-amber-500 dark:text-amber-400 font-mono drop-shadow-[0_0_8px_rgba(245,158,11,0.7)]"
       style={{
-        top: horizontal ? (side === "top" ? (showPercentage ? 38 : 36) : "calc(100% - 36px)") : "50%",
+        top: horizontal ? (side === "top" ? 36 : "calc(100% - 36px)") : "50%",
         left: horizontal ? "50%" : verticalAnchor,
         visibility: visible ? undefined : "hidden",
       }}
@@ -1043,22 +1036,6 @@ export function ArcPicker({
           disabled={disabled}
         />
       )}
-      {showPercentage && (
-        <div 
-          className="absolute z-30 pointer-events-none select-none"
-          style={{
-            top: horizontal ? (side === "top" ? 14 : "calc(100% - 14px)") : 14,
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <GamingPercentageIndicator
-            percentage={progressPercent}
-            direction={percentDirection}
-            className={percentageClassName}
-          />
-        </div>
-      )}
       {options.map((option, index) => (
         <ArcOption
           key={option.value}
@@ -1072,7 +1049,6 @@ export function ArcPicker({
           side={side}
           selected={option.value === selectedValue}
           disabled={disabled}
-          showPercentage={showPercentage}
           setRef={(element) => {
             if (element) buttons.current.set(option.value, element);
             else buttons.current.delete(option.value);
@@ -1086,7 +1062,6 @@ export function ArcPicker({
         side={side}
         verticalAnchor={verticalAnchor}
         visible={selectedValue !== undefined}
-        showPercentage={showPercentage}
       />
       {!options.length && (
         <span className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">

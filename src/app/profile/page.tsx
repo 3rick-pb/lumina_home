@@ -66,7 +66,7 @@ import {
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
-import { ArcPicker, type ArcPickerOption } from "@/components/motion/arc-picker";
+import { ArcPicker, GamingPercentageIndicator, type ArcPickerOption } from "@/components/motion/arc-picker";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import {
   CatalogTabSkeleton,
@@ -630,6 +630,37 @@ export default function ProfilePage() {
       label: t.label,
     }));
   }, [topNavTabs]);
+
+  // Real-time navigation percentage tracking for Gaming Percentage HUD
+  const currentTabIndex = useMemo(() => {
+    const idx = topNavTabs.findIndex((t) => t.id === activeTab);
+    return Math.max(0, idx);
+  }, [topNavTabs, activeTab]);
+
+  const targetTabPercent = useMemo(() => {
+    const max = Math.max(1, topNavTabs.length - 1);
+    return Math.round((currentTabIndex / max) * 100);
+  }, [currentTabIndex, topNavTabs.length]);
+
+  const [activeTabPercent, setActiveTabPercent] = useState(targetTabPercent);
+  const [tabDirection, setTabDirection] = useState<1 | -1>(1);
+  const prevTabPercentRef = useRef(targetTabPercent);
+
+  useEffect(() => {
+    if (targetTabPercent !== prevTabPercentRef.current) {
+      setTabDirection(targetTabPercent >= prevTabPercentRef.current ? 1 : -1);
+      prevTabPercentRef.current = targetTabPercent;
+      setActiveTabPercent(targetTabPercent);
+    }
+  }, [targetTabPercent]);
+
+  const handleArcProgressChange = useCallback((p: number) => {
+    if (p !== prevTabPercentRef.current) {
+      setTabDirection(p >= prevTabPercentRef.current ? 1 : -1);
+      prevTabPercentRef.current = p;
+      setActiveTabPercent(p);
+    }
+  }, []);
 
   const TABS_PER_PAGE = 2;
   const tabPages = useMemo(() => {
@@ -1618,57 +1649,28 @@ const handleConfirmDeleteNiche = async () => {
       />
     </Link>
 
-    {/* Center: beUI Arc Picker con Cyber Gaming HUD Deck */}
-    <div className="hidden md:flex items-center justify-center flex-1 max-w-[360px] lg:max-w-[440px] relative px-1">
-      <div className="relative w-full h-13 sm:h-14 rounded-2xl bg-[#0f0f13]/85 dark:bg-[#0c0c10]/90 backdrop-blur-2xl border border-amber-500/30 dark:border-amber-500/40 shadow-[0_4px_24px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.1),0_0_18px_rgba(245,158,11,0.1)] flex items-center justify-center overflow-hidden transition-all duration-300">
-        {/* Ambient cyber neon glow behind active selection */}
-        <div 
-          aria-hidden="true" 
-          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-8 rounded-full bg-amber-500/15 blur-xl -z-0"
+    {/* Center: beUI Arc Picker con Indicador de Porcentaje Gaming (Limpio, Sin Cuadros) */}
+    <div className="hidden md:flex flex-col items-center justify-center flex-1 max-w-[340px] lg:max-w-[420px] relative select-none">
+      {/* Indicador de Porcentaje Gaming (Siempre Visible, Letras Gaming, Salto Kinético) */}
+      <div className="flex items-center justify-center mb-0.5 z-20">
+        <GamingPercentageIndicator
+          percentage={activeTabPercent}
+          direction={tabDirection}
         />
+      </div>
 
-        {/* Micro Tech HUD corner telemetry accents */}
-        <div aria-hidden="true" className="pointer-events-none absolute top-1.5 left-2.5 text-[8px] font-mono font-bold text-amber-500/50 dark:text-amber-400/50 select-none tracking-widest flex items-center gap-1">
-          <span className="w-1 h-1 rounded-full bg-amber-400/80 animate-pulse" />
-          SYS.POS
-        </div>
-        <div aria-hidden="true" className="pointer-events-none absolute top-1.5 right-2.5 text-[8px] font-mono font-bold text-amber-500/50 dark:text-amber-400/50 select-none tracking-widest">
-          NAV // 01
-        </div>
-
-        {/* Arc trajectory curved guide */}
-        <svg 
-          aria-hidden="true" 
-          className="pointer-events-none absolute inset-x-0 bottom-0 w-full h-7 opacity-25 dark:opacity-30" 
-          viewBox="0 0 360 28" 
-          fill="none"
-        >
-          <path 
-            d="M 10 25 Q 180 8 350 25" 
-            stroke="url(#arc-track-grad)" 
-            strokeWidth="1.2" 
-            strokeDasharray="4 4" 
-          />
-          <defs>
-            <linearGradient id="arc-track-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0" />
-              <stop offset="50%" stopColor="#f59e0b" stopOpacity="1" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-        </svg>
-
-        {/* ArcPicker with Gaming Percentage */}
+      {/* Rueda de Navegación ArcPicker - Completamente limpia y flotante */}
+      <div className="w-full flex items-center justify-center overflow-visible">
         <ArcPicker
           options={arcPickerOptions}
           value={activeTab}
           onValueChange={(val) => setActiveTab(val as ProfileTab)}
+          onProgressChange={handleArcProgressChange}
           side="top"
           radius={220}
           itemHeight={40}
           visibleCount={5}
-          showPercentage
-          className="h-full w-full"
+          className="h-10 w-full"
         />
       </div>
     </div>
