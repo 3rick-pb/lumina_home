@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -16,7 +15,6 @@ import {
   ChevronRight
 } from "lucide-react";
 import MicrosoftExcel from "@thesvg/react/microsoft-excel";
-import { MetalFx, useMetalBend, BEND, setSharedPresetMode, PRESETS } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
@@ -104,6 +102,163 @@ interface ExcelExportRadialMenuProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+/**
+ * Authentic Thinking Orbs Physical Liquid Metal Animated Ring:
+ * - Continuously generates an ultra-fluid, hardware-accelerated metallic orbit at 60/120 FPS
+ * - Polished liquid chrome, titanium depth, specular flares & subtle prismatic dispersion
+ * - Dynamic cursor lean on desktop with fine pointers (mouse)
+ * - 100% flawless compatibility on iOS Safari, Android Chrome, mobile and tablets
+ */
+function LiquidMetalRing({
+  size = 48,
+  hasFinePointer = false,
+}: {
+  size?: number;
+  hasFinePointer?: boolean;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pointerPosRef = useRef<{ x: number; y: number; active: boolean }>({
+    x: 0,
+    y: 0,
+    active: false,
+  });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let rafId: number;
+    let angle = 0;
+    let currentDisplayAngle = 0;
+    const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2.5) : 1;
+    const pxSize = size * dpr;
+    canvas.width = pxSize;
+    canvas.height = pxSize;
+
+    const cx = pxSize / 2;
+    const cy = pxSize / 2;
+    const ringThickness = 2.65 * dpr;
+    const outerR = cx - 1.2 * dpr;
+    const innerR = outerR - ringThickness;
+    const midR = (innerR + outerR) / 2;
+
+    const render = () => {
+      ctx.clearRect(0, 0, pxSize, pxSize);
+
+      // Smooth liquid metal orbit (~7.5s cycle)
+      angle = (angle + 0.024) % (Math.PI * 2);
+
+      let targetAngle = angle;
+      if (hasFinePointer && pointerPosRef.current.active) {
+        const dx = pointerPosRef.current.x - size / 2;
+        const dy = pointerPosRef.current.y - size / 2;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1) {
+          targetAngle = Math.atan2(dy, dx);
+        }
+      }
+
+      // Viscous hydrodynamic inertia lerp
+      let diff = (targetAngle - currentDisplayAngle) % (Math.PI * 2);
+      if (diff < -Math.PI) diff += Math.PI * 2;
+      if (diff > Math.PI) diff -= Math.PI * 2;
+      currentDisplayAngle += diff * 0.12;
+
+      const steps = 72;
+      const stepAngle = (Math.PI * 2) / steps;
+
+      ctx.save();
+      ctx.lineWidth = ringThickness;
+      ctx.lineCap = "round";
+
+      for (let i = 0; i < steps; i++) {
+        const a1 = i * stepAngle;
+        const a2 = (i + 1) * stepAngle + 0.015;
+
+        let relA = (a1 - currentDisplayAngle) % (Math.PI * 2);
+        if (relA < -Math.PI) relA += Math.PI * 2;
+        if (relA > Math.PI) relA -= Math.PI * 2;
+
+        const cosVal = Math.cos(relA);
+        const spec = cosVal > 0 ? Math.pow(cosVal, 5) : 0;
+        const oppCos = Math.cos(relA + Math.PI);
+        const oppSpec = oppCos > 0 ? Math.pow(oppCos, 6) * 0.42 : 0;
+
+        const ripple = Math.sin(a1 * 3 + angle * 2) * 0.12 + Math.cos(a1 * 5 - angle) * 0.08;
+        const intensity = Math.min(1.0, 0.32 + ripple + spec * 0.68 + oppSpec);
+        const chroma = Math.sin(relA * 2) * 35;
+
+        const r = Math.min(255, Math.round(155 * intensity + 100 * spec + chroma));
+        const g = Math.min(255, Math.round(170 * intensity + 85 * spec - chroma * 0.4));
+        const b = Math.min(255, Math.round(195 * intensity + 60 * spec + chroma * 1.1));
+
+        ctx.strokeStyle = `rgb(${r},${g},${b})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, midR, a1, a2);
+        ctx.stroke();
+      }
+
+      // Outer and inner razor-thin metallic bevels for physical depth
+      ctx.lineWidth = 0.9 * dpr;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.62)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      rafId = requestAnimationFrame(render);
+    };
+
+    rafId = requestAnimationFrame(render);
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!hasFinePointer) return;
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const dist = Math.hypot(px - size / 2, py - size / 2);
+      if (dist < size * 2.5) {
+        pointerPosRef.current = { x: px, y: py, active: true };
+      } else {
+        pointerPosRef.current.active = false;
+      }
+    };
+
+    const onPointerLeave = () => {
+      pointerPosRef.current.active = false;
+    };
+
+    if (hasFinePointer) {
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointerleave", onPointerLeave, { passive: true });
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (hasFinePointer) {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerleave", onPointerLeave);
+      }
+    };
+  }, [size, hasFinePointer]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none absolute inset-0 z-20 rounded-full"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
 export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuProps = {}) {
   const brand = useBrand();
   const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +267,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
   const [successExport, setSuccessExport] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
   const [hasFinePointer, setHasFinePointer] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(pointer: fine)").matches;
@@ -120,7 +274,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const metalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -129,102 +282,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
     const handler = (e: MediaQueryListEvent) => setHasFinePointer(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  // Immediate detection of WebGL canvas attachment
-  useEffect(() => {
-    const check = () => {
-      if (metalRef.current?.querySelector("canvas.metal-fx-canvas")) {
-        setCanvasReady(true);
-        return true;
-      }
-      return false;
-    };
-
-    if (check()) return;
-
-    let obs: MutationObserver | null = null;
-    if (metalRef.current) {
-      obs = new MutationObserver(() => {
-        if (check() && obs) obs.disconnect();
-      });
-      obs.observe(metalRef.current, { childList: true, subtree: true });
-    }
-
-    const interval = setInterval(() => {
-      if (check()) {
-        clearInterval(interval);
-        if (obs) obs.disconnect();
-      }
-    }, 30);
-
-    return () => {
-      if (obs) obs.disconnect();
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Liquid metal bend effect:
-  // - Immediately active upon entering Mi Perfil when a mouse/cursor is detected
-  // - Deactivated completely when no mouse/cursor is detected (touch screens / mobile / tablets)
-  useMetalBend(
-    metalRef,
-    useCallback(
-      () => ({
-        ...BEND,
-        enabled: Boolean(hasFinePointer && canvasReady),
-        applyTo: "ring" as const,
-        strength: 1,
-        reach: 26,
-        blob: 10,
-        liquidBlob: 14,
-        maxDisp: 15,
-        liquid: 12,
-        gain: 25,
-        pressGain: 1.0,
-        pullGain: 1.2,
-      }),
-      [hasFinePointer, canvasReady]
-    )
-  );
-
-  // Autonomous fluid orbit of the chromatic liquid metal shader:
-  // Dynamically rotates the WebGL shader's u_angle across 360 degrees,
-  // ensuring the chromatic reflections, liquid waves, and iridescent glints flow
-  // continuously along the entire perimeter of the button on mobile, tablets,
-  // and touch screens (where there is no active cursor hover).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let rafId: number;
-    let angle = 70;
-    const basePreset = PRESETS.chromatic.modes.dark;
-
-    const orbitLoop = () => {
-      // 0.85 degrees per frame -> continuous ~7-second full orbit cycle
-      angle = (angle + 0.85) % 360;
-      try {
-        setSharedPresetMode({
-          ...basePreset,
-          angle,
-          speed: 1.2,
-          repetition: 2.4,
-          softness: 0.08,
-          shiftRed: 0.85,
-          shiftBlue: 0.85,
-          distortion: 0.18,
-          contour: 0.45,
-          colorTint: "#88ccff55",
-          shaderOpacity: 1,
-        });
-      } catch {}
-      rafId = requestAnimationFrame(orbitLoop);
-    };
-
-    rafId = requestAnimationFrame(orbitLoop);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-    };
   }, []);
 
   useEffect(() => {
@@ -999,54 +1056,35 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC THINKING ORBS METAL-FX CHROMATIC LIQUID SHADER */}
+        {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC PHYSICAL LIQUID METAL EFFECT */}
         <div className="relative inline-flex items-center justify-center shrink-0">
           {/* Ambient chromatic light spill - highly saturated and vivid in Light Mode, deep celestial aura in Dark Mode */}
           <div 
             aria-hidden="true" 
-            className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-tr from-emerald-500/45 via-cyan-500/50 to-blue-600/45 dark:from-cyan-500/30 dark:via-blue-500/25 dark:to-purple-500/30 blur-md sm:blur-lg opacity-90 dark:opacity-70 -z-10" 
+            className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-emerald-500/50 via-teal-400/50 to-cyan-500/50 dark:from-cyan-500/35 dark:via-blue-500/30 dark:to-purple-500/35 blur-md sm:blur-lg opacity-90 dark:opacity-75 -z-10" 
           />
           <div 
             aria-hidden="true" 
-            className="pointer-events-none absolute -inset-3.5 rounded-full bg-gradient-to-tr from-cyan-400/40 via-teal-400/35 to-indigo-500/40 dark:from-cyan-500/20 dark:via-blue-500/15 dark:to-purple-500/20 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
+            className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-tr from-cyan-400/40 via-teal-400/35 to-indigo-500/40 dark:from-cyan-500/25 dark:via-blue-500/20 dark:to-purple-500/25 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
           />
 
-          <MetalFx
-            ref={metalRef}
-            preset="chromatic"
-            variant="circle"
-            theme="dark"
-            innerShadow
-            ringCssPx={3.5}
-            shaderScale={1.3}
-            strength={1}
-            className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
+          <div
+            className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full bg-[#121316] shadow-[0_6px_20px_rgba(0,0,0,0.45)]"
             style={{
               width: isMobile ? 44 : 48,
               height: isMobile ? 44 : 48,
-              borderRadius: "9999px",
             }}
           >
+            {/* Liquid Metal Ring - continuous 60/120 FPS fluid orbit on mobile/tablets, dynamic cursor follow on desktop */}
+            <LiquidMetalRing size={isMobile ? 44 : 48} hasFinePointer={hasFinePointer} />
+
             <button
               type="button"
               onClick={handleToggleMenu}
               aria-label="Exportar datos a Excel"
               title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0"
-              style={{
-                background: "transparent",
-              }}
+              className="relative z-30 h-full w-full rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
             >
-              {/* Pulse wave on open */}
-              {isOpen && (
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0.8 }}
-                  animate={{ scale: 1.3, opacity: 0 }}
-                  transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
-                  className="pointer-events-none absolute inset-0 rounded-full border-2 border-rose-400"
-                />
-              )}
-
               <motion.div
                 animate={{ 
                   rotate: isOpen ? 90 : 0, 
@@ -1062,7 +1100,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                 )}
               </motion.div>
             </button>
-          </MetalFx>
+          </div>
         </div>
       </div>
 
