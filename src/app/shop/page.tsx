@@ -209,12 +209,12 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
       {/* Velo degradado verde bosque brandeado desde abajo hacia arriba (Puro CSS, 0% costo GPU, 120 FPS) */}
       <div
         aria-hidden="true"
-        className={`fixed bottom-0 left-0 right-0 h-28 sm:h-36 lg:h-44 pointer-events-none z-30 transition-opacity duration-500 ease-out ${
+        className={`fixed bottom-0 left-0 right-0 h-36 sm:h-48 lg:h-56 pointer-events-none z-30 transition-opacity duration-700 ease-out ${
           showCatalogGradient ? "opacity-100" : "opacity-0"
         }`}
         style={{
           background:
-            "linear-gradient(to top, rgba(30, 38, 24, 0.90) 0%, rgba(30, 38, 24, 0.45) 45%, rgba(30, 38, 24, 0.10) 75%, transparent 100%)",
+            "linear-gradient(to top, rgba(20, 27, 16, 0.96) 0%, rgba(20, 27, 16, 0.75) 25%, rgba(20, 27, 16, 0.40) 55%, rgba(20, 27, 16, 0.10) 80%, transparent 100%)",
         }}
       />
     </div>

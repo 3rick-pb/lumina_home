@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch } from "lucide-react";
+import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
@@ -152,6 +152,7 @@ export default function Home() {
   
   // Sincronización precisa de la animación caligráfica con el fade-out del splash
   const [startHeroAnimation, setStartHeroAnimation] = useState(false);
+  const [showAllNicheFilters, setShowAllNicheFilters] = useState(false);
 
   const heroRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
@@ -694,10 +695,10 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Barra de Filtros / Nichos en un nivel inferior con scroll suave y sin cortes */}
-              <div className="relative w-full overflow-hidden">
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap px-1 py-1 w-full">
-                  {["Todos", ...categories].map((filter) => {
+              {/* Barra de Filtros / Nichos Rediseñada: 5 primeros + Botón Ver más interactivo */}
+              <div className="relative w-full">
+                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap py-1 px-0.5 w-full">
+                  {(showAllNicheFilters ? ["Todos", ...categories] : ["Todos", ...categories].slice(0, 5)).map((filter) => {
                     const isActive = activeFilter === filter;
                     return (
                       <button 
@@ -711,16 +712,39 @@ export default function Home() {
                         onMouseEnter={() => {
                           if (filter !== "Todos") handlePointerEnterCategory(filter);
                         }}
-                        className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-transform duration-200 ease-out cursor-pointer ${
+                        className={`relative px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 ease-out cursor-pointer shrink-0 select-none ${
                           isActive 
-                            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs' 
-                            : 'bg-white dark:bg-zinc-800/80 border border-black/5 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-gray-900 dark:hover:text-white'
+                            ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-md shadow-black/10 dark:shadow-white/10 ring-1 ring-black/10 dark:ring-white/20 scale-[1.02]' 
+                            : 'bg-white/80 dark:bg-[#1e1e20]/80 backdrop-blur-md text-gray-600 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white border border-black/[0.06] dark:border-white/[0.08] hover:bg-white dark:hover:bg-[#252528] hover:shadow-xs active:scale-95'
                         }`}
                       >
                         {filter}
+                        {isActive && (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 ml-1.5 align-middle" />
+                        )}
                       </button>
                     );
                   })}
+
+                  {/* Botón Ver más / Ver menos si hay más de 5 nichos */}
+                  {(["Todos", ...categories].length > 5) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllNicheFilters(!showAllNicheFilters)}
+                      className="group relative px-3.5 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ease-out cursor-pointer shrink-0 flex items-center gap-1.5 bg-[#8c9276]/15 dark:bg-[#8c9276]/25 text-[#3e482b] dark:text-[#d4dbbe] border border-[#8c9276]/30 dark:border-[#8c9276]/40 hover:bg-[#8c9276]/25 dark:hover:bg-[#8c9276]/35 active:scale-95 shadow-2xs"
+                    >
+                      <span>
+                        {showAllNicheFilters 
+                          ? "Ver menos" 
+                          : `Ver más (+${["Todos", ...categories].length - 5})`}
+                      </span>
+                      <ChevronDown 
+                        className={`w-3.5 h-3.5 transition-transform duration-300 ease-out ${
+                          showAllNicheFilters ? "rotate-180" : "group-hover:translate-y-0.5"
+                        }`} 
+                      />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -759,12 +783,12 @@ export default function Home() {
       {/* Velo degradado verde bosque brandeado desde abajo hacia arriba (Puro CSS, 0% costo GPU, 120 FPS) */}
       <div
         aria-hidden="true"
-        className={`fixed bottom-0 left-0 right-0 h-28 sm:h-36 lg:h-44 pointer-events-none z-30 transition-opacity duration-500 ease-out ${
+        className={`fixed bottom-0 left-0 right-0 h-36 sm:h-48 lg:h-56 pointer-events-none z-30 transition-opacity duration-700 ease-out ${
           showCatalogGradient ? "opacity-100" : "opacity-0"
         }`}
         style={{
           background:
-            "linear-gradient(to top, rgba(30, 38, 24, 0.90) 0%, rgba(30, 38, 24, 0.45) 45%, rgba(30, 38, 24, 0.10) 75%, transparent 100%)",
+            "linear-gradient(to top, rgba(20, 27, 16, 0.96) 0%, rgba(20, 27, 16, 0.75) 25%, rgba(20, 27, 16, 0.40) 55%, rgba(20, 27, 16, 0.10) 80%, transparent 100%)",
         }}
       />
     </LuminaBootOrchestrator>
