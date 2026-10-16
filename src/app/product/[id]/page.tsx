@@ -62,17 +62,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     notFound();
   }
 
-  return (
-    <motion.div
-      key={product.id}
-      initial={{ opacity: 0, filter: "blur(8px)", y: 12 }}
-      animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-      transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full"
-    >
-      <ProductDetailContent product={product} products={products} />
-    </motion.div>
-  );
+  return <ProductDetailContent product={product} products={products} />;
 }
 
 function ProductDetailContent({ product, products }: { product: CatalogProduct; products: CatalogProduct[] }) {

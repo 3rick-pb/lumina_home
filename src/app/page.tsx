@@ -661,10 +661,10 @@ export default function Home() {
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={activeFilter}
-                initial={{ opacity: 0, filter: "blur(6px)", y: 10 }}
-                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                exit={{ opacity: 0, filter: "blur(6px)", y: -10 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 className="w-full"
               >
                 {filteredProducts.length === 0 ? (
