@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { PackageSearch } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
@@ -135,53 +135,42 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
         </motion.div>
 
         <div id="shop-products" className="scroll-mt-36">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={categoryFilter ? `${categoryFilter}-${searchQuery || ""}` : (searchQuery || "todos")}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="w-full"
-            >
-              {filteredProducts.length === 0 ? (
-                <EmptyState
-                  icon={PackageSearch}
-                  badge={`Catálogo ${brand.shortName}`}
-                  title={searchQuery ? `Sin resultados para "${searchQuery}"` : "No encontramos productos en esta colección"}
-                  description={
-                    searchQuery
-                      ? "No existen artículos que coincidan exactamente con tu búsqueda. Prueba con otro término o restablece los filtros para ver todas las piezas."
-                      : "Actualmente no hay artículos disponibles en la categoría seleccionada. Explora nuestras otras colecciones o revisa nuestro catálogo completo."
-                  }
-                  actionLabel="Ver Todo el Catálogo"
-                  actionHref="/shop"
-                  secondaryActionLabel={categoryFilter || searchQuery ? "Limpiar Filtros" : undefined}
-                  secondaryActionHref={categoryFilter || searchQuery ? "/shop" : undefined}
-                  className="my-10"
-                />
-              ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                  {filteredProducts.map((product, idx) => (
-                    <motion.div
-                      key={product.id}
-                      data-ambient-category={product.category.toLowerCase()}
-                      initial={{ opacity: 0, y: 28 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.05, margin: "0px 0px -20px 0px" }}
-                      transition={{ duration: 0.5, delay: (idx % 4) * 0.07, ease: [0.22, 1, 0.36, 1] }}
-                      style={{ willChange: "transform, opacity" }}
-                      className="transform-gpu"
-                      onMouseEnter={() => handlePointerEnterCategory(product.category)}
-                      onMouseLeave={handlePointerLeaveCategory}
-                    >
-                      <ProductCard {...product} />
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+          {filteredProducts.length === 0 ? (
+            <EmptyState
+              icon={PackageSearch}
+              badge={`Catálogo ${brand.shortName}`}
+              title={searchQuery ? `Sin resultados para "${searchQuery}"` : "No encontramos productos en esta colección"}
+              description={
+                searchQuery
+                  ? "No existen artículos que coincidan exactamente con tu búsqueda. Prueba con otro término o restablece los filtros para ver todas las piezas."
+                  : "Actualmente no hay artículos disponibles en la categoría seleccionada. Explora nuestras otras colecciones o revisa nuestro catálogo completo."
+              }
+              actionLabel="Ver Todo el Catálogo"
+              actionHref="/shop"
+              secondaryActionLabel={categoryFilter || searchQuery ? "Limpiar Filtros" : undefined}
+              secondaryActionHref={categoryFilter || searchQuery ? "/shop" : undefined}
+              className="my-10"
+            />
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {filteredProducts.map((product, idx) => (
+                <motion.div
+                  key={product.id}
+                  data-ambient-category={product.category.toLowerCase()}
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.05, margin: "0px 0px -20px 0px" }}
+                  transition={{ duration: 0.5, delay: (idx % 4) * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ willChange: "transform, opacity" }}
+                  className="transform-gpu"
+                  onMouseEnter={() => handlePointerEnterCategory(product.category)}
+                  onMouseLeave={handlePointerLeaveCategory}
+                >
+                  <ProductCard {...product} />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

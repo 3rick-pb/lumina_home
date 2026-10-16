@@ -658,36 +658,25 @@ export default function Home() {
               </div>
             </motion.div>
             
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={activeFilter}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full"
-              >
-                {filteredProducts.length === 0 ? (
-                  <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-3xl border border-black/5 dark:border-white/10 shadow-xs">
-                    <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">No hay productos en esta categoría por el momento.</p>
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-3xl border border-black/5 dark:border-white/10 shadow-xs">
+                <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">No hay productos en esta categoría por el momento.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+                {filteredProducts.slice(0, 8).map((product) => (
+                  <div 
+                    key={product.id}
+                    data-ambient-category={product.category.toLowerCase()}
+                    className="transform-gpu"
+                    onMouseEnter={() => handlePointerEnterCategory(product.category)}
+                    onMouseLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
+                  >
+                    <ProductCard {...product} />
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                    {filteredProducts.slice(0, 8).map((product) => (
-                      <div 
-                        key={product.id}
-                        data-ambient-category={product.category.toLowerCase()}
-                        className="transform-gpu"
-                        onMouseEnter={() => handlePointerEnterCategory(product.category)}
-                        onMouseLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
-                      >
-                        <ProductCard {...product} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>
