@@ -1628,7 +1628,6 @@ const handleConfirmDeleteNiche = async () => {
         radius={220}
         itemHeight={40}
         visibleCount={5}
-        showPercentage
         className="h-12"
       />
     </div>

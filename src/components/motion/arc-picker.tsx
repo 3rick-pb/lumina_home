@@ -58,8 +58,6 @@ export type ArcPickerProps = Omit<
   name?: string;
   /** Whether to play crisp mechanical detent sounds during scrolling and selection. Defaults to true. */
   sound?: boolean;
-  /** Whether to render percentage indicator below selected section. Defaults to false. */
-  showPercentage?: boolean;
 };
 
 // A short velocity projection lets a flick coast through several detents
@@ -176,16 +174,12 @@ function ArcSelectionFrame({
   side,
   verticalAnchor,
   visible,
-  percentage,
-  direction = 1,
 }: {
   width: MotionValue<number>;
   expansion: MotionValue<number>;
   side: ArcPickerSide;
   verticalAnchor: number | string;
   visible: boolean;
-  percentage?: number;
-  direction?: 1 | -1;
 }) {
   const horizontal = side === "top" || side === "bottom";
   const leading = useTransform<number, string>(
@@ -233,33 +227,6 @@ function ArcSelectionFrame({
       >
         ]
       </motion.span>
-
-      {percentage !== undefined && (
-        <span className="absolute left-1/2 -translate-x-1/2 top-4 flex items-center justify-center text-[10px] sm:text-[11px] font-mono font-bold text-[#e07a3f] dark:text-[#f59e0b] select-none pointer-events-none tabular-nums tracking-tight">
-          <motion.span
-            key={percentage}
-            initial={{
-              y: (direction ?? 1) > 0 ? 3 : -3,
-              scale: 1.18,
-              opacity: 0.65,
-            }}
-            animate={{
-              y: 0,
-              scale: 1,
-              opacity: 1,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 500,
-              damping: 18,
-              mass: 0.4,
-            }}
-            className="inline-block"
-          >
-            {percentage}%
-          </motion.span>
-        </span>
-      )}
     </div>
   );
 }
@@ -279,7 +246,6 @@ export function ArcPicker({
   disabled = false,
   name,
   sound = true,
-  showPercentage = false,
   className,
   style,
   onKeyDown,
@@ -377,37 +343,18 @@ export function ArcPicker({
   );
   const position = useMotionValue(selectedIndex);
 
-  const maxIdx = Math.max(1, options.length - 1);
-  const initialPercent = Math.round(clamp(selectedIndex / maxIdx, 0, 1) * 100);
-  const [progressPercent, setProgressPercent] = useState(initialPercent);
-  const [percentDirection, setPercentDirection] = useState<1 | -1>(1);
-  const prevPercentRef = useRef(initialPercent);
-
   useEffect(() => {
-    const max = Math.max(1, options.length - 1);
-    let lastP = Math.round(clamp(position.get() / max, 0, 1) * 100);
+    const maxIdx = Math.max(1, options.length - 1);
+    let lastP = Math.round(clamp(position.get() / maxIdx, 0, 1) * 100);
     onProgressChange?.(lastP);
     return position.on("change", (latest) => {
-      const p = Math.round(clamp(latest / max, 0, 1) * 100);
+      const p = Math.round(clamp(latest / maxIdx, 0, 1) * 100);
       if (p !== lastP) {
-        setPercentDirection(p >= lastP ? 1 : -1);
         lastP = p;
-        prevPercentRef.current = p;
-        setProgressPercent(p);
         onProgressChange?.(p);
       }
     });
   }, [options.length, onProgressChange, position]);
-
-  useEffect(() => {
-    const max = Math.max(1, options.length - 1);
-    const targetPercent = Math.round(clamp(selectedIndex / max, 0, 1) * 100);
-    if (targetPercent !== prevPercentRef.current) {
-      setPercentDirection(targetPercent >= prevPercentRef.current ? 1 : -1);
-      prevPercentRef.current = targetPercent;
-      setProgressPercent(targetPercent);
-    }
-  }, [selectedIndex, options.length]);
   const activity = useMotionValue(0);
   const expansion = useSpring(activity, SPRING_GLIDE);
   const frameTarget = useMotionValue(0);
@@ -1022,8 +969,6 @@ export function ArcPicker({
         side={side}
         verticalAnchor={verticalAnchor}
         visible={selectedValue !== undefined}
-        percentage={showPercentage ? progressPercent : undefined}
-        direction={percentDirection}
       />
       {!options.length && (
         <span className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
