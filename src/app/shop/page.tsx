@@ -70,7 +70,20 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
       gradientRafRef.current = window.requestAnimationFrame(() => {
         gradientRafRef.current = null;
         const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-        const shouldShow = scrollY > 120;
+
+        // Comprobar si nos acercamos al pie de página (FAQs / Garantías / Copyright)
+        const footer = document.querySelector("footer") || document.getElementById("envios-garantias");
+        let isNearFooter = false;
+        if (footer) {
+          const rect = footer.getBoundingClientRect();
+          isNearFooter = rect.top < window.innerHeight + 120;
+        } else {
+          const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+          const distFromBottom = scrollHeight - (scrollY + window.innerHeight);
+          isNearFooter = distFromBottom < 700;
+        }
+
+        const shouldShow = scrollY > 120 && !isNearFooter;
         if (shouldShow !== showCatalogGradientRef.current) {
           showCatalogGradientRef.current = shouldShow;
           setShowCatalogGradient(shouldShow);
@@ -79,8 +92,12 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    onScroll();
+
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       if (gradientRafRef.current !== null) {
         window.cancelAnimationFrame(gradientRafRef.current);
       }

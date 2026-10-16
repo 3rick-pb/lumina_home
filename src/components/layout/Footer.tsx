@@ -23,7 +23,7 @@ export function Footer() {
   }
 
   return (
-    <footer id="envios-garantias" className={`${isAuthPage ? "mt-0 border-t border-gray-200/40 dark:border-white/5" : "mt-24 border-t border-black/[0.06] dark:border-white/[0.06]"} bg-transparent pt-16 pb-12 transition-colors duration-300 scroll-mt-10`}>
+    <footer id="envios-garantias" className={`${isAuthPage ? "mt-0 border-t border-gray-200/40 dark:border-white/5" : "mt-24 border-t border-black/[0.06] dark:border-white/[0.06]"} bg-transparent pt-16 pb-12 transition-colors duration-300 scroll-mt-10 relative z-30`}>
       <div className="container mx-auto px-4 md:px-6">
         
         {/* ========================================================================= */}
@@ -171,7 +171,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-10 sm:mt-12 border-t border-gray-200/80 dark:border-white/10 pt-6 sm:pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center md:text-left">
+          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium text-center md:text-left select-none">
             &copy; {new Date().getFullYear()} {brand.name}. Todos los derechos reservados.
           </p>
         </div>
