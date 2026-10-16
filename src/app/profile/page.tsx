@@ -1314,22 +1314,24 @@ const handleConfirmDeleteNiche = async () => {
   {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
   <aside
     style={{ contain: "layout style" }}
-    className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
+    className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center pt-3.5 pb-6 gap-5 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
   >
  
-  {/* Brand Logo Symbol (Soft Melon in Light Mode, Inverted in Dark Mode) */}
-  <div className="flex flex-col items-center gap-5 w-full">
-  <Link 
-    href="/" 
-    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-[#FFE4D1] dark:bg-[#080C26] text-[#080C26] dark:text-[#FFE4D1] border border-[#F5C2A1]/80 dark:border-[#FFE4D1]/30 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 dark:shadow-black/50 hover:scale-105 active:scale-95 transition-all duration-300" 
-    title={`${brand.name} • Volver a la Tienda`}
-  >
-    <LuminaBrandEmblem size={30} />
-    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#080C26] dark:bg-[#FFE4D1] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  </Link>
+  {/* Brand Logo Symbol */}
+  <div className="flex flex-col items-center gap-3 w-full">
+    <div className="flex items-center justify-center w-full">
+      <Link 
+        href="/" 
+        className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-[#FFE4D1] dark:bg-[#080C26] text-[#080C26] dark:text-[#FFE4D1] border border-[#F5C2A1]/80 dark:border-[#FFE4D1]/30 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 dark:shadow-black/50 hover:scale-105 active:scale-95 transition-all duration-300" 
+        title={`${brand.name} • Volver a la Tienda`}
+      >
+        <LuminaBrandEmblem size={30} />
+        <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#080C26] dark:bg-[#FFE4D1] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </Link>
+    </div>
 
- {/* Visible section divider */}
- <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
+    {/* Visible section divider */}
+    <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full transition-colors shrink-0" />
 
  {/* Navigation Icons */}
  <nav className="flex flex-col items-center gap-2.5 w-full px-2">
