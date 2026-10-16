@@ -999,8 +999,8 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
               variant="circle"
               theme="dark"
               innerShadow
-              ringCssPx={2.2}
-              shaderScale={1.3}
+              ringCssPx={4.2}
+              shaderScale={1.5}
               strength={1}
               className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
               style={{

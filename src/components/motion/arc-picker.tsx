@@ -145,7 +145,7 @@ function ArcOption({
           : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white",
       )}
       style={{
-        top: horizontal ? (side === "top" ? 36 : "calc(100% - 36px)") : "50%",
+        top: horizontal ? "50%" : "50%",
         left: horizontal ? "50%" : verticalAnchor,
         transformOrigin: horizontal
           ? "center"
@@ -206,7 +206,7 @@ function ArcSelectionFrame({
       data-slot="arc-picker-selection-frame"
       className="pointer-events-none absolute h-0 w-0 text-sm font-bold text-[#e07a3f] dark:text-[#f59e0b] font-mono"
       style={{
-        top: horizontal ? (side === "top" ? 36 : "calc(100% - 36px)") : "50%",
+        top: horizontal ? "50%" : "50%",
         left: horizontal ? "50%" : verticalAnchor,
         visibility: visible ? undefined : "hidden",
       }}

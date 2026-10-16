@@ -67,7 +67,6 @@ import {
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 import { ArcPicker, type ArcPickerOption } from "@/components/motion/arc-picker";
-import { MorphingSearchChips, type MorphingSearchChipRow } from "@/components/motion/morphing-search-chips";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import {
   CatalogTabSkeleton,
@@ -727,23 +726,6 @@ export default function ProfilePage() {
     });
   }, [products, searchQuery]);
 
-  const searchSuggestions = useMemo(() => {
-    const list: string[] = [];
-    list.push("Pedidos", "Inventario", "Billetera", "Favoritos", "Nichos");
-    if (Array.isArray(products)) {
-      products.slice(0, 10).forEach((p) => {
-        if (p?.title) list.push(p.title);
-      });
-    }
-    if (Array.isArray(scopedOrders)) {
-      scopedOrders.slice(0, 8).forEach((o) => {
-        if (o?.id) list.push(`Pedido #${o.id.slice(-6)}`);
-        if (o?.customerName) list.push(o.customerName);
-      });
-    }
-    return Array.from(new Set(list));
-  }, [products, scopedOrders]);
-
   if (!isMounted || isLoading || !user) {
  return (
  <div className="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-[#18181b]">
@@ -948,29 +930,6 @@ export default function ProfilePage() {
     setEditProductStep(0);
     requestMobileLandscapeFullscreen();
     setShowEditProductModal(true);
-  };
-
-  const handleSelectSearchRow = (row: MorphingSearchChipRow) => {
-    const term = row.label.toLowerCase();
-    const matchingTab = topNavTabs.find((t) => t.label.toLowerCase() === term || t.id.toLowerCase() === term);
-    if (matchingTab) {
-      setActiveTab(matchingTab.id);
-      return;
-    }
-    const matchingOrder = scopedOrders.find((o) => 
-      o?.id?.toLowerCase().includes(term) || (o?.customerName && o.customerName.toLowerCase().includes(term))
-    );
-    if (matchingOrder) {
-      setActiveTab("orders");
-      setSelectedOrder(matchingOrder);
-      return;
-    }
-    const matchingProd = products.find((p) => p?.title?.toLowerCase().includes(term));
-    if (matchingProd) {
-      setActiveTab("catalog");
-      handleOpenEditProduct(matchingProd);
-      return;
-    }
   };
 
   const handleUpdateProductSubmit = async (e: React.FormEvent) => {
@@ -1362,12 +1321,12 @@ const handleConfirmDeleteNiche = async () => {
   {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
   <aside
     style={{ contain: "layout style" }}
-    className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center pt-0 pb-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
+    className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center pt-3.5 pb-6 gap-5 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
   >
  
-  {/* Brand Logo Symbol (Aligned to exact height and baseline of header wordmark) */}
+  {/* Brand Logo Symbol */}
   <div className="flex flex-col items-center gap-3 w-full">
-    <div className="flex items-center justify-center min-h-[56px] w-full">
+    <div className="flex items-center justify-center w-full">
       <Link 
         href="/" 
         className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-[#FFE4D1] dark:bg-[#080C26] text-[#080C26] dark:text-[#FFE4D1] border border-[#F5C2A1]/80 dark:border-[#FFE4D1]/30 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 dark:shadow-black/50 hover:scale-105 active:scale-95 transition-all duration-300" 
@@ -1660,34 +1619,99 @@ const handleConfirmDeleteNiche = async () => {
     </Link>
 
     {/* Center: beUI Arc Picker (Media Luna en modo "Top") */}
-    <div className="hidden md:flex items-center justify-center flex-1 max-w-[340px] lg:max-w-[420px] h-12 relative px-2">
+    <div className="hidden md:flex items-center justify-center flex-1 max-w-[340px] lg:max-w-[400px] h-10 relative px-2">
       <ArcPicker
         options={arcPickerOptions}
         value={activeTab}
         onValueChange={(val) => setActiveTab(val as ProfileTab)}
         side="top"
-        radius={220}
-        itemHeight={40}
+        radius={320}
+        itemHeight={34}
         visibleCount={5}
-        className="h-12"
+        className="h-10"
       />
     </div>
 
     {/* Right: beUI Morphing Search + Ver Tienda */}
     <div className="hidden md:flex items-center gap-3 sm:gap-3.5 lg:gap-4 shrink-0 min-w-0">
-      {/* beUI Morphing Search Bar */}
-      <div className="relative z-50 w-52 sm:w-60 md:w-64 lg:w-72">
-        <MorphingSearchChips
-          compact
-          side="bottom"
-          query={searchQuery}
-          onQueryChange={setSearchQuery}
-          suggestions={searchSuggestions}
-          onSelectRow={handleSelectSearchRow}
-          placeholder={isAdmin ? "Buscar pedidos, productos..." : "Buscar pedidos..."}
-          storageKey="lumina_profile_search_recents"
-          className="w-full"
-        />
+      {/* Barra de Búsqueda (beUI Morphing Search + Spotlight Command Dropdown) */}
+      <div className="relative z-50 group/search" ref={searchDropdownRef}>
+        <motion.div 
+          layout
+          transition={{ type: "spring", stiffness: 400, damping: 28 }}
+          className={`relative flex items-center gap-2 pl-3 pr-2 h-9 sm:h-9.5 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
+            isSearchFocused
+              ? "border-[#e07a3f] dark:border-[#e07a3f] ring-3 ring-[#e07a3f]/25 shadow-[0_4px_20px_rgba(224,122,63,0.18)] w-56 md:w-64 lg:w-72"
+              : "border-stone-200/90 dark:border-white/10 hover:border-[#e07a3f]/40 dark:hover:border-[#e07a3f]/40 hover:ring-2 hover:ring-[#e07a3f]/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] w-36 md:w-44 lg:w-48"
+          }`}
+        >
+          <div className="flex items-center justify-center shrink-0">
+            <Search className={`w-3.5 h-3.5 transition-all duration-300 ${
+              isSearchFocused
+                ? "text-[#e07a3f] scale-110 rotate-[-8deg]"
+                : "text-stone-400 dark:text-stone-500 group-hover/search:text-[#e07a3f] group-hover/search:scale-110"
+            }`} />
+          </div>
+
+          <input
+            ref={searchInputRef}
+            id="lumina-profile-search-input"
+            type="text"
+            value={searchQuery}
+            onFocus={() => setIsSearchFocused(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (!isSearchFocused) {
+                   setIsSearchFocused(true);
+                } else if (searchQuery.trim().length > 0) {
+                  if (filteredOrders.length > 0) {
+                    setActiveTab("orders");
+                    setSelectedOrder(filteredOrders[0]);
+                    setSearchQuery("");
+                    setIsSearchFocused(false);
+                  } else if (filteredCatalog.length > 0) {
+                    setActiveTab("catalog");
+                    handleOpenEditProduct(filteredCatalog[0]);
+                    setSearchQuery("");
+                    setIsSearchFocused(false);
+                  }
+                }
+              }
+            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={isAdmin ? "Buscar pedidos, productos..." : "Buscar pedidos..."}
+            className="bg-transparent border-none outline-none text-[11px] w-full font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
+          />
+
+          {!searchQuery && !isSearchFocused && (
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-white/10 text-[9px] font-mono text-stone-400 dark:text-stone-500 select-none pointer-events-none shrink-0">
+              ⌘K
+            </kbd>
+          )}
+
+          {searchQuery && (
+            <div className="flex items-center gap-1 shrink-0 animate-fade-in">
+              <span className="px-1.5 py-0.2 rounded-full bg-[#e07a3f]/10 text-[#e07a3f] dark:text-[#f59e0b] text-[9px] font-mono font-bold">
+                {filteredOrders.length + filteredCatalog.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                className="w-4 h-4 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-800 dark:hover:text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                title="Limpiar búsqueda (Esc)"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Spotlight Dropdown Panel en Desktop */}
+        {isSearchFocused && renderSpotlightDropdown(false)}
       </div>
 
       {/* Botón Ver Tienda (Al lado derecho de la barra de búsqueda) */}
