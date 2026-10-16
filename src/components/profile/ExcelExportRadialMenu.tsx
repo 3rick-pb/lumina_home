@@ -16,7 +16,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import MicrosoftExcel from "@thesvg/react/microsoft-excel";
-import { MetalFx, useMetalBend, BEND } from "metal-fx";
+import { MetalFx, useMetalBend, BEND, setSharedPresetMode, PRESETS } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
@@ -187,6 +187,45 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
       [hasFinePointer, canvasReady]
     )
   );
+
+  // Autonomous fluid orbit of the chromatic liquid metal shader:
+  // Dynamically rotates the WebGL shader's u_angle across 360 degrees,
+  // ensuring the chromatic reflections, liquid waves, and iridescent glints flow
+  // continuously along the entire perimeter of the button on mobile, tablets,
+  // and touch screens (where there is no active cursor hover).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let rafId: number;
+    let angle = 70;
+    const basePreset = PRESETS.chromatic.modes.dark;
+
+    const orbitLoop = () => {
+      // 0.85 degrees per frame -> continuous ~7-second full orbit cycle
+      angle = (angle + 0.85) % 360;
+      try {
+        setSharedPresetMode({
+          ...basePreset,
+          angle,
+          speed: 1.2,
+          repetition: 2.4,
+          softness: 0.08,
+          shiftRed: 0.85,
+          shiftBlue: 0.85,
+          distortion: 0.18,
+          contour: 0.45,
+          colorTint: "#88ccff55",
+          shaderOpacity: 1,
+        });
+      } catch {}
+      rafId = requestAnimationFrame(orbitLoop);
+    };
+
+    rafId = requestAnimationFrame(orbitLoop);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -978,8 +1017,8 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             variant="circle"
             theme="dark"
             innerShadow
-            ringCssPx={2.8}
-            shaderScale={1.5}
+            ringCssPx={3.5}
+            shaderScale={1.3}
             strength={1}
             className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
             style={{
