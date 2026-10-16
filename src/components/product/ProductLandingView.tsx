@@ -414,10 +414,10 @@ export function ProductLandingView({
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={currentImage}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      initial={{ opacity: 0, filter: "blur(6px)" }}
+                      animate={{ opacity: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, filter: "blur(6px)" }}
+                      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                       className="relative w-full h-full"
                     >
                       <Image
