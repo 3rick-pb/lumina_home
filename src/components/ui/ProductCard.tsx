@@ -11,7 +11,6 @@ import { BeUIActionSwapLabel } from "@/components/ui/BeUIControls";
 import { flyToCart } from "@/components/ui/FlyToCartAnimation";
 
 import { normalizeImageUrl } from "@/lib/imageUtils";
-import { useLenis } from "lenis/react";
 
 interface ProductCardProps {
   id: string;
@@ -75,36 +74,6 @@ export const ProductCard = React.memo(function ProductCard({
   const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
   const showAddedState = (isMounted && isInBag) || isAdding;
 
-  const imgParallaxRef = React.useRef<HTMLDivElement>(null);
-
-  // Movimiento suave Lenis slow-motion para las imágenes de los productos al explorar el catálogo:
-  // - En Desktop / Laptop con ratón/trackpad: efecto inercial suave slow-motion.
-  // - En Celulares y pantallas táctiles: DESACTIVADO para garantizar 120Hz y 60Hz nativos sin layout thrashing al arrastrar con el dedo.
-  useLenis(() => {
-    if (!imgParallaxRef.current) return;
-    if (typeof window === "undefined") return;
-
-    const isTouchOrMobile =
-      window.innerWidth < 1024 ||
-      window.matchMedia("(pointer: coarse)").matches ||
-      window.matchMedia("(hover: none)").matches;
-
-    if (isTouchOrMobile) {
-      if (imgParallaxRef.current.style.transform) {
-        imgParallaxRef.current.style.transform = "";
-      }
-      return;
-    }
-
-    const rect = imgParallaxRef.current.getBoundingClientRect();
-    const vh = window.innerHeight || 800;
-    if (rect.bottom >= -50 && rect.top <= vh + 50) {
-      const centerDiff = (rect.top + rect.height / 2) - vh / 2;
-      const translateY = centerDiff * 0.07;
-      imgParallaxRef.current.style.transform = `translate3d(0, ${translateY.toFixed(2)}px, 0) scale(1.08)`;
-    }
-  });
-
   return (
     <Link 
       href={`/product/${id}`} 
@@ -145,9 +114,9 @@ export const ProductCard = React.memo(function ProductCard({
           <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 ${isFav ? 'fill-current scale-110' : ''}`} />
         </button>
 
-        {/* Imagen del Producto - Movimiento suave e inercial Lenis en scroll */}
+        {/* Imagen del Producto */}
         {imgSrc ? (
-          <div ref={imgParallaxRef} className="relative w-full h-full will-change-transform transform-gpu">
+          <div className="relative w-full h-full">
             <Image
               src={imgSrc}
               alt={title}

@@ -153,21 +153,15 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
             />
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-              {filteredProducts.map((product, idx) => (
-                <motion.div
+              {filteredProducts.map((product) => (
+                <div
                   key={product.id}
                   data-ambient-category={product.category.toLowerCase()}
-                  initial={{ opacity: 0, y: 28 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.05, margin: "0px 0px -20px 0px" }}
-                  transition={{ duration: 0.5, delay: (idx % 4) * 0.07, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ willChange: "transform, opacity" }}
-                  className="transform-gpu"
                   onMouseEnter={() => handlePointerEnterCategory(product.category)}
                   onMouseLeave={handlePointerLeaveCategory}
                 >
                   <ProductCard {...product} />
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
