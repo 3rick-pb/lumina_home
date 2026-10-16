@@ -1619,37 +1619,35 @@ const handleConfirmDeleteNiche = async () => {
     </Link>
 
     {/* Center: beUI Arc Picker (Media Luna en modo "Top") */}
-    <div className="hidden md:flex items-center justify-center flex-1 max-w-[340px] lg:max-w-[400px] h-10 relative px-2">
+    <div className="hidden md:flex items-center justify-center flex-1 max-w-[340px] lg:max-w-[420px] h-12 relative px-2">
       <ArcPicker
         options={arcPickerOptions}
         value={activeTab}
         onValueChange={(val) => setActiveTab(val as ProfileTab)}
         side="top"
-        radius={320}
-        itemHeight={34}
+        radius={220}
+        itemHeight={40}
         visibleCount={5}
-        className="h-10"
+        className="h-12"
       />
     </div>
 
-    {/* Right: beUI Morphing Search + Ver Tienda */}
-    <div className="hidden md:flex items-center gap-3 sm:gap-3.5 lg:gap-4 shrink-0 min-w-0">
-      {/* Barra de Búsqueda (beUI Morphing Search + Spotlight Command Dropdown) */}
+    {/* Right Search Input, Ver Tienda Button & Profile Badge (Desktop) */}
+    <div className="hidden md:flex items-center gap-3 sm:gap-3.5 lg:gap-4.5 shrink-0 min-w-0">
+      {/* Barra de Búsqueda (Spotlight Alive Command Bar en Desktop) */}
       <div className="relative z-50 group/search" ref={searchDropdownRef}>
-        <motion.div 
-          layout
-          transition={{ type: "spring", stiffness: 400, damping: 28 }}
+        <div 
           className={`relative flex items-center gap-2 pl-3 pr-2 h-9 sm:h-9.5 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
             isSearchFocused
-              ? "border-[#e07a3f] dark:border-[#e07a3f] ring-3 ring-[#e07a3f]/25 shadow-[0_4px_20px_rgba(224,122,63,0.18)] w-56 md:w-64 lg:w-72"
-              : "border-stone-200/90 dark:border-white/10 hover:border-[#e07a3f]/40 dark:hover:border-[#e07a3f]/40 hover:ring-2 hover:ring-[#e07a3f]/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] w-36 md:w-44 lg:w-48"
+              ? "border-[#e07a3f] dark:border-[#e07a3f] ring-3 ring-[#e07a3f]/25 shadow-[0_4px_20px_rgba(224,122,63,0.2)]"
+              : "border-[#e07a3f]/30 dark:border-[#e07a3f]/35 hover:border-[#e07a3f] dark:hover:border-[#e07a3f] hover:ring-2 hover:ring-[#e07a3f]/20 shadow-[0_2px_8px_rgba(224,122,63,0.06)]"
           }`}
         >
           <div className="flex items-center justify-center shrink-0">
             <Search className={`w-3.5 h-3.5 transition-all duration-300 ${
               isSearchFocused
                 ? "text-[#e07a3f] scale-110 rotate-[-8deg]"
-                : "text-stone-400 dark:text-stone-500 group-hover/search:text-[#e07a3f] group-hover/search:scale-110"
+                : "text-[#e07a3f]/70 dark:text-[#e07a3f]/80 group-hover/search:text-[#e07a3f] group-hover/search:scale-110"
             }`} />
           </div>
 
@@ -1680,15 +1678,9 @@ const handleConfirmDeleteNiche = async () => {
               }
             }}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isAdmin ? "Buscar pedidos, productos..." : "Buscar pedidos..."}
-            className="bg-transparent border-none outline-none text-[11px] w-full font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
+            placeholder={isAdmin ? "Buscar pedidos o productos..." : "Buscar mis pedidos o marcas..."}
+            className="bg-transparent border-none outline-none text-[11px] w-24 sm:w-28 md:w-32 lg:w-44 focus:w-36 md:focus:w-48 lg:focus:w-60 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 ease-out"
           />
-
-          {!searchQuery && !isSearchFocused && (
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-white/10 text-[9px] font-mono text-stone-400 dark:text-stone-500 select-none pointer-events-none shrink-0">
-              ⌘K
-            </kbd>
-          )}
 
           {searchQuery && (
             <div className="flex items-center gap-1 shrink-0 animate-fade-in">
@@ -1708,7 +1700,7 @@ const handleConfirmDeleteNiche = async () => {
               </button>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Spotlight Dropdown Panel en Desktop */}
         {isSearchFocused && renderSpotlightDropdown(false)}
