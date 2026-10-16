@@ -15,8 +15,21 @@ import {
   ChevronRight
 } from "lucide-react";
 import MicrosoftExcel from "@thesvg/react/microsoft-excel";
-import { MetalFx, useMetalBend, BEND, setSharedPresetMode, PRESETS } from "metal-fx";
+import dynamic from "next/dynamic";
+import { useMetalBend, BEND } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
+
+const DynamicMetalFx = dynamic(
+  () => import("metal-fx").then((mod) => mod.MetalFx),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="relative shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#18181b] border border-stone-300 dark:border-white/20 flex items-center justify-center">
+        <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 opacity-90" />
+      </div>
+    ),
+  }
+);
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
@@ -187,39 +200,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
     return () => clearInterval(timer);
   }, []);
 
-  // Continuous autonomous fluid orbit of the liquid metal shader:
-  // Rotates u_rotation continuously across 360 degrees so that on mobile, tablets,
-  // and touch screens (where there is no cursor hover), the liquid metal waves
-  // visibly and smoothly orbit around the button at all times.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let rafId: number;
-    let rot = 0;
-    const basePreset = PRESETS.chromatic.modes.dark;
-
-    const orbitLoop = () => {
-      rot = (rot + 0.65) % 360;
-      try {
-        setSharedPresetMode({
-          ...basePreset,
-          rotation: rot,
-          speed: 1.2,
-          repetition: 2.2,
-          softness: 0.08,
-          shiftRed: 0.82,
-          shiftBlue: 0.82,
-          distortion: 0.15,
-          contour: 0.45,
-          colorTint: "#88ccff44",
-          shaderOpacity: 1,
-        });
-      } catch {}
-      rafId = requestAnimationFrame(orbitLoop);
-    };
-
-    rafId = requestAnimationFrame(orbitLoop);
-    return () => cancelAnimationFrame(rafId);
-  }, []);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -1012,45 +992,58 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             />
           )}
 
-          <MetalFx
-            ref={metalRef}
-            preset="chromatic"
-            variant="circle"
-            theme="dark"
-            innerShadow
-            ringCssPx={2.5}
-            shaderScale={1.3}
-            strength={1}
-            className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
-            style={{
-              width: isMobile ? 44 : 48,
-              height: isMobile ? 44 : 48,
-              borderRadius: "9999px",
-            }}
-          >
-            <button
-              type="button"
-              onClick={handleToggleMenu}
-              aria-label="Exportar datos a Excel"
-              title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
+          {mounted ? (
+            <DynamicMetalFx
+              ref={metalRef}
+              preset="silver"
+              variant="circle"
+              theme="dark"
+              innerShadow
+              ringCssPx={2.2}
+              shaderScale={1.3}
+              strength={1}
+              className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
+              style={{
+                width: isMobile ? 44 : 48,
+                height: isMobile ? 44 : 48,
+                borderRadius: "9999px",
+              }}
             >
-              <motion.div
-                animate={{ 
-                  rotate: isOpen ? 90 : 0, 
-                  scale: isOpen ? 1.05 : 1 
-                }}
-                transition={{ type: "spring", stiffness: 380, damping: 20 }}
-                className="relative z-10 flex items-center justify-center select-none"
+              <button
+                type="button"
+                onClick={handleToggleMenu}
+                aria-label="Exportar datos a Excel"
+                title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
               >
-                {isOpen ? (
-                  <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-                ) : (
-                  <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
-                )}
-              </motion.div>
-            </button>
-          </MetalFx>
+                <motion.div
+                  animate={{ 
+                    rotate: isOpen ? 90 : 0, 
+                    scale: isOpen ? 1.05 : 1 
+                  }}
+                  transition={{ type: "spring", stiffness: 380, damping: 20 }}
+                  className="relative z-10 flex items-center justify-center select-none"
+                >
+                  {isOpen ? (
+                    <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                  ) : (
+                    <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
+                  )}
+                </motion.div>
+              </button>
+            </DynamicMetalFx>
+          ) : (
+            <div 
+              style={{
+                width: isMobile ? 44 : 48,
+                height: isMobile ? 44 : 48,
+                borderRadius: "9999px",
+              }}
+              className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-[#18181b] border border-white/20"
+            >
+              <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 opacity-90" />
+            </div>
+          )}
         </div>
       </div>
 

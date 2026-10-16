@@ -137,11 +137,11 @@ function ArcOption({
         if (!event.defaultPrevented) onSelect();
       }}
       className={cn(
-        "absolute rounded-md px-2 py-1 text-xs sm:text-sm font-mono whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-35 transition-colors",
+        "absolute rounded-md px-2 py-1 text-xs sm:text-sm font-mono whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-[#e07a3f] disabled:cursor-not-allowed disabled:opacity-35 transition-colors",
         horizontal && "text-center",
         !horizontal && (side === "left" ? "text-right" : "text-left"),
         selected
-          ? "text-blue-500 dark:text-blue-400 font-bold"
+          ? "text-[#e07a3f] dark:text-[#f59e0b] font-bold"
           : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white",
       )}
       style={{
@@ -204,7 +204,7 @@ function ArcSelectionFrame({
     <div
       aria-hidden="true"
       data-slot="arc-picker-selection-frame"
-      className="pointer-events-none absolute h-0 w-0 text-sm font-bold text-blue-500 dark:text-blue-400 font-mono"
+      className="pointer-events-none absolute h-0 w-0 text-sm font-bold text-[#e07a3f] dark:text-[#f59e0b] font-mono"
       style={{
         top: horizontal ? (side === "top" ? 36 : "calc(100% - 36px)") : "50%",
         left: horizontal ? "50%" : verticalAnchor,

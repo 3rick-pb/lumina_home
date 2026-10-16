@@ -66,6 +66,8 @@ import {
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
+import { ArcPicker, type ArcPickerOption } from "@/components/motion/arc-picker";
+import { MorphingSearchChips, type MorphingSearchChipRow } from "@/components/motion/morphing-search-chips";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import {
   CatalogTabSkeleton,
@@ -623,6 +625,13 @@ export default function ProfilePage() {
     return list;
   }, [isEffectiveAdmin, scopedOrders, cards, favorites, products, categories]);
 
+  const arcPickerOptions = useMemo<ArcPickerOption[]>(() => {
+    return topNavTabs.map((t) => ({
+      value: t.id,
+      label: t.label,
+    }));
+  }, [topNavTabs]);
+
   const TABS_PER_PAGE = 2;
   const tabPages = useMemo(() => {
     const pages: TopNavTabItem[][] = [];
@@ -718,8 +727,24 @@ export default function ProfilePage() {
     });
   }, [products, searchQuery]);
 
+  const searchSuggestions = useMemo(() => {
+    const list: string[] = [];
+    list.push("Pedidos", "Inventario", "Billetera", "Favoritos", "Nichos");
+    if (Array.isArray(products)) {
+      products.slice(0, 10).forEach((p) => {
+        if (p?.title) list.push(p.title);
+      });
+    }
+    if (Array.isArray(scopedOrders)) {
+      scopedOrders.slice(0, 8).forEach((o) => {
+        if (o?.id) list.push(`Pedido #${o.id.slice(-6)}`);
+        if (o?.customerName) list.push(o.customerName);
+      });
+    }
+    return Array.from(new Set(list));
+  }, [products, scopedOrders]);
 
- if (!isMounted || isLoading || !user) {
+  if (!isMounted || isLoading || !user) {
  return (
  <div className="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-[#18181b]">
  <div className="flex flex-col items-center gap-3">
@@ -923,6 +948,29 @@ export default function ProfilePage() {
     setEditProductStep(0);
     requestMobileLandscapeFullscreen();
     setShowEditProductModal(true);
+  };
+
+  const handleSelectSearchRow = (row: MorphingSearchChipRow) => {
+    const term = row.label.toLowerCase();
+    const matchingTab = topNavTabs.find((t) => t.label.toLowerCase() === term || t.id.toLowerCase() === term);
+    if (matchingTab) {
+      setActiveTab(matchingTab.id);
+      return;
+    }
+    const matchingOrder = scopedOrders.find((o) => 
+      o?.id?.toLowerCase().includes(term) || (o?.customerName && o.customerName.toLowerCase().includes(term))
+    );
+    if (matchingOrder) {
+      setActiveTab("orders");
+      setSelectedOrder(matchingOrder);
+      return;
+    }
+    const matchingProd = products.find((p) => p?.title?.toLowerCase().includes(term));
+    if (matchingProd) {
+      setActiveTab("catalog");
+      handleOpenEditProduct(matchingProd);
+      return;
+    }
   };
 
   const handleUpdateProductSubmit = async (e: React.FormEvent) => {
@@ -1314,22 +1362,24 @@ const handleConfirmDeleteNiche = async () => {
   {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
   <aside
     style={{ contain: "layout style" }}
-    className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
+    className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center pt-0 pb-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
   >
  
-  {/* Brand Logo Symbol (Soft Melon in Light Mode, Inverted in Dark Mode) */}
-  <div className="flex flex-col items-center gap-5 w-full">
-  <Link 
-    href="/" 
-    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-[#FFE4D1] dark:bg-[#080C26] text-[#080C26] dark:text-[#FFE4D1] border border-[#F5C2A1]/80 dark:border-[#FFE4D1]/30 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 dark:shadow-black/50 hover:scale-105 active:scale-95 transition-all duration-300" 
-    title={`${brand.name} • Volver a la Tienda`}
-  >
-    <LuminaBrandEmblem size={30} />
-    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#080C26] dark:bg-[#FFE4D1] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  </Link>
+  {/* Brand Logo Symbol (Aligned to exact height and baseline of header wordmark) */}
+  <div className="flex flex-col items-center gap-3 w-full">
+    <div className="flex items-center justify-center min-h-[56px] w-full">
+      <Link 
+        href="/" 
+        className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-[#FFE4D1] dark:bg-[#080C26] text-[#080C26] dark:text-[#FFE4D1] border border-[#F5C2A1]/80 dark:border-[#FFE4D1]/30 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 dark:shadow-black/50 hover:scale-105 active:scale-95 transition-all duration-300" 
+        title={`${brand.name} • Volver a la Tienda`}
+      >
+        <LuminaBrandEmblem size={30} />
+        <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#080C26] dark:bg-[#FFE4D1] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </Link>
+    </div>
 
- {/* Visible section divider */}
- <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
+    {/* Visible section divider */}
+    <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full transition-colors shrink-0" />
 
  {/* Navigation Icons */}
  <nav className="flex flex-col items-center gap-2.5 w-full px-2">
@@ -1591,199 +1641,64 @@ const handleConfirmDeleteNiche = async () => {
     </div>
   </div>
 
-  {/* --- 2. VISTA DESKTOP (md:flex): Brand & Top Navigation Pill Bar --- */}
-  <div className="hidden md:flex items-center justify-start gap-3 md:gap-4 lg:gap-5 min-w-0 shrink-0">
-  {/* Desktop Brand Logo (Lateral Izquierdo en Desktop) */}
-  <Link 
-    href="/" 
-    className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5 mr-0.5" 
-    title="Ir a la tienda"
-  >
-    <Image
-      src="/brand/lumina-wordmark.png"
-      alt={brand.name || "Lumina"}
-      width={1058}
-      height={272}
-      priority
-      className="h-6 sm:h-6.5 w-auto object-contain dark:invert"
-    />
-  </Link>
-
-  {/* Top Bar Paginated Tabs (2 por página, tamaño compacto, botones en píldora individuales) */}
-  <div
-    onWheel={handleTabsWheel}
-    className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-stone-100/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-xs transition-all select-none shrink-0"
-  >
-    {/* Flecha izquierda: se muestra SOLO si no estamos en la primera página */}
-    {topNavPage > 0 && (
-      <button
-        type="button"
-        onClick={goToPreviousPage}
-        title="Pestañas anteriores"
-        className="p-1 rounded-xl text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-white/10 transition-all flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
-      >
-        <ChevronLeft className="w-3.5 h-3.5" />
-      </button>
-    )}
-
-    {/* Contenedor animado de las 2 pestañas */}
-    <div className="overflow-hidden w-[200px] sm:w-[210px] lg:w-[220px]">
-      <AnimatePresence mode="wait" custom={navDirection}>
-        <motion.div
-          key={topNavPage}
-          custom={navDirection}
-          variants={{
-            enter: (direction: number) => ({
-              x: direction > 0 ? 12 : -12,
-              opacity: 0,
-            }),
-            center: {
-              x: 0,
-              opacity: 1,
-            },
-            exit: (direction: number) => ({
-              x: direction > 0 ? -12 : 12,
-              opacity: 0,
-            }),
-          }}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-2 gap-1 w-full"
-        >
-          {tabPages[topNavPage]?.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setActiveTab(tab.id);
-                }}
-                title={tab.label}
-                className={`group relative flex items-center justify-center gap-1 px-2 py-1 rounded-xl text-[11px] whitespace-nowrap transition-all duration-150 cursor-pointer select-none truncate ${
-                  isActive
-                    ? "bg-white dark:bg-[#28282e] text-stone-950 dark:text-white font-semibold border border-stone-200/90 dark:border-white/20 shadow-xs ring-1 ring-black/5 dark:ring-white/10"
-                    : "bg-stone-200/60 dark:bg-white/5 border border-stone-200/80 dark:border-white/5 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-white/80 dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/15 font-medium"
-                }`}
-              >
-                <Icon className={`w-3 h-3 shrink-0 transition-transform duration-150 group-hover:scale-110 ${tab.iconColor}`} />
-                <span className="truncate">{tab.label}</span>
-                {typeof tab.badge === "number" && tab.badge > 0 && (
-                  <span className={`text-[9px] font-mono px-1 py-0.2 rounded-full shrink-0 leading-none ${
-                    isActive
-                      ? "bg-[#e07a3f]/15 text-[#e07a3f] dark:text-[#ff9d66] font-semibold"
-                      : "bg-stone-300/60 dark:bg-white/10 text-stone-600 dark:text-stone-400"
-                  }`}>
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </motion.div>
-      </AnimatePresence>
-    </div>
-
-    {/* Flecha derecha: se muestra SOLO si no estamos en la última página */}
-    {topNavPage < tabPages.length - 1 && (
-      <button
-        type="button"
-        onClick={goToNextPage}
-        title="Pestañas siguientes"
-        className="p-1 rounded-xl text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-white/10 transition-all flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
-      >
-        <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    )}
-  </div>
-  </div>
-
-  {/* Right Search Input, Ver Tienda Button & Profile Badge (Desktop) */}
-  <div className="hidden md:flex items-center gap-3 sm:gap-3.5 lg:gap-4.5 shrink-0 min-w-0">
-    {/* Barra de Búsqueda (Spotlight Alive Command Bar en Desktop) */}
-    <div className="relative z-50 group/search" ref={searchDropdownRef}>
-      <div 
-        className={`relative flex items-center gap-2 pl-3 pr-2 h-9 sm:h-9.5 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
-          isSearchFocused
-            ? "border-[#e07a3f] dark:border-[#e07a3f] ring-3 ring-[#e07a3f]/25 shadow-[0_4px_20px_rgba(224,122,63,0.2)]"
-            : "border-[#e07a3f]/30 dark:border-[#e07a3f]/35 hover:border-[#e07a3f] dark:hover:border-[#e07a3f] hover:ring-2 hover:ring-[#e07a3f]/20 shadow-[0_2px_8px_rgba(224,122,63,0.06)]"
-        }`}
-      >
-        <div className="flex items-center justify-center shrink-0">
-          <Search className={`w-3.5 h-3.5 transition-all duration-300 ${
-            isSearchFocused
-              ? "text-[#e07a3f] scale-110 rotate-[-8deg]"
-              : "text-[#e07a3f]/70 dark:text-[#e07a3f]/80 group-hover/search:text-[#e07a3f] group-hover/search:scale-110"
-          }`} />
-        </div>
-
-        <input
-          ref={searchInputRef}
-          id="lumina-profile-search-input"
-          type="text"
-          value={searchQuery}
-          onFocus={() => setIsSearchFocused(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              if (!isSearchFocused) {
-                 setIsSearchFocused(true);
-              } else if (searchQuery.trim().length > 0) {
-                if (filteredOrders.length > 0) {
-                  setActiveTab("orders");
-                  setSelectedOrder(filteredOrders[0]);
-                  setSearchQuery("");
-                  setIsSearchFocused(false);
-                } else if (filteredCatalog.length > 0) {
-                  setActiveTab("catalog");
-                  handleOpenEditProduct(filteredCatalog[0]);
-                  setSearchQuery("");
-                  setIsSearchFocused(false);
-                }
-              }
-            }
-          }}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={isAdmin ? "Buscar pedidos o productos..." : "Buscar mis pedidos o marcas..."}
-          className="bg-transparent border-none outline-none text-[11px] w-24 sm:w-28 md:w-32 lg:w-44 focus:w-36 md:focus:w-48 lg:focus:w-60 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 ease-out"
-        />
-
-        {searchQuery && (
-          <div className="flex items-center gap-1 shrink-0 animate-fade-in">
-            <span className="px-1.5 py-0.2 rounded-full bg-[#e07a3f]/10 text-[#e07a3f] dark:text-[#f59e0b] text-[9px] font-mono font-bold">
-              {filteredOrders.length + filteredCatalog.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery("");
-                searchInputRef.current?.focus();
-              }}
-              className="w-4 h-4 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-800 dark:hover:text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
-              title="Limpiar búsqueda (Esc)"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Spotlight Dropdown Panel en Desktop */}
-      {isSearchFocused && renderSpotlightDropdown(false)}
-    </div>
-
-    {/* Botón Ver Tienda (Al lado derecho de la barra de búsqueda) */}
+  {/* --- 2. VISTA DESKTOP (md:flex): Brand, Arc Picker & Morphing Search --- */}
+  <div className="hidden md:flex items-center justify-between w-full gap-3 lg:gap-5 min-w-0">
+    {/* Left: Brand Wordmark */}
     <Link 
       href="/" 
-      className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-white/10 transition-colors shrink-0"
-      title="Ir a la tienda Lumina"
+      className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5" 
+      title="Ir a la tienda"
     >
-      <span>Ver Tienda</span>
-      <span aria-hidden="true">&rarr;</span>
+      <Image
+        src="/brand/lumina-wordmark.png"
+        alt={brand.name || "Lumina"}
+        width={1058}
+        height={272}
+        priority
+        className="h-6 sm:h-6.5 w-auto object-contain dark:invert"
+      />
     </Link>
+
+    {/* Center: beUI Arc Picker (Media Luna en modo "Top") */}
+    <div className="hidden md:flex items-center justify-center flex-1 max-w-[340px] lg:max-w-[420px] h-12 relative px-2">
+      <ArcPicker
+        options={arcPickerOptions}
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as ProfileTab)}
+        side="top"
+        radius={220}
+        itemHeight={40}
+        visibleCount={5}
+        className="h-12"
+      />
+    </div>
+
+    {/* Right: beUI Morphing Search + Ver Tienda */}
+    <div className="hidden md:flex items-center gap-3 sm:gap-3.5 lg:gap-4 shrink-0 min-w-0">
+      {/* beUI Morphing Search Bar */}
+      <div className="relative z-50 w-52 sm:w-60 md:w-64 lg:w-72">
+        <MorphingSearchChips
+          compact
+          side="bottom"
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          suggestions={searchSuggestions}
+          onSelectRow={handleSelectSearchRow}
+          placeholder={isAdmin ? "Buscar pedidos, productos..." : "Buscar pedidos..."}
+          storageKey="lumina_profile_search_recents"
+          className="w-full"
+        />
+      </div>
+
+      {/* Botón Ver Tienda (Al lado derecho de la barra de búsqueda) */}
+      <Link 
+        href="/" 
+        className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-white/10 transition-colors shrink-0"
+        title="Ir a la tienda Lumina"
+      >
+        <span>Ver Tienda</span>
+        <span aria-hidden="true">&rarr;</span>
+      </Link>
 
     {/* Avatar + Nombre y Rol con espaciado independiente calibrado */}
     <div className="flex items-center gap-2.5 sm:gap-3 pl-3.5 sm:pl-4 border-l border-gray-200 dark:border-white/10 shrink-0 min-w-0">
@@ -1811,6 +1726,7 @@ const handleConfirmDeleteNiche = async () => {
         </span>
       </div>
     </div>
+  </div>
   </div>
   </header>
 

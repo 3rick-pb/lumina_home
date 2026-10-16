@@ -925,6 +925,13 @@ export function SrdavoLiquidMenu({
               className="absolute inset-0 rounded-full pointer-events-none transition-[box-shadow,border] duration-150 z-20"
             />
           </div>
+
+          {/* Marco exterior 0.9px perfectamente redondeado sin distorsión ni artefactos horizontales */}
+          <div
+            className="pointer-events-none absolute inset-0 rounded-full border-[0.9px] border-[#18181b] dark:border-white/30 z-30"
+            style={{ borderRadius: 9999 }}
+            aria-hidden="true"
+          />
         </div>
 
         {/* BOTÓN DE LUPA DE BÚSQUEDA CON LIQUID GLASS REAL */}
@@ -993,6 +1000,12 @@ export function SrdavoLiquidMenu({
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3.5-3.5" strokeLinecap="round" />
             </svg>
+            {/* Marco exterior 0.9px perfectamente redondeado sin distorsión */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-full border-[0.9px] border-[#18181b] dark:border-white/30 z-20"
+              style={{ borderRadius: 9999 }}
+              aria-hidden="true"
+            />
           </button>
         )}
       </div>
