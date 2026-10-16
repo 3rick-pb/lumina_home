@@ -23,11 +23,7 @@ const DynamicMetalFx = dynamic(
   () => import("metal-fx").then((mod) => mod.MetalFx),
   {
     ssr: false,
-    loading: () => (
-      <div className="relative shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#18181b] border border-stone-300 dark:border-white/20 flex items-center justify-center">
-        <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 opacity-90" />
-      </div>
-    ),
+    loading: () => null,
   }
 );
 import { useUserStore, Order } from "@/lib/userStore";
@@ -109,6 +105,219 @@ function DropiIsotipo({ className = "w-6 h-6" }: { className?: string }) {
       <path d="M23.5204 31.981L23.465 31.9323C23.465 31.9323 23.485 31.95 23.5204 31.981Z" fill="#FF5500" />
       <path d="M55.2215 23.347C54.7759 11.3192 44.0648 1.95143 31.3011 2.42359C28.0425 2.54329 24.9613 3.29475 22.1904 4.54719C24.7662 5.3319 27.147 6.54887 29.224 8.12273C30.758 7.51535 32.4936 7.12078 34.431 6.98999C43.9096 6.34936 50.7836 12.5207 52.0006 20.4432C54.1774 34.6323 43.5439 36.4366 35.5549 35.9977C34.9209 35.9623 34.3025 35.9113 33.7017 35.8448C33.6884 35.8448 33.6774 35.8426 33.6641 35.8404C33.0988 35.7761 32.5513 35.6985 32.017 35.6054C31.9173 35.5877 31.8153 35.5699 31.7178 35.55C31.6934 35.5455 31.6712 35.5411 31.6469 35.5367C26.7524 34.5569 23.9394 32.3313 23.5249 31.9855C22.6759 33.1404 21.317 34.1778 19.2466 34.5037C19.2466 34.5037 16.1388 35.0423 13.3391 32.5862C13.2261 32.4865 13.3591 32.2604 13.4987 32.3202C15.3275 33.1448 19.3198 34.4039 22.1771 30.139C22.1815 30.1479 22.3101 29.9373 22.3101 29.9373C22.381 29.8264 22.4498 29.7156 22.5185 29.5981C22.5251 29.5826 22.6803 29.2678 22.7402 29.1459C23.4162 27.6873 23.7776 25.9605 23.7111 24.1207C23.7089 24.032 23.7044 23.9433 23.7 23.8547C23.7 23.8414 23.7 23.8281 23.6956 23.8148C23.6933 23.7749 23.6889 23.735 23.6845 23.6951C23.6756 23.5776 23.6601 23.4645 23.649 23.3492C23.6357 23.2229 23.6268 23.0965 23.6091 22.9746C23.5891 22.8239 23.567 22.6732 23.5404 22.5246C23.5359 22.5003 23.5337 22.4737 23.5271 22.447L23.4805 22.2963L23.5293 22.4493C23.1392 20.3035 22.166 18.4481 20.8493 17.1602C21.4478 15.3713 22.4143 13.5869 23.6047 12.1394C21.2616 10.5434 18.5262 9.44831 15.5846 8.98281C14.2967 10.2375 12.9601 11.9687 12.0202 13.4827L11.998 9.18453C13.4677 8.73232 14.494 7.30698 14.3566 5.68435C14.2103 3.97528 12.7495 2.62309 11.036 2.60757C9.10301 2.59206 7.57126 4.18586 7.6422 6.09444C7.69762 7.62175 8.76607 8.87197 10.1781 9.23108L10.2535 17.0582C9.37788 19.9111 8.88577 22.0946 8.99439 25.0583C9.03429 26.1113 9.15177 27.162 9.35128 28.1972C9.54635 29.2146 9.819 30.2188 10.1648 31.1941C10.5062 32.1584 10.9207 33.0983 11.3995 34.0027C11.8761 34.9027 12.4192 35.7694 13.0199 36.5918C13.6229 37.4164 14.2812 38.1989 14.9928 38.9304C15.7066 39.6686 16.4735 40.3558 17.2804 40.9898C18.0962 41.6282 18.9562 42.2134 19.8496 42.7365C20.7562 43.2663 21.6961 43.7362 22.6648 44.1419C23.649 44.5542 24.6598 44.8978 25.6906 45.1749C26.7435 45.4564 27.8142 45.667 28.8937 45.8044C29.4279 45.8731 29.9622 45.9219 30.4986 45.9552C30.9575 45.984 31.4318 46.0483 31.8973 45.9995C32.3917 45.9485 32.8151 45.7158 33.2495 45.4919C33.7416 45.237 34.2227 44.9599 34.6793 44.6429C35.3687 44.1641 36.0115 43.5899 36.4815 42.8895C36.5147 42.8385 36.5413 42.7919 36.5635 42.7365C35.9517 42.69 35.2822 42.5725 34.5906 42.3597C34.584 42.3575 34.5751 42.3552 34.5663 42.353C34.564 42.353 34.5596 42.353 34.5552 42.3464C34.4599 42.302 34.369 42.2222 34.3645 42.1092C34.3601 42.0072 34.4133 41.9185 34.4909 41.8587C34.4909 41.8587 36.8051 40.1873 38.3635 38.4006L38.3901 38.4051C38.4543 38.3541 38.5275 38.3208 38.6073 38.3386C38.6805 38.3541 38.7403 38.4073 38.7891 38.4627C38.7891 38.4627 40.8329 40.6439 41.4358 41.0984C41.5023 41.1494 41.5489 41.2247 41.5511 41.3156C41.5511 41.3245 41.5466 41.3333 41.5466 41.3444C41.5466 41.3511 41.5511 41.3577 41.5533 41.3644C41.5577 41.4397 41.5112 41.4996 41.4469 41.5528C41.4136 41.5794 41.376 41.606 41.3405 41.6282C41.3316 41.6348 41.3205 41.6392 41.3117 41.6459C41.0612 41.8055 40.4782 42.1402 39.6359 42.404C39.1881 43.6875 38.9442 44.4323 38.5053 45.0064C38.962 44.9022 39.4652 44.787 40.0371 44.654C49.1898 41.4708 55.5806 33.0229 55.2215 23.3515M10.9695 24.4399C10.8276 20.6116 13.1241 17.4174 16.0967 17.3065C19.0693 17.1957 21.5963 20.2104 21.7382 24.0409C21.8801 27.8691 19.5836 31.0634 16.611 31.1742C13.6362 31.285 11.1113 28.2703 10.9695 24.4399Z" fill="#FF5500" />
     </svg>
+  );
+}
+
+// Client-side fix for mobile Chromium/Android where OffscreenCanvas exists globally
+// but getContext("webgl2") returns null. By safely deleting OffscreenCanvas from window,
+// WebGL libraries fall back to standard HTMLCanvasElement instead of throwing uncaught errors.
+if (typeof window !== "undefined") {
+  try {
+    if (typeof OffscreenCanvas !== "undefined") {
+      const testOc = new OffscreenCanvas(1, 1);
+      const testGl = testOc.getContext("webgl2");
+      if (!testGl) {
+        try {
+          delete (window as unknown as { OffscreenCanvas?: unknown }).OffscreenCanvas;
+        } catch {
+          (window as unknown as { OffscreenCanvas?: unknown }).OffscreenCanvas = undefined;
+        }
+      } else {
+        const ext = testGl.getExtension("WEBGL_lose_context");
+        ext?.loseContext();
+      }
+    }
+  } catch {
+    try {
+      delete (window as unknown as { OffscreenCanvas?: unknown }).OffscreenCanvas;
+    } catch {
+      (window as unknown as { OffscreenCanvas?: unknown }).OffscreenCanvas = undefined;
+    }
+  }
+}
+
+class MetalFxErrorBoundary extends React.Component<
+  { fallback: React.ReactNode; children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.warn("MetalFx fallback active on this device:", error);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+/**
+ * Authentic Liquid Metal Silver (Mercury / Plata Líquida) Ring:
+ * - 100% Pure silver liquid metal caustics & specular luster
+ * - 0% chromatic distortion (pure mercury / platinum / chrome reflections, strictly monochromatic)
+ * - Autonomous fluid orbit on mobile/touch screens (60/120 FPS hardware acceleration)
+ * - Viscous hydrodynamic inertia following mouse cursor on desktop
+ * - Razor-thin outer specular bevel & inner dark occlusion shadow for genuine physical depth
+ */
+function LiquidMetalSilverRing({
+  size = 48,
+  hasFinePointer = false,
+}: {
+  size?: number;
+  hasFinePointer?: boolean;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pointerPosRef = useRef<{ x: number; y: number; active: boolean }>({
+    x: 0,
+    y: 0,
+    active: false,
+  });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let rafId: number;
+    let angle = 0;
+    let currentDisplayAngle = 0;
+    const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2.5) : 1;
+    const pxSize = Math.round(size * dpr);
+    canvas.width = pxSize;
+    canvas.height = pxSize;
+
+    const cx = pxSize / 2;
+    const cy = pxSize / 2;
+    // Ring thickness ~2.4 CSS px
+    const ringThickness = 2.4 * dpr;
+    const outerR = cx - 1.0 * dpr;
+    const innerR = outerR - ringThickness;
+    const midR = (innerR + outerR) / 2;
+
+    const render = () => {
+      ctx.clearRect(0, 0, pxSize, pxSize);
+
+      // Smooth liquid metal orbit (~7.5s cycle)
+      angle = (angle + 0.022) % (Math.PI * 2);
+
+      let targetAngle = angle;
+      if (hasFinePointer && pointerPosRef.current.active) {
+        const dx = pointerPosRef.current.x - size / 2;
+        const dy = pointerPosRef.current.y - size / 2;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1) {
+          targetAngle = Math.atan2(dy, dx);
+        }
+      }
+
+      // Viscous hydrodynamic inertia lerp
+      let diff = (targetAngle - currentDisplayAngle) % (Math.PI * 2);
+      if (diff < -Math.PI) diff += Math.PI * 2;
+      if (diff > Math.PI) diff -= Math.PI * 2;
+      currentDisplayAngle += diff * 0.12;
+
+      const steps = 72;
+      const stepAngle = (Math.PI * 2) / steps;
+
+      ctx.save();
+      ctx.lineWidth = ringThickness;
+      ctx.lineCap = "round";
+
+      for (let i = 0; i < steps; i++) {
+        const a1 = i * stepAngle;
+        const a2 = (i + 1) * stepAngle + 0.015;
+
+        let relA = (a1 - currentDisplayAngle) % (Math.PI * 2);
+        if (relA < -Math.PI) relA += Math.PI * 2;
+        if (relA > Math.PI) relA -= Math.PI * 2;
+
+        const cosVal = Math.cos(relA);
+        const spec = cosVal > 0 ? Math.pow(cosVal, 5) : 0;
+        const oppCos = Math.cos(relA + Math.PI);
+        const oppSpec = oppCos > 0 ? Math.pow(oppCos, 6) * 0.42 : 0;
+
+        // Mercury fluid ripples
+        const ripple = Math.sin(a1 * 3 + angle * 2) * 0.12 + Math.cos(a1 * 5 - angle) * 0.08;
+        const intensity = Math.min(1.0, Math.max(0.18, 0.35 + ripple + spec * 0.65 + oppSpec));
+
+        // PURE SILVER / PLATINUM / MERCURY (strictly monochromatic, NO RAINBOW)
+        const baseSilver = 175 * intensity + 80 * spec;
+        const r = Math.min(255, Math.round(baseSilver * 0.98));
+        const g = Math.min(255, Math.round(baseSilver * 1.0));
+        const b = Math.min(255, Math.round(baseSilver * 1.04));
+
+        ctx.strokeStyle = `rgb(${r},${g},${b})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, midR, a1, a2);
+        ctx.stroke();
+      }
+
+      // Outer and inner razor-thin metallic bevels for physical depth
+      ctx.lineWidth = 0.9 * dpr;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.38)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.68)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      rafId = requestAnimationFrame(render);
+    };
+
+    rafId = requestAnimationFrame(render);
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!hasFinePointer) return;
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const dist = Math.hypot(px - size / 2, py - size / 2);
+      if (dist < size * 2.5) {
+        pointerPosRef.current = { x: px, y: py, active: true };
+      } else {
+        pointerPosRef.current.active = false;
+      }
+    };
+
+    const onPointerLeave = () => {
+      pointerPosRef.current.active = false;
+    };
+
+    if (hasFinePointer) {
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointerleave", onPointerLeave, { passive: true });
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (hasFinePointer) {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerleave", onPointerLeave);
+      }
+    };
+  }, [size, hasFinePointer]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none absolute inset-0 z-20 rounded-full"
+      style={{
+        width: size,
+        height: size,
+      }}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -973,7 +1182,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC THINKING ORBS METAL-FX LIQUID SHADER */}
+        {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC LIQUID METAL SILVER EFFECT */}
         <div className="relative inline-flex items-center justify-center shrink-0">
           {/* Ambient chromatic light spill - highly saturated and vivid in Light Mode, deep celestial aura in Dark Mode */}
           <div 
@@ -985,65 +1194,73 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-tr from-cyan-400/50 via-teal-400/40 to-indigo-500/50 dark:from-cyan-500/25 dark:via-blue-500/20 dark:to-purple-500/25 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
           />
 
-          {canvasReady && (
-            <MetalBendController
-              targetRef={metalRef}
-              enabled={hasFinePointer}
+          <div
+            className="relative shrink-0 flex items-center justify-center rounded-full bg-[#18181b] shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+            style={{
+              width: isMobile ? 44 : 48,
+              height: isMobile ? 44 : 48,
+            }}
+          >
+            {/* Liquid Metal Silver Ring: 100% reliable hardware-accelerated silver mercury ring on mobile, tablets, laptops, and desktop */}
+            <LiquidMetalSilverRing
+              size={isMobile ? 44 : 48}
+              hasFinePointer={hasFinePointer}
             />
-          )}
 
-          {mounted ? (
-            <DynamicMetalFx
-              ref={metalRef}
-              preset="silver"
-              variant="circle"
-              theme="dark"
-              innerShadow
-              ringCssPx={2.2}
-              shaderScale={1.3}
-              strength={1}
-              className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
-              style={{
-                width: isMobile ? 44 : 48,
-                height: isMobile ? 44 : 48,
-                borderRadius: "9999px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={handleToggleMenu}
-                aria-label="Exportar datos a Excel"
-                title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-                className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
-              >
-                <motion.div
-                  animate={{ 
-                    rotate: isOpen ? 90 : 0, 
-                    scale: isOpen ? 1.05 : 1 
+            {/* Desktop WebGL MetalFx Shader with cursor bend on devices with fine pointer */}
+            {mounted && hasFinePointer && (
+              <MetalFxErrorBoundary fallback={null}>
+                <DynamicMetalFx
+                  ref={metalRef}
+                  preset="silver"
+                  variant="circle"
+                  theme="dark"
+                  innerShadow
+                  ringCssPx={2.2}
+                  shaderScale={1.3}
+                  strength={1}
+                  className="absolute inset-0 z-30 shrink-0 w-full h-full flex items-center justify-center pointer-events-none"
+                  style={{
+                    width: isMobile ? 44 : 48,
+                    height: isMobile ? 44 : 48,
+                    borderRadius: "9999px",
                   }}
-                  transition={{ type: "spring", stiffness: 380, damping: 20 }}
-                  className="relative z-10 flex items-center justify-center select-none"
                 >
-                  {isOpen ? (
-                    <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-                  ) : (
-                    <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
-                  )}
-                </motion.div>
-              </button>
-            </DynamicMetalFx>
-          ) : (
-            <div 
-              style={{
-                width: isMobile ? 44 : 48,
-                height: isMobile ? 44 : 48,
-                borderRadius: "9999px",
-              }}
-              className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-[#18181b] border border-white/20"
+                  <div className="w-full h-full" />
+                </DynamicMetalFx>
+              </MetalFxErrorBoundary>
+            )}
+
+            {canvasReady && hasFinePointer && (
+              <MetalBendController
+                targetRef={metalRef}
+                enabled={hasFinePointer}
+              />
+            )}
+
+            <button
+              type="button"
+              onClick={handleToggleMenu}
+              aria-label="Exportar datos a Excel"
+              title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+              className="relative z-40 h-full w-full rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
             >
-              <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 opacity-90" />
-            </div>
-          )}
+              <motion.div
+                animate={{ 
+                  rotate: isOpen ? 90 : 0, 
+                  scale: isOpen ? 1.05 : 1 
+                }}
+                transition={{ type: "spring", stiffness: 380, damping: 20 }}
+                className="relative z-10 flex items-center justify-center select-none"
+              >
+                {isOpen ? (
+                  <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                ) : (
+                  <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
+                )}
+              </motion.div>
+            </button>
+          </div>
         </div>
       </div>
 
