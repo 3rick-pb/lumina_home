@@ -119,7 +119,7 @@ export function BackToTopButton({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.92 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center justify-center pointer-events-auto select-none ${className}`}
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 lg:bottom-16 lg:left-8 xl:left-12 lg:translate-x-0 z-40 flex items-center justify-center pointer-events-auto select-none ${className}`}
         >
           <button
             ref={buttonRef}

@@ -695,9 +695,9 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Barra de Filtros / Nichos Rediseñada: 5 primeros + Botón Ver más interactivo */}
+              {/* Barra de Filtros / Nichos Rediseñada: Animación física spring, tipografía editorial y tonos bosque brandeados */}
               <div className="relative w-full">
-                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap py-1 px-0.5 w-full">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap py-1.5 px-1 w-full">
                   {(showAllNicheFilters ? ["Todos", ...categories] : ["Todos", ...categories].slice(0, 5)).map((filter) => {
                     const isActive = activeFilter === filter;
                     return (
@@ -712,16 +712,32 @@ export default function Home() {
                         onMouseEnter={() => {
                           if (filter !== "Todos") handlePointerEnterCategory(filter);
                         }}
-                        className={`relative px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 ease-out cursor-pointer shrink-0 select-none ${
-                          isActive 
-                            ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-md shadow-black/10 dark:shadow-white/10 ring-1 ring-black/10 dark:ring-white/20 scale-[1.02]' 
-                            : 'bg-white/80 dark:bg-[#1e1e20]/80 backdrop-blur-md text-gray-600 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white border border-black/[0.06] dark:border-white/[0.08] hover:bg-white dark:hover:bg-[#252528] hover:shadow-xs active:scale-95'
-                        }`}
+                        className="relative px-4 sm:px-5 py-2 rounded-full whitespace-nowrap cursor-pointer shrink-0 select-none group transition-transform duration-200 active:scale-95"
                       >
-                        {filter}
+                        {/* Indicador animado físico deslizable (Apple Segmented Spring Physics) */}
                         {isActive && (
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 ml-1.5 align-middle" />
+                          <motion.span
+                            layoutId="activeNicheIndicator"
+                            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                            className="absolute inset-0 rounded-full bg-[#242c1c] dark:bg-[#e5ecdb] shadow-md shadow-black/15 dark:shadow-white/10 ring-1 ring-black/10 dark:ring-white/20 -z-0"
+                          />
                         )}
+
+                        {/* Fondo inactivo translúcido con toque cálido brandeado */}
+                        {!isActive && (
+                          <span className="absolute inset-0 rounded-full bg-[#f3f0e8]/80 dark:bg-[#1f251c]/70 border border-black/[0.06] dark:border-white/[0.08] backdrop-blur-xs transition-colors duration-200 group-hover:bg-[#eae5da] dark:group-hover:bg-[#283024] -z-0" />
+                        )}
+
+                        <span className={`relative z-10 flex items-center gap-1.5 text-xs sm:text-sm font-display tracking-wide transition-colors duration-200 ${
+                          isActive 
+                            ? 'text-[#f5f8f0] dark:text-[#182012] font-semibold italic' 
+                            : 'text-[#48533d] dark:text-[#c4cec0] font-medium group-hover:text-gray-950 dark:group-hover:text-white'
+                        }`}>
+                          {filter}
+                          {isActive && (
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-[#526437] shrink-0" />
+                          )}
+                        </span>
                       </button>
                     );
                   })}
@@ -731,7 +747,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setShowAllNicheFilters(!showAllNicheFilters)}
-                      className="group relative px-3.5 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ease-out cursor-pointer shrink-0 flex items-center gap-1.5 bg-[#8c9276]/15 dark:bg-[#8c9276]/25 text-[#3e482b] dark:text-[#d4dbbe] border border-[#8c9276]/30 dark:border-[#8c9276]/40 hover:bg-[#8c9276]/25 dark:hover:bg-[#8c9276]/35 active:scale-95 shadow-2xs"
+                      className="group relative px-4 py-2 rounded-full text-xs sm:text-sm font-display tracking-wide font-medium whitespace-nowrap transition-all duration-200 ease-out cursor-pointer shrink-0 flex items-center gap-1.5 bg-[#8c9276]/20 dark:bg-[#8c9276]/25 text-[#2d3721] dark:text-[#dce4cf] border border-[#8c9276]/35 dark:border-[#8c9276]/40 hover:bg-[#8c9276]/30 dark:hover:bg-[#8c9276]/35 active:scale-95 shadow-2xs"
                     >
                       <span>
                         {showAllNicheFilters 
@@ -783,12 +799,12 @@ export default function Home() {
       {/* Velo degradado verde bosque brandeado desde abajo hacia arriba (Puro CSS, 0% costo GPU, 120 FPS) */}
       <div
         aria-hidden="true"
-        className={`fixed bottom-0 left-0 right-0 h-36 sm:h-48 lg:h-56 pointer-events-none z-30 transition-opacity duration-700 ease-out ${
+        className={`fixed bottom-0 left-0 right-0 h-44 sm:h-56 lg:h-64 pointer-events-none z-30 transition-opacity duration-700 ease-out ${
           showCatalogGradient ? "opacity-100" : "opacity-0"
         }`}
         style={{
           background:
-            "linear-gradient(to top, rgba(20, 27, 16, 0.96) 0%, rgba(20, 27, 16, 0.75) 25%, rgba(20, 27, 16, 0.40) 55%, rgba(20, 27, 16, 0.10) 80%, transparent 100%)",
+            "linear-gradient(to top, rgba(16, 22, 13, 0.98) 0%, rgba(16, 22, 13, 0.92) 12%, rgba(16, 22, 13, 0.80) 24%, rgba(16, 22, 13, 0.62) 38%, rgba(16, 22, 13, 0.42) 52%, rgba(16, 22, 13, 0.25) 66%, rgba(16, 22, 13, 0.12) 79%, rgba(16, 22, 13, 0.03) 90%, transparent 100%)",
         }}
       />
     </LuminaBootOrchestrator>
