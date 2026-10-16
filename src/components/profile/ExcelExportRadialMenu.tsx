@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import MicrosoftExcel from "@thesvg/react/microsoft-excel";
 import dynamic from "next/dynamic";
-import { useMetalBend, BEND } from "metal-fx";
+import { useMetalBend, BEND, PRESETS, setSharedPresetMode } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
 
 const DynamicMetalFx = dynamic(
@@ -459,6 +459,41 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
     return () => clearInterval(timer);
   }, []);
 
+  // Continuous autonomous fluid orbit of the liquid metal shader:
+  // Dynamically rotates angle and rotation continuously across 360 degrees so that on mobile,
+  // tablets, and touch screens (where there is no cursor hover), the liquid metal caustics and waves
+  // visibly and smoothly orbit around the button at all times.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let rafId: number;
+    let angle = 0;
+    const baseSilver = PRESETS.silver.modes.dark;
+
+    const orbitLoop = () => {
+      // Rotate ~0.85 degrees per frame -> continuous ~7.0s full fluid orbit cycle
+      angle = (angle + 0.85) % 360;
+      try {
+        setSharedPresetMode({
+          ...baseSilver,
+          angle,
+          rotation: angle,
+          speed: 1.2,
+          repetition: 2.2,
+          softness: 0.08,
+          shiftRed: 0.25,
+          shiftBlue: 0.25,
+          distortion: 0.16,
+          contour: 0.45,
+          colorTint: "#ffffffee",
+          shaderOpacity: 1,
+        });
+      } catch {}
+      rafId = requestAnimationFrame(orbitLoop);
+    };
+
+    rafId = requestAnimationFrame(orbitLoop);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -1267,7 +1302,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                 variant="circle"
                 theme="dark"
                 innerShadow
-                ringCssPx={2.2}
+                ringCssPx={isMobile ? 3.0 : 2.8}
                 shaderScale={1.3}
                 strength={1}
                 className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
