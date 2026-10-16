@@ -411,16 +411,27 @@ export function ProductLandingView({
               <>
                 {/* Foto Principal Cuadrada/Vertical con botón Zoom y Favorito */}
                 <div className="relative w-full aspect-[4/5] sm:aspect-square rounded-3xl overflow-hidden bg-gradient-to-b from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] border border-black/5 dark:border-white/10 shadow-2xl group flex items-center justify-center">
-                  <Image
-                    src={currentImage}
-                    alt={product.title}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    priority
-                    quality={95}
-                    draggable={false}
-                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
-                  />
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentImage}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="relative w-full h-full"
+                    >
+                      <Image
+                        src={currentImage}
+                        alt={product.title}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        priority
+                        quality={95}
+                        draggable={false}
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                   
                   {/* Badge de Estado */}
                   {(product.badge || isAgotado) && (
