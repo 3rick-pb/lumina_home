@@ -7,7 +7,6 @@ import { ProductCard } from "@/components/ui/ProductCard";
 import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
-import { useAmbientStore } from "@/lib/ambientStore";
 import { supabase } from "@/lib/supabase";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 import { BackToTopButton } from "@/components/ui/BackToTopButton";
@@ -143,7 +142,6 @@ const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
 
 export default function Home() {
   const { products, categories } = useCatalogStore();
-  const { setCategoryTheme, resetTheme } = useAmbientStore();
   const heroTime = useHeroTimePhase();
   const [isMounted, setIsMounted] = useState(false);
   const [activeFilter, setActiveFilter] = useState("Todos");
@@ -360,15 +358,6 @@ export default function Home() {
       }
     };
   }, []);
-
-  const handlePointerEnterCategory = (catName: string) => {
-    setCategoryTheme(catName);
-  };
-
-  const handlePointerLeaveCategory = (fallback = "default") => {
-    if (fallback === "default") resetTheme();
-    else setCategoryTheme(fallback);
-  };
 
   const displayProducts = isMounted ? products : [];
   
@@ -599,8 +588,6 @@ export default function Home() {
                     onClick={() => {
                       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
                     }}
-                    onMouseEnter={() => handlePointerEnterCategory(cat.name)}
-                    onMouseLeave={() => handlePointerLeaveCategory("default")}
                     className="group relative h-[240px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-xs border border-black/5 transition-transform duration-300 ease-out hover:-translate-y-1 transform-gpu"
                   >
                     <Image 
@@ -635,8 +622,6 @@ export default function Home() {
                   onClick={() => {
                     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
                   }}
-                  onMouseEnter={() => handlePointerEnterCategory("default")}
-                  onMouseLeave={() => handlePointerLeaveCategory("default")}
                   className="group relative h-[160px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-5 md:p-6 bg-gradient-to-br from-[#242c1d] via-[#1a2114] to-[#10150d] dark:from-[#1b2216] dark:via-[#13190f] dark:to-[#0b0e09] border border-white/10 shadow-xs transition-transform duration-300 ease-out hover:-translate-y-1 transform-gpu cursor-pointer"
                 >
                   {/* Glow sutil verde bosque brandeado Lumina */}
@@ -704,35 +689,14 @@ export default function Home() {
                       <button 
                         key={filter}
                         type="button"
-                        onClick={() => {
-                          setActiveFilter(filter);
-                          if (filter === "Todos") resetTheme();
-                          else setCategoryTheme(filter);
-                        }}
-                        onMouseEnter={() => {
-                          if (filter !== "Todos") handlePointerEnterCategory(filter);
-                        }}
-                        className="relative px-4 sm:px-5 py-2 rounded-full whitespace-nowrap cursor-pointer shrink-0 select-none group transition-transform duration-200 active:scale-95"
-                      >
-                        {/* Indicador animado físico deslizable (Apple Segmented Spring Physics) */}
-                        {isActive && (
-                          <motion.span
-                            layoutId="activeNicheIndicator"
-                            transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                            className="absolute inset-0 rounded-full bg-[#242c1c] dark:bg-[#e5ecdb] shadow-md shadow-black/15 dark:shadow-white/10 ring-1 ring-black/10 dark:ring-white/20 -z-0"
-                          />
-                        )}
-
-                        {/* Fondo inactivo translúcido con toque cálido brandeado */}
-                        {!isActive && (
-                          <span className="absolute inset-0 rounded-full bg-[#f3f0e8]/80 dark:bg-[#1f251c]/70 border border-black/[0.06] dark:border-white/[0.08] backdrop-blur-xs transition-colors duration-200 group-hover:bg-[#eae5da] dark:group-hover:bg-[#283024] -z-0" />
-                        )}
-
-                        <span className={`relative z-10 flex items-center gap-1.5 text-xs sm:text-sm font-display tracking-wide transition-colors duration-200 ${
+                        onClick={() => setActiveFilter(filter)}
+                        className={`relative px-4 sm:px-5 py-2 rounded-full whitespace-nowrap cursor-pointer shrink-0 select-none transition-all duration-150 active:scale-95 ${
                           isActive 
-                            ? 'text-[#f5f8f0] dark:text-[#182012] font-semibold italic' 
-                            : 'text-[#48533d] dark:text-[#c4cec0] font-medium group-hover:text-gray-950 dark:group-hover:text-white'
-                        }`}>
+                            ? 'bg-[#242c1c] dark:bg-[#e5ecdb] text-[#f5f8f0] dark:text-[#182012] shadow-sm ring-1 ring-black/10 dark:ring-white/20' 
+                            : 'bg-[#f3f0e8]/80 dark:bg-[#1f251c]/70 text-[#48533d] dark:text-[#c4cec0] hover:bg-[#eae5da] dark:hover:bg-[#283024] hover:text-gray-950 dark:hover:text-white border border-black/[0.06] dark:border-white/[0.08]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 text-xs sm:text-sm font-display tracking-wide font-medium">
                           {filter}
                           {isActive && (
                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-[#526437] shrink-0" />
@@ -747,7 +711,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setShowAllNicheFilters(!showAllNicheFilters)}
-                      className="group relative px-4 py-2 rounded-full text-xs sm:text-sm font-display tracking-wide font-medium whitespace-nowrap transition-all duration-200 ease-out cursor-pointer shrink-0 flex items-center gap-1.5 bg-[#8c9276]/20 dark:bg-[#8c9276]/25 text-[#2d3721] dark:text-[#dce4cf] border border-[#8c9276]/35 dark:border-[#8c9276]/40 hover:bg-[#8c9276]/30 dark:hover:bg-[#8c9276]/35 active:scale-95 shadow-2xs"
+                      className="group relative px-4 py-2 rounded-full text-xs sm:text-sm font-display tracking-wide font-medium whitespace-nowrap transition-all duration-150 ease-out cursor-pointer shrink-0 flex items-center gap-1.5 bg-[#8c9276]/20 dark:bg-[#8c9276]/25 text-[#2d3721] dark:text-[#dce4cf] border border-[#8c9276]/35 dark:border-[#8c9276]/40 hover:bg-[#8c9276]/30 dark:hover:bg-[#8c9276]/35 active:scale-95 shadow-2xs"
                     >
                       <span>
                         {showAllNicheFilters 
@@ -755,7 +719,7 @@ export default function Home() {
                           : `Ver más (+${["Todos", ...categories].length - 5})`}
                       </span>
                       <ChevronDown 
-                        className={`w-3.5 h-3.5 transition-transform duration-300 ease-out ${
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ease-out ${
                           showAllNicheFilters ? "rotate-180" : "group-hover:translate-y-0.5"
                         }`} 
                       />
@@ -774,10 +738,7 @@ export default function Home() {
                 {filteredProducts.slice(0, 8).map((product) => (
                   <div 
                     key={product.id}
-                    data-ambient-category={product.category.toLowerCase()}
                     className="transform-gpu"
-                    onMouseEnter={() => handlePointerEnterCategory(product.category)}
-                    onMouseLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
                   >
                     <ProductCard {...product} />
                   </div>

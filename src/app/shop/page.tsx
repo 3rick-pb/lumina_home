@@ -7,8 +7,6 @@ import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
-import { useAmbientStore } from "@/lib/ambientStore";
-import { useScrollAmbient } from "@/lib/useScrollAmbient";
 import { normalizeSearchText as normalizeText } from "@/lib/utils";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
@@ -25,7 +23,6 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
   const categoryFilter = resolvedSearchParams.category;
   const searchQuery = resolvedSearchParams.search;
   const { products, categories } = useCatalogStore();
-  const { setCategoryTheme, resetTheme } = useAmbientStore();
 
   // Resolve canonical category name from store categories (e.g. "iluminacion" -> "Iluminación")
   const canonicalCategoryName = React.useMemo(() => {
@@ -43,29 +40,6 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [categoryFilter, searchQuery]);
 
-  useEffect(() => {
-    if (canonicalCategoryName) {
-      setCategoryTheme(canonicalCategoryName);
-    } else {
-      resetTheme();
-    }
-    return () => resetTheme();
-  }, [canonicalCategoryName, setCategoryTheme, resetTheme]);
-
-  // Desktop pointer hover handlers (strictly bypassed on mobile/touch screens to prevent lag & confusion)
-  const handlePointerEnterCategory = (catName: string) => {
-    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      setCategoryTheme(catName);
-    }
-  };
-
-  const handlePointerLeaveCategory = () => {
-    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      if (canonicalCategoryName) setCategoryTheme(canonicalCategoryName);
-      else resetTheme();
-    }
-  };
-
   const filteredProducts = React.useMemo(() => {
     let list = products;
     if (categoryFilter) {
@@ -82,9 +56,6 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
     }
     return list;
   }, [products, categoryFilter, searchQuery]);
-
-  // Mobile/touch scroll-driven ambient theme transition
-  useScrollAmbient("[data-ambient-category]", [categoryFilter, searchQuery, filteredProducts]);
 
   // Velo degradado inferior de color puro CSS verde bosque (0% GPU overhead, 120 FPS)
   const [showCatalogGradient, setShowCatalogGradient] = React.useState(false);
@@ -154,8 +125,6 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
               <Link 
                 key={cat} 
                 href={`/shop?category=${encodeURIComponent(cat.toLowerCase())}`}
-                onMouseEnter={() => handlePointerEnterCategory(cat)}
-                onMouseLeave={handlePointerLeaveCategory}
                 className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${isSelected ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}
               >
                 {cat}
@@ -184,12 +153,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
               {filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  data-ambient-category={product.category.toLowerCase()}
-                  onMouseEnter={() => handlePointerEnterCategory(product.category)}
-                  onMouseLeave={handlePointerLeaveCategory}
-                >
+                <div key={product.id}>
                   <ProductCard {...product} />
                 </div>
               ))}
@@ -204,7 +168,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
       </div>
 
       {/* Floating Centered Scroll-To-Top Button for Catalog */}
-      <CatalogScrollToTopButton className="bottom-6 sm:bottom-8" />
+      <CatalogScrollToTopButton />
 
       {/* Velo degradado verde bosque brandeado desde abajo hacia arriba (Puro CSS, 0% costo GPU, 120 FPS) */}
       <div
