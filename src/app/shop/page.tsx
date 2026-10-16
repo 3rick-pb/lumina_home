@@ -86,6 +86,36 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
   // Mobile/touch scroll-driven ambient theme transition
   useScrollAmbient("[data-ambient-category]", [categoryFilter, searchQuery, filteredProducts]);
 
+  // Velo degradado inferior de color puro CSS verde bosque (0% GPU overhead, 120 FPS)
+  const [showCatalogGradient, setShowCatalogGradient] = React.useState(false);
+  const showCatalogGradientRef = React.useRef(false);
+  const gradientRafRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onScroll = () => {
+      if (gradientRafRef.current !== null) return;
+      gradientRafRef.current = window.requestAnimationFrame(() => {
+        gradientRafRef.current = null;
+        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        const shouldShow = scrollY > 120;
+        if (shouldShow !== showCatalogGradientRef.current) {
+          showCatalogGradientRef.current = shouldShow;
+          setShowCatalogGradient(shouldShow);
+        }
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (gradientRafRef.current !== null) {
+        window.cancelAnimationFrame(gradientRafRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen pt-32 pb-24 bg-transparent relative">
       <div className="container mx-auto px-4 md:px-8 relative z-10">
@@ -175,6 +205,18 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
 
       {/* Floating Centered Scroll-To-Top Button for Catalog */}
       <CatalogScrollToTopButton className="bottom-6 sm:bottom-8" />
+
+      {/* Velo degradado verde bosque brandeado desde abajo hacia arriba (Puro CSS, 0% costo GPU, 120 FPS) */}
+      <div
+        aria-hidden="true"
+        className={`fixed bottom-0 left-0 right-0 h-28 sm:h-36 lg:h-44 pointer-events-none z-30 transition-opacity duration-500 ease-out ${
+          showCatalogGradient ? "opacity-100" : "opacity-0"
+        }`}
+        style={{
+          background:
+            "linear-gradient(to top, rgba(30, 38, 24, 0.90) 0%, rgba(30, 38, 24, 0.45) 45%, rgba(30, 38, 24, 0.10) 75%, transparent 100%)",
+        }}
+      />
     </div>
   );
 }

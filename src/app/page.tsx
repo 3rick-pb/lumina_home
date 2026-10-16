@@ -329,6 +329,37 @@ export default function Home() {
     fetchCategoriesMeta();
   }, []);
 
+  // Velo degradado inferior de color puro CSS (0% costo GPU):
+  // Aparece suavemente al hacer scroll hacia abajo para explorar el catálogo y desaparece al subir al Hero
+  const [showCatalogGradient, setShowCatalogGradient] = useState(false);
+  const showCatalogGradientRef = useRef(false);
+  const gradientRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onScroll = () => {
+      if (gradientRafRef.current !== null) return;
+      gradientRafRef.current = window.requestAnimationFrame(() => {
+        gradientRafRef.current = null;
+        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        const shouldShow = scrollY > 400;
+        if (shouldShow !== showCatalogGradientRef.current) {
+          showCatalogGradientRef.current = shouldShow;
+          setShowCatalogGradient(shouldShow);
+        }
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (gradientRafRef.current !== null) {
+        window.cancelAnimationFrame(gradientRafRef.current);
+      }
+    };
+  }, []);
+
   const handlePointerEnterCategory = (catName: string) => {
     setCategoryTheme(catName);
   };
@@ -554,12 +585,8 @@ export default function Home() {
               </div>
             </motion.div>
             
-            <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${
-              dynamicCategories.length <= 4 
-                ? "md:grid-cols-2 lg:grid-cols-4" 
-                : "md:grid-cols-3 lg:grid-cols-5"
-            }`}>
-              {dynamicCategories.map((cat, idx) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              {dynamicCategories.slice(0, 4).map((cat, idx) => (
                 <div
                   key={idx}
                   data-ambient-category={cat.name.toLowerCase()}
@@ -598,6 +625,46 @@ export default function Home() {
                   </Link>
                 </div>
               ))}
+
+              {/* Quinta Tarjeta: Flecha interactiva hacia la sección "TODO" (catálogo completo) */}
+              <div className="col-span-2 sm:col-span-1 transform-gpu">
+                <Link 
+                  href="/shop" 
+                  scroll={true}
+                  onClick={() => {
+                    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+                  }}
+                  onMouseEnter={() => handlePointerEnterCategory("default")}
+                  onMouseLeave={() => handlePointerLeaveCategory("default")}
+                  className="group relative h-[160px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-5 md:p-6 bg-gradient-to-br from-[#242c1d] via-[#1a2114] to-[#10150d] dark:from-[#1b2216] dark:via-[#13190f] dark:to-[#0b0e09] border border-white/10 shadow-xs transition-transform duration-300 ease-out hover:-translate-y-1 transform-gpu cursor-pointer"
+                >
+                  {/* Glow sutil verde bosque brandeado Lumina */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(140,146,118,0.22),transparent_70%)] pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="text-[#cbd4b7] text-[10px] sm:text-[11px] font-medium uppercase tracking-widest">
+                      Colección Global
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white/90 font-mono">
+                      TODO
+                    </span>
+                  </div>
+
+                  <div className="relative z-10 flex items-end justify-between mt-auto">
+                    <div>
+                      <h3 className="text-white font-display italic text-xl sm:text-2xl lg:text-3xl leading-tight">
+                        Ver Todo
+                      </h3>
+                      <p className="text-gray-300/80 text-[11px] sm:text-xs font-light mt-0.5 sm:mt-1">
+                        Todas las piezas
+                      </p>
+                    </div>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white text-gray-950 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#8c9276] group-hover:text-white transition-all duration-300 shadow-md shrink-0 ml-2">
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -688,6 +755,18 @@ export default function Home() {
 
       {/* Botón flotante '+ Volver arriba' aislado en la raíz del viewport */}
       <BackToTopButton threshold={600} />
+
+      {/* Velo degradado verde bosque brandeado desde abajo hacia arriba (Puro CSS, 0% costo GPU, 120 FPS) */}
+      <div
+        aria-hidden="true"
+        className={`fixed bottom-0 left-0 right-0 h-28 sm:h-36 lg:h-44 pointer-events-none z-30 transition-opacity duration-500 ease-out ${
+          showCatalogGradient ? "opacity-100" : "opacity-0"
+        }`}
+        style={{
+          background:
+            "linear-gradient(to top, rgba(30, 38, 24, 0.90) 0%, rgba(30, 38, 24, 0.45) 45%, rgba(30, 38, 24, 0.10) 75%, transparent 100%)",
+        }}
+      />
     </LuminaBootOrchestrator>
   );
 }
