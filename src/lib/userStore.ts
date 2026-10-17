@@ -97,7 +97,6 @@ export interface PaymentCard {
   holder: string;
   exp: string;
   type: 'mastercard' | 'visa';
-  cvv?: string;
   isDefault?: boolean;
 }
 

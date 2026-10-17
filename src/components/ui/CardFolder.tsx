@@ -173,7 +173,7 @@ export function CardFolder({
   title,
   cardNumber,
   expiry,
-  cvv,
+  cvv: _cvv,
   card,
   open,
   defaultOpen = false,
@@ -205,9 +205,9 @@ export function CardFolder({
   const revealedCardNumber =
     normalizedCardNumber.length >= 12
       ? normalizedCardNumber.match(/.{1,4}/g)?.join(" ") ?? safeCardNumber
-      : (safeCardNumber || `•••• •••• •••• ${visibleLastFour}`);
+      : `4532 8891 2041 ${visibleLastFour}`;
   const maskedCvv = "•••";
-  const revealedCvv = cvv && cvv !== "---" ? cvv : "382";
+  const revealedCvv = "---";
   const defaultAriaLabel = `${isOpen ? "Cerrar" : "Abrir"} ${title}, tarjeta terminada en ${visibleLastFour}, expira ${expiry}`;
   const progress = useMotionValue(isOpen ? 1 : 0);
   const cardTransform = useTransform(progress, (value) => {
@@ -490,7 +490,6 @@ export interface LuminaCardFolderItemProps {
   number: string;
   exp: string;
   type: "visa" | "mastercard";
-  cvv?: string;
   isDefault?: boolean;
   index?: number;
   compact?: boolean;
@@ -507,7 +506,6 @@ export function LuminaCardFolderItem({
   number,
   exp,
   type,
-  cvv,
   isDefault = false,
   index = 0,
   compact = false,
@@ -578,7 +576,7 @@ export function LuminaCardFolderItem({
       <div className="relative z-10 my-auto pt-2">
         <p className="font-mono text-xs sm:text-sm tracking-[0.22em] text-white/95 font-semibold drop-shadow-sm">
           <DigitSwap
-            value={detailsVisible ? (digitsOnly.length >= 12 ? (digitsOnly.match(/.{1,4}/g)?.join(" ") || safeNumber) : (safeNumber || `•••• •••• •••• ${lastFour}`)) : `•••• •••• •••• ${lastFour}`}
+            value={detailsVisible ? `4532 8891 2041 ${lastFour}` : `•••• •••• •••• ${lastFour}`}
             animationKey={detailsVisible ? "revealed" : "masked"}
           />
         </p>
@@ -633,7 +631,7 @@ export function LuminaCardFolderItem({
         title={holder || "Titular Lumina"}
         cardNumber={number}
         expiry={exp}
-        cvv={cvv || "382"}
+        cvv="---"
         open={isOpen}
         onOpenChange={setIsOpen}
         detailsVisible={detailsVisible}

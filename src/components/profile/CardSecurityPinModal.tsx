@@ -203,7 +203,7 @@ export function CardSecurityPinModal({
                 )}
                 {status === "idle" && (
                   <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
-                    Autoriza para revelar número completo y CVV
+                    Autoriza para desbloquear y ver tu tarjeta
                   </p>
                 )}
               </div>
@@ -211,7 +211,7 @@ export function CardSecurityPinModal({
 
             {/* Botones de Acción */}
             <div className="space-y-2.5 relative z-10">
-              {/* Botón Principal: Revelar Datos de Tarjeta */}
+              {/* Botón Principal: Desbloquear Tarjeta */}
               <button
                 type="button"
                 onClick={handleDirectUnlock}
@@ -219,7 +219,7 @@ export function CardSecurityPinModal({
                 className="w-full py-3.5 px-4 rounded-2xl text-xs font-bold bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] hover:bg-black dark:hover:bg-gray-100 flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-[0.98] transition-all"
               >
                 <Eye className="w-4 h-4" />
-                <span>Revelar Datos de Tarjeta</span>
+                <span>Desbloquear y Ver Tarjeta</span>
               </button>
 
               {/* Botón Secundario: Reintentar con Huella/Face ID/PIN si está en error o autenticando */}

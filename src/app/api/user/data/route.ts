@@ -45,7 +45,6 @@ export interface PaymentCard {
   holder: string;
   exp: string;
   type: 'mastercard' | 'visa';
-  cvv?: string;
   isDefault?: boolean;
 }
 
@@ -205,24 +204,14 @@ export async function GET(request: Request) {
 
         if (!cardErr && dbCards && dbCards.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return dbCards.map((c: any) => {
-            let cleanExp = c.exp || "12/28";
-            let resolvedCvv = c.cvv || "";
-            if (typeof cleanExp === "string" && cleanExp.includes("||CVV||")) {
-              const parts = cleanExp.split("||CVV||");
-              cleanExp = parts[0];
-              resolvedCvv = parts[1] || resolvedCvv;
-            }
-            return {
-              id: c.id,
-              number: c.number,
-              holder: c.holder,
-              exp: cleanExp,
-              cvv: resolvedCvv,
-              type: c.type,
-              isDefault: !!c.is_default,
-            };
-          });
+          return dbCards.map((c: any) => ({
+            id: c.id,
+            number: c.number,
+            holder: c.holder,
+            exp: c.exp,
+            type: c.type,
+            isDefault: !!c.is_default,
+          }));
         }
       } catch (err) {
         console.warn('Notice: Error reading payment_cards table:', err);
@@ -410,18 +399,15 @@ export async function POST(request: Request) {
           try {
             await supabase.from('payment_cards').delete().eq('user_id', targetUserId);
             if (cards.length > 0) {
-              const rows = cards.map(c => {
-                const packedExp = c.cvv ? `${c.exp}||CVV||${c.cvv}` : c.exp;
-                return {
-                  id: c.id && UUID_REGEX.test(c.id) ? c.id : crypto.randomUUID(),
-                  user_id: targetUserId,
-                  number: c.number,
-                  holder: c.holder,
-                  exp: packedExp,
-                  type: c.type || 'mastercard',
-                  is_default: !!c.isDefault,
-                };
-              });
+              const rows = cards.map(c => ({
+                id: c.id && UUID_REGEX.test(c.id) ? c.id : crypto.randomUUID(),
+                user_id: targetUserId,
+                number: c.number,
+                holder: c.holder,
+                exp: c.exp,
+                type: c.type || 'mastercard',
+                is_default: !!c.isDefault,
+              }));
               const { error: insErr } = await supabase.from('payment_cards').insert(rows);
               if (insErr) console.warn('Warning inserting payment_cards:', insErr.message);
             }

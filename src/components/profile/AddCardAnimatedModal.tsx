@@ -27,7 +27,6 @@ export interface AddCardAnimatedModalProps {
     number: string;
     holder: string;
     exp: string;
-    cvv?: string;
   }) => Promise<void> | void;
   defaultHolder?: string;
 }
@@ -355,7 +354,6 @@ export function AddCardAnimatedModal({
           number: cardNumber,
           holder: cardHolder.trim() || defaultHolder,
           exp: cardExp,
-          cvv: cardCvv,
         });
 
         setStep("success");
