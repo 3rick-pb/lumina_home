@@ -15,6 +15,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { playCardEnvelopeSound } from "@/lib/soundUtils";
 import { CardSecurityPinModal } from "@/components/profile/CardSecurityPinModal";
+import { useDeviceUnlock } from "@/hooks/useDeviceUnlock";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -144,6 +145,7 @@ export function DigitSwap({
 }
 
 export interface CardFolderProps {
+  cardId?: string;
   title: string;
   cardNumber: string;
   expiry: string;
@@ -170,6 +172,7 @@ export interface CardFolderProps {
  * separate privacy control reveals its number, expiry and CVV.
  */
 export function CardFolder({
+  cardId,
   title,
   cardNumber,
   expiry,
@@ -251,18 +254,45 @@ export function CardFolder({
     onClick?.();
   };
 
-  const [showSecurityPinModal, setShowSecurityPinModal] = useState(false);
+  const {
+    requiresPinFallback,
+    requestCardUnlock,
+    closePinFallback,
+  } = useDeviceUnlock();
+
+  const handleReveal = useCallback(() => {
+    if (!detailsControlled) setInternalDetailsVisible(true);
+    onDetailsVisibleChange?.(true);
+  }, [detailsControlled, onDetailsVisibleChange]);
+
+  const handleHide = useCallback(() => {
+    if (!detailsControlled) setInternalDetailsVisible(false);
+    onDetailsVisibleChange?.(false);
+  }, [detailsControlled, onDetailsVisibleChange]);
 
   const toggleDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (disabled) return;
-    if (areDetailsVisible) {
-      if (!detailsControlled) setInternalDetailsVisible(false);
-      onDetailsVisibleChange?.(false);
-    } else {
-      setShowSecurityPinModal(true);
-    }
+    requestCardUnlock(
+      cardId || cardNumber || title,
+      areDetailsVisible,
+      handleReveal,
+      handleHide
+    );
   };
+
+  // Auto-Lock al minimizar o cambiar de app (Visibility API - Regla 5.3)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && areDetailsVisible) {
+        handleHide();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [areDetailsVisible, handleHide]);
 
   return (
     <div
@@ -472,12 +502,11 @@ export function CardFolder({
       ) : null}
 
       <CardSecurityPinModal
-        isOpen={showSecurityPinModal}
-        onClose={() => setShowSecurityPinModal(false)}
+        isOpen={requiresPinFallback}
+        onClose={closePinFallback}
         onSuccess={() => {
-          if (!detailsControlled) setInternalDetailsVisible(true);
-          onDetailsVisibleChange?.(true);
-          setShowSecurityPinModal(false);
+          handleReveal();
+          closePinFallback();
         }}
       />
     </div>
@@ -628,6 +657,7 @@ export function LuminaCardFolderItem({
   return (
     <div className="flex flex-col items-center w-full">
       <CardFolder
+        cardId={id}
         title={holder || "Titular Lumina"}
         cardNumber={number}
         expiry={exp}
