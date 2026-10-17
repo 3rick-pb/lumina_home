@@ -9,6 +9,7 @@ import { useEffect } from "react";
  * En celulares, el fondo se mantiene como un lienzo mate estático sin cambios graduales de color.
  */
 export function useScrollAmbient(..._args: unknown[]) {
+  void _args;
   useEffect(() => {
     // Intencionalmente inactivo para garantizar 0% CPU/GPU overhead en scroll
     return () => {};
