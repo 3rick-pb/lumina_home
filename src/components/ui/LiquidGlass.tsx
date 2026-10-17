@@ -30,6 +30,13 @@ interface FilterParams extends DisplacementParams {
 }
 
 function getDisplacementMap({ height, width, radius, depth }: DisplacementParams): string {
+  // Para cápsulas completas (como el dock móvil, buscador y header),
+  // usamos el mapa óptico de bisel continuo sin costuras (getCapsuleInverseBezelMap)
+  if (radius >= 9999 || radius >= Math.min(width, height) / 2 - 1) {
+    const capsuleMap = getCapsuleInverseBezelMap();
+    if (capsuleMap) return capsuleMap;
+  }
+
   const safeRadius = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
   const safeDepth = Math.max(1, depth);
 
@@ -50,6 +57,7 @@ function getDisplacementMap({ height, width, radius, depth }: DisplacementParams
         <stop offset="100%" stop-color="#000" />
       </linearGradient>
     </defs>
+    <rect width="100%" height="100%" fill="#808080" />
     <rect x="0" y="0" height="${height}" width="${width}" rx="${safeRadius}" ry="${safeRadius}" fill="#808080" />
     <g filter="blur(2px)">
       <rect x="0" y="0" height="${height}" width="${width}" rx="${safeRadius}" ry="${safeRadius}" fill="#000080" />
@@ -85,12 +93,15 @@ export function getDisplacementFilter({
 
   const displacementMapUrl = getDisplacementMap({ height, width, radius, depth });
 
-  const svg =
-    chromaticAberration <= 0
-      ? `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+  // En CSS backdrop-filter, usar feBlend mode="screen" genera un velo blanco lechoso debido
+  // a la premultiplicación de alfa en el compositor GPU (Skia / Chromium).
+  // Para preservar el cristal líquido 100% puro y transparente con refracción óptica real,
+  // aplicamos feDisplacementMap directamente en el SourceGraphic, con coordenadas exactas (0, 0, width, height)
+  // sin relleno transparente exterior que genere líneas de corte o artefactos horizontales.
+  const svg = `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="displace" x="-10" y="-10" width="${width + 20}" height="${height + 20}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-        <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
+      <filter id="displace" x="0" y="0" width="${width}" height="${height}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" preserveAspectRatio="none" />
         <feDisplacementMap
           transform-origin="center"
           in="SourceGraphic"
@@ -99,52 +110,6 @@ export function getDisplacementFilter({
           xChannelSelector="R"
           yChannelSelector="G"
         />
-      </filter>
-    </defs>
-  </svg>`
-      : `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <filter id="displace" x="-10" y="-10" width="${width + 20}" height="${height + 20}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-        <feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" />
-        <feDisplacementMap
-          transform-origin="center"
-          in="SourceGraphic"
-          in2="displacementMap"
-          scale="${strength + chromaticAberration * 2}"
-          xChannelSelector="R"
-          yChannelSelector="G"
-        />
-        <feColorMatrix
-          type="matrix"
-          values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-          result="displacedR"
-        />
-        <feDisplacementMap
-          in="SourceGraphic"
-          in2="displacementMap"
-          scale="${strength + chromaticAberration}"
-          xChannelSelector="R"
-          yChannelSelector="G"
-        />
-        <feColorMatrix
-          type="matrix"
-          values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-          result="displacedG"
-        />
-        <feDisplacementMap
-          in="SourceGraphic"
-          in2="displacementMap"
-          scale="${strength}"
-          xChannelSelector="R"
-          yChannelSelector="G"
-        />
-        <feColorMatrix
-          type="matrix"
-          values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-          result="displacedB"
-        />
-        <feBlend in="displacedR" in2="displacedG" mode="screen"/>
-        <feBlend in2="displacedB" mode="screen"/>
       </filter>
     </defs>
   </svg>`;
@@ -160,7 +125,7 @@ let cachedCapsuleBezelMapUrl = "";
 /**
  * Mapa óptico de cápsula (srdavo/liquid-glass):
  * - Centro plano (rgb(128,128,128)) para que el ícono, badge y texto se vean limpios.
- * - Bisel lateral grueso con inversión en el labio exterior para curvar los íconos al pasar.
+ * - Bisel lateral grueso con curvatura fluida que se desvanece suavemente a 128 en el perímetro exterior.
  */
 export function getCapsuleInverseBezelMap(): string {
   if (typeof document === "undefined") return "";
@@ -193,7 +158,7 @@ export function getCapsuleInverseBezelMap(): string {
       let rChan = 128;
       let gChan = 128;
 
-      if (r > bezelStart && r <= 1.04 && dist > 0.001) {
+      if (r > bezelStart && r <= 1.02 && dist > 0.001) {
         const nx = dx / dist;
         const ny = dy / dist;
         const t = Math.min(1, (r - bezelStart) / bezelSpan);
@@ -206,6 +171,11 @@ export function getCapsuleInverseBezelMap(): string {
           const v = (t - 0.58) / 0.42;
           profile = Math.pow(Math.sin(v * Math.PI * 0.5), 1.35) * 1.0;
         }
+
+        // Desvanecimiento suave en el borde exterior (r >= 0.88) para que la refracción vuelva
+        // exactamente a 128 (desplazamiento 0) en el perímetro, eliminando cualquier línea horizontal
+        const edgeFade = r >= 0.88 ? Math.max(0, 1 - (r - 0.88) / 0.12) : 1;
+        profile = profile * edgeFade;
 
         const lateralWeight = 0.35 + 0.65 * Math.abs(nx);
         rChan = Math.max(

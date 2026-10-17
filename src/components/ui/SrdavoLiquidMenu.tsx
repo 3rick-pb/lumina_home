@@ -79,7 +79,7 @@ function getCapsuleInverseBezelMap(): string {
       let rChan = 128;
       let gChan = 128;
 
-      if (r > bezelStart && r <= 1.04 && dist > 0.001) {
+      if (r > bezelStart && r <= 1.02 && dist > 0.001) {
         const nx = dx / dist;
         const ny = dy / dist;
         const t = Math.min(1, (r - bezelStart) / bezelSpan);
@@ -92,6 +92,11 @@ function getCapsuleInverseBezelMap(): string {
           const v = (t - 0.58) / 0.42;
           profile = Math.pow(Math.sin(v * Math.PI * 0.5), 1.35) * 1.0;
         }
+
+        // Desvanecimiento suave en el borde exterior (r >= 0.88) para que la refracción vuelva
+        // exactamente a 128 (desplazamiento 0) en el perímetro, eliminando cualquier línea horizontal
+        const edgeFade = r >= 0.88 ? Math.max(0, 1 - (r - 0.88) / 0.12) : 1;
+        profile = profile * edgeFade;
 
         const lateralWeight = 0.35 + 0.65 * Math.abs(nx);
         rChan = Math.max(
@@ -139,6 +144,7 @@ export function SrdavoLiquidMenu({
   const pillRef = useRef<HTMLDivElement>(null);
   const blackStripRef = useRef<HTMLDivElement>(null);
   const rimOverlayRef = useRef<HTMLDivElement>(null);
+  const pillBackingRef = useRef<HTMLDivElement>(null);
 
   // Badge indicador flotante de porcentaje (números pequeños en tipografía monospace)
   const percentBadgeRef = useRef<HTMLDivElement>(null);
@@ -511,6 +517,11 @@ export function SrdavoLiquidMenu({
 
         // Interpolación continua entre Reposo Mate (glassAlpha = 0) y Cristal Líquido (glassAlpha = 1)
         const a = s.glassAlpha;
+
+        if (pillBackingRef.current) {
+          pillBackingRef.current.style.opacity = (a > 0.05 ? Math.min(0.98, a * 0.98) : 0).toFixed(3);
+        }
+
         const topAlpha = (0.44 - a * 0.16).toFixed(3);
         const midAlpha = (0.18 - a * 0.12).toFixed(3);
         const botAlpha = (0.35 - a * 0.15).toFixed(3);
@@ -790,7 +801,7 @@ export function SrdavoLiquidMenu({
               opacity: 0,
               willChange: "opacity",
             }}
-            className="absolute -top-7 -translate-x-1/2 z-30 pointer-events-none select-none transition-opacity duration-350 ease-out"
+            className="absolute -top-7 -translate-x-1/2 z-50 pointer-events-none select-none transition-opacity duration-350 ease-out"
           >
             <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-950/85 dark:bg-white/90 text-white dark:text-zinc-950 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.18)] border border-white/20 dark:border-black/10">
               <span
@@ -805,6 +816,7 @@ export function SrdavoLiquidMenu({
           <div
             className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0"
             style={{
+              contain: "paint",
               clipPath: "inset(0 round 9999px)",
               WebkitClipPath: "inset(0 round 9999px)",
               backdropFilter: hasSvgFilterSupport && barFilterUrl
@@ -872,16 +884,26 @@ export function SrdavoLiquidMenu({
               left: 0,
               willChange: "transform, width, height, background",
             }}
-            className="absolute z-20 rounded-full overflow-hidden pointer-events-none"
+            className="absolute z-40 rounded-full overflow-hidden pointer-events-none shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
           >
+            {/* Base sólida que tapa al 100% las líneas de 0.9px del marco exterior al mantener presionado */}
+            <div
+              ref={pillBackingRef}
+              className="pointer-events-none absolute inset-0 rounded-full bg-white/95 dark:bg-[#1a1a20]/95 z-0"
+              style={{
+                opacity: 0,
+                willChange: "opacity",
+              }}
+            />
+
             {/* Reflejo especular superior continuo en la píldora */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-55 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full z-0" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-55 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full z-10" />
 
             <div
               style={{
                 filter: "url(#srdavo-pill-fg)",
               }}
-              className="relative w-full h-full overflow-hidden rounded-full z-10"
+              className="relative w-full h-full overflow-hidden rounded-full z-20"
             >
               <div
                 ref={blackStripRef}
@@ -922,7 +944,7 @@ export function SrdavoLiquidMenu({
               style={{
                 border: "1.2px solid rgba(255, 255, 255, 0.9)",
               }}
-              className="absolute inset-0 rounded-full pointer-events-none transition-[box-shadow,border] duration-150 z-20"
+              className="absolute inset-0 rounded-full pointer-events-none transition-[box-shadow,border] duration-150 z-30"
             />
           </div>
 
@@ -943,6 +965,7 @@ export function SrdavoLiquidMenu({
             onPointerUp={() => setIsSearchPressed(false)}
             onPointerLeave={() => setIsSearchPressed(false)}
             style={{
+              contain: "paint",
               clipPath: "inset(0 round 9999px)",
               WebkitClipPath: "inset(0 round 9999px)",
               backdropFilter: isSearchActive
