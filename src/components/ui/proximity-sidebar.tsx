@@ -62,25 +62,25 @@ const DASH_PRESETS: Record<SectionKind, DashPreset> = {
     base: 38,
     bump: 68,
     thickness: 2,
-    className: "bg-[#8c9276] dark:bg-[#a3aa8c]",
+    className: "bg-white/45 dark:bg-white/30 hover:bg-white/75 dark:hover:bg-white/55",
   },
   subtitle: {
     base: 32,
     bump: 60,
     thickness: 1.5,
-    className: "bg-gray-800 dark:bg-gray-200",
+    className: "bg-white/40 dark:bg-white/25 hover:bg-white/70 dark:hover:bg-white/50",
   },
   section: {
     base: 26,
     bump: 52,
     thickness: 1.5,
-    className: "bg-gray-400 dark:bg-gray-500",
+    className: "bg-white/35 dark:bg-white/20 hover:bg-white/65 dark:hover:bg-white/45",
   },
   body: {
     base: 20,
     bump: 44,
     thickness: 1,
-    className: "bg-gray-300 dark:bg-gray-600",
+    className: "bg-white/30 dark:bg-white/15 hover:bg-white/60 dark:hover:bg-white/40",
   },
 }
 
@@ -219,23 +219,26 @@ const Dash = ({
       {/* Floating tooltip preview: strictly only visible when user hovers or interacts with the sidebar */}
       <span
         className={cn(
-          "pointer-events-none absolute text-[11px] font-medium px-2.5 py-1 rounded-full shadow-lg backdrop-blur-xl whitespace-nowrap transition-all duration-200 border select-none z-50",
-          side === "right" ? "right-[118px]" : "left-[118px]",
+          "pointer-events-none absolute text-[12px] font-sans font-medium px-3.5 py-1.5 rounded-full backdrop-blur-2xl whitespace-nowrap transition-all duration-200 select-none z-50 flex items-center gap-2",
+          side === "right" ? "right-[124px]" : "left-[124px]",
           !isSidebarHovered
             ? "opacity-0 pointer-events-none scale-95 translate-x-2"
             : active
-              ? "opacity-100 scale-100 translate-x-0 bg-[#8c9276] text-white border-[#8c9276]/50 font-semibold shadow-[#8c9276]/25"
-              : "opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 bg-white/95 dark:bg-[#1e1e20]/95 text-gray-800 dark:text-gray-200 border-black/10 dark:border-white/10 translate-x-1 group-hover:translate-x-0"
+              ? "opacity-100 scale-100 translate-x-0 bg-gradient-to-r from-[#2c3321]/95 via-[#3d472e]/95 to-[#4d5939]/95 text-white border border-[#8c9276]/50 shadow-[0_8px_24px_rgba(0,0,0,0.28),inset_0_1px_1px_rgba(255,255,255,0.4),0_0_14px_rgba(140,146,118,0.3)] tracking-tight"
+              : "opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 bg-white/90 dark:bg-[#18181b]/90 text-zinc-900 dark:text-zinc-100 border border-white/80 dark:border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.1)] translate-x-1 group-hover:translate-x-0 tracking-tight"
         )}
       >
-        {section.label}
+        {active && (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#dce4cc] shadow-[0_0_8px_#cbd4b7] shrink-0 animate-pulse" />
+        )}
+        <span>{section.label}</span>
       </span>
 
       <motion.span
         className={cn(
           "block rounded-full transition-colors duration-200 ease-out group-focus-visible:ring-2 group-focus-visible:ring-[#8c9276]",
           active 
-            ? "bg-[#8c9276] dark:bg-[#a3aa8c] shadow-sm shadow-[#8c9276]/40" 
+            ? "bg-gradient-to-l from-[#b2bc98] via-[#8c9276] to-[#60694a] shadow-[0_0_12px_rgba(178,188,152,0.6)]" 
             : preset.className
         )}
         style={{

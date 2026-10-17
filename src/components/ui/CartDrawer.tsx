@@ -947,7 +947,7 @@ export function CartDrawer() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className={clsx("fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 lg:p-8 overflow-hidden", resolvedTheme === 'dark' ? 'dark' : '')}>
+        <div className={clsx("fixed inset-0 z-[90] flex items-center justify-center p-2.5 sm:p-4 md:p-6 lg:p-8 overflow-hidden", resolvedTheme === 'dark' ? 'dark' : '')}>
           {/* Backdrop with Deep Soft Blur (Lightweight GPU Fill) */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -966,7 +966,7 @@ export function CartDrawer() {
             animate="visible"
             exit="exit"
             style={{ willChange: "transform, opacity", transform: "translateZ(0)" }}
-            className="relative w-full max-w-6xl h-full max-h-[100dvh] sm:max-h-[92vh] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-[2.5rem] rounded-b-none sm:rounded-b-[2.5rem] border-x border-t sm:border border-white/90 dark:border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden z-10 transform-gpu"
+            className="relative w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[92vh] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl rounded-3xl sm:rounded-[2.5rem] border border-white/90 dark:border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden z-10 transform-gpu"
           >
 
   {/* Top Bar Header */}
@@ -1078,7 +1078,7 @@ export function CartDrawer() {
   {/* ========================================================================= */}
   <div ref={cartScrollRef} data-lenis-prevent className={`flex-1 overflow-y-auto ${
     items.length === 0 && step === "bag"
-      ? "p-2.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3"
+      ? "p-2.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3 flex flex-col"
       : "p-2.5 sm:p-6 lg:p-10"
   } [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-5 sm:space-y-10`}>
 
@@ -1108,7 +1108,7 @@ export function CartDrawer() {
   )}
 
   {items.length === 0 ? (
-  <div className="relative overflow-hidden my-2 sm:my-2.5 sm:mt-1 rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 lg:p-10 min-h-[350px] sm:min-h-[460px] md:min-h-[500px] border-2 border-black/15 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
+  <div className="relative overflow-hidden flex-1 w-full my-2 sm:my-2.5 sm:mt-1 rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 lg:p-10 min-h-[460px] sm:min-h-[520px] md:min-h-[560px] border-2 border-black/15 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
     {/* 3D Radial Champagne Aura */}
     <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.08] to-amber-400/[0.06] blur-3xl pointer-events-none" />
     <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-black/[0.04] dark:via-white/15 to-transparent pointer-events-none" />

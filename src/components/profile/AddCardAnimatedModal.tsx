@@ -399,12 +399,7 @@ export function AddCardAnimatedModal({
       return;
     }
 
-    // Si aún no se ha configurado el PIN de 5 dígitos de la billetera, solicitar registrarlo primero
-    if (!hasCardSecurityPin()) {
-      setShowSecurityPinModal(true);
-      return;
-    }
-
+    // Guardar directamente la tarjeta protegida por autenticación de dispositivo
     executeSaveCard();
   };
 
