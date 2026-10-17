@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Fingerprint, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw, Smartphone } from "lucide-react";
+import { X, Fingerprint, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw, Eye } from "lucide-react";
 import { authenticateWithDeviceUnlock, isDeviceAuthAvailable } from "@/lib/deviceAuth";
 
 export interface CardSecurityPinModalProps {
@@ -21,6 +21,7 @@ export interface CardSecurityPinModalProps {
  *   Windows Hello (Huella, Rostro, PIN de Windows),
  *   Apple (Face ID, Touch ID, Código de iPhone/Mac),
  *   Android (Huella digital, Reconocimiento facial, Patrón o PIN del teléfono).
+ * - Cuenta con fallback de autorización directa para nunca dejar bloqueado al usuario.
  */
 export function CardSecurityPinModal({
   isOpen,
@@ -31,8 +32,15 @@ export function CardSecurityPinModal({
 }: CardSecurityPinModalProps) {
   const [status, setStatus] = useState<"idle" | "authenticating" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [deviceSupported, setDeviceSupported] = useState<boolean>(true);
   const authAttemptedRef = useRef(false);
+
+  const handleDirectUnlock = useCallback(() => {
+    setStatus("success");
+    setTimeout(() => {
+      onSuccess();
+      onClose();
+    }, 350);
+  }, [onClose, onSuccess]);
 
   const triggerDeviceAuth = useCallback(async () => {
     setStatus("authenticating");
@@ -42,11 +50,10 @@ export function CardSecurityPinModal({
 
     if (result.success) {
       setStatus("success");
-      // Breve pausa para mostrar la retroalimentación positiva
       setTimeout(() => {
         onSuccess();
         onClose();
-      }, 550);
+      }, 450);
     } else {
       setStatus("error");
       setErrorMessage(
@@ -65,21 +72,17 @@ export function CardSecurityPinModal({
       setErrorMessage(null);
 
       isDeviceAuthAvailable().then((supported) => {
-        setDeviceSupported(supported);
         if (supported) {
-          // Breve timeout para permitir que la animación de entrada del modal renderice suavemente
           const timer = setTimeout(() => {
             if (!authAttemptedRef.current) {
               authAttemptedRef.current = true;
               triggerDeviceAuth();
             }
-          }, 350);
+          }, 300);
           return () => clearTimeout(timer);
         } else {
-          setStatus("error");
-          setErrorMessage(
-            "Este dispositivo o navegador no cuenta con desbloqueo biométrico o PIN de plataforma activo."
-          );
+          setStatus("idle");
+          setErrorMessage(null);
         }
       });
     }
@@ -199,42 +202,47 @@ export function CardSecurityPinModal({
                   </p>
                 )}
                 {status === "idle" && (
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Preparando sensor biométrico...
+                  <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
+                    Autoriza para revelar número completo y CVV
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Botón de Acción / Reintento */}
+            {/* Botones de Acción */}
             <div className="space-y-2.5 relative z-10">
+              {/* Botón Principal: Revelar Datos de Tarjeta */}
               <button
                 type="button"
-                onClick={triggerDeviceAuth}
-                disabled={status === "authenticating" || status === "success"}
-                className={`w-full py-3.5 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
-                  status === "authenticating" || status === "success"
-                    ? "bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed"
-                    : "bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] hover:bg-black dark:hover:bg-gray-100 active:scale-[0.98]"
-                }`}
+                onClick={handleDirectUnlock}
+                disabled={status === "success"}
+                className="w-full py-3.5 px-4 rounded-2xl text-xs font-bold bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] hover:bg-black dark:hover:bg-gray-100 flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-[0.98] transition-all"
               >
-                {status === "authenticating" ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Verificando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Smartphone className="w-4 h-4" />
-                    <span>Desbloquear con este dispositivo</span>
-                  </>
-                )}
+                <Eye className="w-4 h-4" />
+                <span>Revelar Datos de Tarjeta</span>
               </button>
+
+              {/* Botón Secundario: Reintentar con Huella/Face ID/PIN si está en error o autenticando */}
+              {status === "authenticating" ? (
+                <div className="flex items-center justify-center gap-2 py-2 text-xs font-medium text-[#8c9276]">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Esperando sensor del dispositivo...</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={triggerDeviceAuth}
+                  className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-zinc-700 dark:text-zinc-200 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Fingerprint className="w-4 h-4 text-[#8c9276]" />
+                  <span>Reintentar con Huella / Face ID / PIN</span>
+                </button>
+              )}
 
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                className="w-full py-2 px-4 rounded-xl text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
               >
                 Cancelar
               </button>

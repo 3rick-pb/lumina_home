@@ -84,6 +84,7 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
                   holder={c?.holder || "Titular Lumina"}
                   number={c?.number || ""}
                   exp={c?.exp || "12/28"}
+                  cvv={c?.cvv}
                   type={c?.type === "mastercard" ? "mastercard" : "visa"}
                   isDefault={Boolean(c?.isDefault)}
                   index={index}
