@@ -56,12 +56,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // Si no se encuentra el producto, retornar metadata de autor
   if (!product) {
-    const fallbackTitle = `Pieza de Autor · ${brandConfig.name}`;
+    const fallbackTitle = `Pieza de Autor | ${brandConfig.name}`;
     const fallbackDesc = `Descubre piezas de autor seleccionadas con precisión artesanal y diseño minimalista en ${brandConfig.name}.`;
     return {
-      title: {
-        absolute: fallbackTitle,
-      },
+      title: fallbackTitle,
       description: fallbackDesc,
       openGraph: {
         type: "website",
@@ -92,7 +90,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // Formato de Alta Conversión SEO & Redes Sociales
   const rawTitle = `${product.title || "Pieza de Diseño"} ${product.title_highlight || product.titleHighlight || ""}`.trim();
-  const ogTitle = `${rawTitle} · ${brandConfig.name}`;
+  const ogTitle = `${rawTitle} | ${brandConfig.name}`;
 
   // Formato: "[Precio / Beneficio] - [Descripción corta atractiva]"
   const formattedPrice = typeof product.price === "number" ? `$${product.price.toFixed(2)} USD` : (product.price ? `$${product.price}` : "");
@@ -109,9 +107,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const productUrl = `${siteUrl}/product/${rawId}`;
 
   return {
-    title: {
-      absolute: ogTitle,
-    },
+    title: ogTitle,
     description: ogDescription,
     alternates: {
       canonical: productUrl,

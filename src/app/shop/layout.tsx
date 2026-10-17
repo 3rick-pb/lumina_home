@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import { brandConfig } from "@/config";
 
 const siteUrl = brandConfig.meta.siteUrl || "https://luminahome-3rick.vercel.app";
-const shopTitle = `Catálogo de Muebles y Decoración de Autor · ${brandConfig.name}`;
-const shopDescription = "Explora piezas exclusivas de diseño contemporáneo, iluminación escultural y mobiliario minimalista con envíos a todo el país. 15% OFF en tu primera compra.";
+const shopTitle = `Catálogo y Colecciones | ${brandConfig.name}`;
+const shopDescription = brandConfig.description;
 const shopOgImage = `${siteUrl}/og-default.jpg`;
 
 export const metadata: Metadata = {
-  title: {
-    absolute: shopTitle,
-  },
+  title: shopTitle,
   description: shopDescription,
   alternates: {
     canonical: `${siteUrl}/shop`,

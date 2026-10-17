@@ -12,8 +12,6 @@ export function buildBrandMetadata(
 ): Metadata {
   const siteUrl = customBrand.meta.siteUrl;
 
-  const baseTitle = "Muebles de Diseño y Decoración Contemporánea · Lumina Home";
-  const persuasiveDescription = "Descubre piezas de autor, iluminación escultural y diseño minimalista. Envíos a todo el país · 15% OFF en tu primera compra.";
   const absoluteOgImage = customBrand.meta.ogImage.startsWith('http') 
     ? customBrand.meta.ogImage 
     : `${siteUrl}${customBrand.meta.ogImage.startsWith('/') ? '' : '/'}${customBrand.meta.ogImage}`;
@@ -21,15 +19,15 @@ export function buildBrandMetadata(
   const base: Metadata = {
     metadataBase: new URL(siteUrl),
     title: {
-      default: baseTitle,
-      template: `%s · ${customBrand.name}`,
+      default: "Lumina Home",
+      template: `%s | Lumina Home`,
     },
-    description: persuasiveDescription,
-    applicationName: customBrand.name,
+    description: customBrand.description,
+    applicationName: "Lumina Home",
     appleWebApp: {
       capable: true,
       statusBarStyle: 'default',
-      title: customBrand.name,
+      title: "Lumina Home",
     },
     keywords: customBrand.meta.keywords,
     authors: [{ name: customBrand.meta.publisher }],
@@ -41,15 +39,15 @@ export function buildBrandMetadata(
       address: false,
     },
     alternates: {
-      canonical: siteUrl,
+      canonical: '/',
     },
     openGraph: {
       type: 'website',
       locale: customBrand.meta.locale || 'es_EC',
       url: siteUrl,
-      siteName: customBrand.name,
-      title: baseTitle,
-      description: persuasiveDescription,
+      siteName: "Lumina Home",
+      title: "Lumina Home",
+      description: customBrand.description,
       images: [
         {
           url: absoluteOgImage,
@@ -57,14 +55,14 @@ export function buildBrandMetadata(
           width: 1200,
           height: 630,
           type: 'image/jpeg',
-          alt: `${customBrand.name} — Muebles de Diseño Contemporáneo y Piezas de Autor`,
+          alt: `${customBrand.name} — Colección de Autor`,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: baseTitle,
-      description: persuasiveDescription,
+      title: "Lumina Home",
+      description: customBrand.description,
       images: [absoluteOgImage],
     },
     robots: {
