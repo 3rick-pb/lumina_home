@@ -13,7 +13,7 @@ export const luminaBrandConfig: BrandConfig = {
   shortName: 'Lumina',
   tagline: 'Espacios con Alma y Diseño de Autor',
   slogan: 'Espacios diseñados para perdurar',
-  description: 'Descubre piezas exclusivas de diseño contemporáneo, iluminación escultural, aromaterapia, cerámica artesanal y mobiliario minimalista creados para transformar tu hogar.',
+  description: 'Descubre piezas de diseño y mucho más',
   logo: {
     text: 'Lumina',
     accentDot: '.',
