@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback, useState } from "react";
+import React, { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import { getDisplacementFilter } from "./LiquidGlass";
 
 export interface LiquidTabItem {
   id: string;
@@ -78,7 +79,7 @@ function getCapsuleInverseBezelMap(): string {
       let rChan = 128;
       let gChan = 128;
 
-      if (r > bezelStart && r <= 1.02 && dist > 0.001) {
+      if (r > bezelStart && r <= 1.04 && dist > 0.001) {
         const nx = dx / dist;
         const ny = dy / dist;
         const t = Math.min(1, (r - bezelStart) / bezelSpan);
@@ -91,11 +92,6 @@ function getCapsuleInverseBezelMap(): string {
           const v = (t - 0.58) / 0.42;
           profile = Math.pow(Math.sin(v * Math.PI * 0.5), 1.35) * 1.0;
         }
-
-        // Desvanecimiento suave en el borde exterior (r >= 0.88) para que la refracción vuelva
-        // exactamente a 128 (desplazamiento 0) en el perímetro, eliminando cualquier línea horizontal
-        const edgeFade = r >= 0.88 ? Math.max(0, 1 - (r - 0.88) / 0.12) : 1;
-        profile = profile * edgeFade;
 
         const lateralWeight = 0.35 + 0.65 * Math.abs(nx);
         rChan = Math.max(
@@ -134,6 +130,8 @@ export function SrdavoLiquidMenu({
   const activeIndex = Math.max(0, items.findIndex((i) => i.id === activeId));
   const [bezelMapUrl, setBezelMapUrl] = useState<string>("");
   const [isSearchPressed, setIsSearchPressed] = useState(false);
+  const [trackDims, setTrackDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState<boolean>(true);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const grayWindowRef = useRef<HTMLDivElement>(null);
@@ -141,7 +139,6 @@ export function SrdavoLiquidMenu({
   const pillRef = useRef<HTMLDivElement>(null);
   const blackStripRef = useRef<HTMLDivElement>(null);
   const rimOverlayRef = useRef<HTMLDivElement>(null);
-  const pillBackingRef = useRef<HTMLDivElement>(null);
 
   // Badge indicador flotante de porcentaje (números pequeños en tipografía monospace)
   const percentBadgeRef = useRef<HTMLDivElement>(null);
@@ -215,11 +212,63 @@ export function SrdavoLiquidMenu({
     pointerX: 0,
   });
 
+  // Detectar soporte para filtros SVG en backdrop-filter
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
+      setHasSvgFilterSupport(isChromium);
+    }
+  }, []);
 
-  // Generar mapa óptico de cápsula para refracción de bordes en el filtro de la píldora
+  // Generar mapa óptico de cápsula para refracción de bordes
   useEffect(() => {
     setBezelMapUrl(getCapsuleInverseBezelMap());
   }, []);
+
+  // Medir dimensiones del track para alimentar el filtro oficial de srdavo/liquid-glass
+  useEffect(() => {
+    if (!trackRef.current) return;
+    const el = trackRef.current;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.ceil(rect.width);
+      const h = Math.ceil(rect.height);
+      if (w > 0 && h > 0) {
+        setTrackDims((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Filtro Liquid Glass para el cuerpo del menú (con aberración cromática)
+  const barFilterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport || trackDims.width === 0 || trackDims.height === 0) return null;
+    return getDisplacementFilter({
+      width: trackDims.width,
+      height: trackDims.height,
+      radius: 9999,
+      depth: 4,
+      strength: 28,
+      chromaticAberration: 1.6,
+    });
+  }, [hasSvgFilterSupport, trackDims.width, trackDims.height]);
+
+  // Filtro Liquid Glass para la lupa de búsqueda
+  const orbFilterUrl = useMemo(() => {
+    if (!hasSvgFilterSupport) return null;
+    return getDisplacementFilter({
+      width: 58,
+      height: 58,
+      radius: 9999,
+      depth: 4,
+      strength: isSearchPressed ? 36 : 28,
+      chromaticAberration: 1.6,
+    });
+  }, [hasSvgFilterSupport, isSearchPressed]);
 
   // Medir geometría y calcular destino sin destruir la posición actual del resorte
   const updateTargets = useCallback(
@@ -460,26 +509,26 @@ export function SrdavoLiquidMenu({
         pillRef.current.style.height = `${pillH}px`;
         pillRef.current.style.transform = `translate3d(${pillLeft}px, ${pillTop}px, 0)`;
 
-        // Óptica Liquid Glass cristalina para la píldora activa
+        // Interpolación continua entre Reposo Mate (glassAlpha = 0) y Cristal Líquido (glassAlpha = 1)
         const a = s.glassAlpha;
-
-        if (pillBackingRef.current) {
-          pillBackingRef.current.style.opacity = s.elevated ? "0.98" : "0";
-        }
-
-        const bgAlpha = (0.16 + a * 0.12).toFixed(3);
-        pillRef.current.style.background = `rgba(255, 255, 255, ${bgAlpha})`;
-        const blurVal = (14 + a * 4).toFixed(1);
-        const satVal = (210 + a * 30).toFixed(0);
-        const filterVal = `blur(${blurVal}px) saturate(${satVal}%) contrast(1.05) brightness(1.04)`;
+        const topAlpha = (0.44 - a * 0.16).toFixed(3);
+        const midAlpha = (0.18 - a * 0.12).toFixed(3);
+        const botAlpha = (0.35 - a * 0.15).toFixed(3);
+        pillRef.current.style.background = `linear-gradient(180deg, rgba(255,255,255,${topAlpha}) 0%, rgba(255,255,255,${midAlpha}) 50%, rgba(255,255,255,${botAlpha}) 100%)`;
+        const filterVal =
+          a > 0.05
+            ? `blur(${(12 + a * 2).toFixed(1)}px) saturate(${(190 + a * 20).toFixed(0)}%) brightness(1.10)`
+            : "blur(12px) saturate(190%) brightness(1.08)";
         pillRef.current.style.backdropFilter = filterVal;
         pillRef.current.style.setProperty("-webkit-backdrop-filter", filterVal);
 
         rimOverlayRef.current.style.boxShadow =
           a > 0.1
-            ? `inset 0 0 ${(10 + a * 8).toFixed(1)}px rgba(255, 255, 255, ${(0.3 + a * 0.2).toFixed(2)}),
-               0 ${(4 + a * 6).toFixed(1)}px ${(12 + a * 10).toFixed(1)}px rgba(0, 0, 0, ${(0.10 + a * 0.06).toFixed(2)})`
-            : "inset 0 0 8px rgba(255, 255, 255, 0.25), 0 4px 14px rgba(0, 0, 0, 0.08)";
+            ? `inset 0 ${(1.5 + a * 2).toFixed(1)}px ${(2 + a * 5).toFixed(1)}px rgba(255, 255, 255, 0.98),
+               inset 0 -${(1 + a * 2.5).toFixed(1)}px ${(2 + a * 5).toFixed(1)}px rgba(255, 255, 255, 0.88),
+               inset 0 0 ${(12 * a).toFixed(1)}px rgba(255, 255, 255, 0.35),
+               0 ${(4 + a * 8).toFixed(1)}px ${(14 + a * 14).toFixed(1)}px rgba(0, 0, 0, ${(0.08 + a * 0.08).toFixed(2)})`
+            : "inset 0 1.5px 2px rgba(255, 255, 255, 0.95), inset 0 -1px 2px rgba(255, 255, 255, 0.5), 0 4px 14px rgba(0, 0, 0, 0.08)";
 
         const innerX = -spanLeft - s.scrollX + s.extraW / 2;
         const innerY = -4 + s.extraH / 2;
@@ -741,7 +790,7 @@ export function SrdavoLiquidMenu({
               opacity: 0,
               willChange: "opacity",
             }}
-            className="absolute -top-7 -translate-x-1/2 z-50 pointer-events-none select-none transition-opacity duration-350 ease-out"
+            className="absolute -top-7 -translate-x-1/2 z-30 pointer-events-none select-none transition-opacity duration-350 ease-out"
           >
             <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-950/85 dark:bg-white/90 text-white dark:text-zinc-950 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.18)] border border-white/20 dark:border-black/10">
               <span
@@ -752,19 +801,32 @@ export function SrdavoLiquidMenu({
               </span>
             </div>
           </div>
-          {/* CAPA DE CRISTAL LÍQUIDO DEL CUERPO (óptica cristalina pura sin velo blanco ni líneas horizontales) */}
+          {/* CAPA DE CRISTAL LÍQUIDO DEL CUERPO (estrictamente recortada a la cápsula perfecta sin esquinas cuadradas) */}
           <div
             className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0"
             style={{
               clipPath: "inset(0 round 9999px)",
               WebkitClipPath: "inset(0 round 9999px)",
-              backdropFilter: "blur(20px) saturate(210%) contrast(1.05) brightness(1.02)",
-              WebkitBackdropFilter: "blur(20px) saturate(210%) contrast(1.05) brightness(1.02)",
-              background: "rgba(255, 255, 255, 0.06)",
-              boxShadow:
-                "inset 0 0 16px 0px rgba(255, 255, 255, 0.12), 0 12px 36px 0px rgba(0, 0, 0, 0.12), 0 4px 12px 0px rgba(0, 0, 0, 0.05)",
+              backdropFilter: hasSvgFilterSupport && barFilterUrl
+                ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
+              WebkitBackdropFilter: hasSvgFilterSupport && barFilterUrl
+                ? `blur(0.8px) url('${barFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(18px) saturate(190%) brightness(1.10)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(240,240,248,0.24) 100%)",
+              boxShadow: `
+                inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.88),
+                inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
+                inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
+                0 10px 30px rgba(0, 0, 0, 0.10)
+              `,
+              border: "1px solid rgba(255, 255, 255, 0.72)",
             }}
-          />
+          >
+            {/* Reflejo especular superior característico de srdavo/liquid-glass */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full" />
+          </div>
 
           {/* CAPA 1: Ítems en Gris */}
           <div
@@ -810,23 +872,16 @@ export function SrdavoLiquidMenu({
               left: 0,
               willChange: "transform, width, height, background",
             }}
-            className="absolute z-40 rounded-full overflow-hidden pointer-events-none shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+            className="absolute z-20 rounded-full overflow-hidden pointer-events-none"
           >
-            {/* Base sólida que tapa al 100% las líneas de 0.9px del marco exterior al mantener presionado */}
-            <div
-              ref={pillBackingRef}
-              className="pointer-events-none absolute inset-0 rounded-full bg-white/95 dark:bg-[#1a1a20]/95 z-0"
-              style={{
-                opacity: 0,
-                willChange: "opacity",
-              }}
-            />
+            {/* Reflejo especular superior continuo en la píldora */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-55 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full z-0" />
 
             <div
               style={{
                 filter: "url(#srdavo-pill-fg)",
               }}
-              className="relative w-full h-full overflow-hidden rounded-full z-20"
+              className="relative w-full h-full overflow-hidden rounded-full z-10"
             >
               <div
                 ref={blackStripRef}
@@ -865,9 +920,9 @@ export function SrdavoLiquidMenu({
             <div
               ref={rimOverlayRef}
               style={{
-                border: "1px solid rgba(255, 255, 255, 0.40)",
+                border: "1.2px solid rgba(255, 255, 255, 0.9)",
               }}
-              className="absolute inset-0 rounded-full pointer-events-none transition-[box-shadow,border] duration-150 z-30"
+              className="absolute inset-0 rounded-full pointer-events-none transition-[box-shadow,border] duration-150 z-20"
             />
           </div>
 
@@ -892,23 +947,35 @@ export function SrdavoLiquidMenu({
               WebkitClipPath: "inset(0 round 9999px)",
               backdropFilter: isSearchActive
                 ? "blur(12px)"
-                : "blur(20px) saturate(210%) contrast(1.05) brightness(1.02)",
+                : hasSvgFilterSupport && orbFilterUrl
+                ? `blur(0.8px) url('${orbFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(16px) saturate(190%) brightness(1.10)",
               WebkitBackdropFilter: isSearchActive
                 ? "blur(12px)"
-                : "blur(20px) saturate(210%) contrast(1.05) brightness(1.02)",
+                : hasSvgFilterSupport && orbFilterUrl
+                ? `blur(0.8px) url('${orbFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+                : "blur(16px) saturate(190%) brightness(1.10)",
               background: isSearchActive
                 ? "rgba(224, 122, 63, 0.95)"
                 : isSearchPressed
-                ? "rgba(255, 255, 255, 0.18)"
-                : "rgba(255, 255, 255, 0.08)",
+                ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(240,240,248,0.36) 100%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(240,240,248,0.25) 100%)",
               boxShadow: isSearchActive
                 ? "0 0 24px rgba(224,122,63,0.6), inset 0 2px 4px rgba(255,255,255,0.8)"
                 : isSearchPressed
-                ? "inset 0 0 16px rgba(255, 255, 255, 0.25), 0 10px 24px rgba(0, 0, 0, 0.16)"
-                : "inset 0 0 14px 0px rgba(255, 255, 255, 0.14), 0 10px 26px rgba(0, 0, 0, 0.10)",
+                ? `
+                  inset 0 3px 6px rgba(255, 255, 255, 0.98),
+                  inset 0 -3px 6px rgba(255, 255, 255, 0.9),
+                  0 10px 24px rgba(0, 0, 0, 0.16)
+                `
+                : `
+                  inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.90),
+                  inset -1px -1px 1px 0px rgba(255, 255, 255, 0.40),
+                  0 10px 26px rgba(0, 0, 0, 0.10)
+                `,
               border: isSearchActive
                 ? "2px solid rgba(255, 255, 255, 0.9)"
-                : "none",
+                : "1px solid rgba(255, 255, 255, 0.76)",
               transform: isSearchPressed
                 ? "scale(1.08)"
                 : isCollapsed
@@ -922,6 +989,8 @@ export function SrdavoLiquidMenu({
             } ${isCollapsed ? "shadow-[0_12px_36px_rgba(0,0,0,0.22)] ring-1 ring-black/10 dark:ring-white/20" : ""}`}
             aria-label="Buscar"
           >
+            {/* Reflejo especular superior característico de srdavo/liquid-glass */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full" />
             <svg
               className="w-5 h-5 stroke-[2.2] relative z-10"
               viewBox="0 0 24 24"

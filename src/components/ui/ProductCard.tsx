@@ -121,7 +121,8 @@ export const ProductCard = React.memo(function ProductCard({
               src={imgSrc}
               alt={title}
               fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 300px"
+              quality={85}
               loading="lazy"
               decoding="async"
               draggable={false}

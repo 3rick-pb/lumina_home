@@ -947,7 +947,7 @@ export function CartDrawer() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className={clsx("fixed inset-0 z-[90] flex items-center justify-center p-1.5 sm:p-4 md:p-6 lg:p-8 overflow-hidden", resolvedTheme === 'dark' ? 'dark' : '')}>
+        <div className={clsx("fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 lg:p-8 overflow-hidden", resolvedTheme === 'dark' ? 'dark' : '')}>
           {/* Backdrop with Deep Soft Blur (Lightweight GPU Fill) */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -965,8 +965,8 @@ export function CartDrawer() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            style={{ willChange: "transform, opacity" }}
-            className="relative w-full max-w-6xl h-full max-h-[96vh] sm:max-h-[92vh] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl rounded-3xl sm:rounded-[2.5rem] border border-white/90 dark:border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden z-10 transform-gpu"
+            style={{ willChange: "transform, opacity", transform: "translateZ(0)" }}
+            className="relative w-full max-w-6xl h-full max-h-[100dvh] sm:max-h-[92vh] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-[2.5rem] rounded-b-none sm:rounded-b-[2.5rem] border-x border-t sm:border border-white/90 dark:border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden z-10 transform-gpu"
           >
 
   {/* Top Bar Header */}
@@ -1386,7 +1386,8 @@ export function CartDrawer() {
             src={item.product.imageUrl} 
             alt={item.product.title} 
             fill 
-            sizes="(max-width: 640px) 80px, 96px"
+            sizes="96px"
+            quality={85}
             className="object-cover group-hover/thumb:scale-105 transition-transform duration-500" 
           />
           {itemIsAgotado && (
@@ -1701,49 +1702,6 @@ export function CartDrawer() {
 
   </div>
 
- </div>
- )}
-
- {/* Recommended Pieces Row (Craft Own Furniture Section) */}
- {recommendedProducts.length > 0 && (
- <div className="pt-8 border-t border-gray-100 dark:border-white/5 space-y-4">
- <div className="flex items-center justify-between gap-3">
- <div className="min-w-0 flex-1">
- <h3 className="font-display font-bold text-lg sm:text-xl text-gray-900 dark:text-gray-100 truncate">
- Complementa tu pedido
- </h3>
- <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">Diseñadas para armonizar en iluminación y estética.</p>
- </div>
- <button 
- onClick={() => { setIsOpen(false); router.push("/shop"); }}
- className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline shrink-0 whitespace-nowrap ml-2 cursor-pointer"
- >
- Ver catálogo completo &rarr;
- </button>
- </div>
-
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
- {recommendedProducts.map(prod => (
- <div 
- key={prod.id}
- onClick={() => { setIsOpen(false); router.push(`/product/${prod.id}`); }}
- className="p-4 rounded-2xl bg-white dark:bg-[#2a2a2c]/70 hover:bg-white dark:hover:bg-[#2c2c2e] border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 shadow-sm dark:shadow-none transition-all cursor-pointer flex items-center gap-3.5 group"
- >
- <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#202022]/5 shrink-0">
- <Image src={prod.imageUrl} alt={prod.title} fill sizes="64px" className="object-cover group-hover:scale-105 transition-transform" />
- </div>
- <div className="min-w-0">
- <h5 className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 transition-colors">
- {prod.title}
- </h5>
- <p className="text-[11px] text-gray-400 dark:text-gray-400 mt-0.5">{prod.category}</p>
- <span className="font-extrabold text-xs text-gray-900 dark:text-gray-100 mt-1 block">
- ${Number(prod.price || 0).toFixed(2)}
- </span>
- </div>
- </div>
- ))}
- </div>
  </div>
  )}
  </>

@@ -99,7 +99,22 @@ export function BackToTopButton({
     });
   }, [hasSvgFilterSupport, dims.width, dims.height]);
 
-  const scrollToTop = () => {
+  const scrollToTop = (e?: React.MouseEvent | React.PointerEvent | React.TouchEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // 1. Disparar a través de Lenis si está activo en el DOM
+    const lenis =
+      typeof window !== "undefined"
+        ? (window as unknown as { __luminaLenis?: { scrollTo: (target: number, opts?: Record<string, unknown>) => void } }).__luminaLenis
+        : null;
+    if (lenis && typeof lenis.scrollTo === "function") {
+      lenis.scrollTo(0, { duration: 1.2, immediate: false });
+    }
+
+    // 2. Respaldo nativo sincronizado
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     if (typeof document !== "undefined") {
       if (document.documentElement) {
@@ -119,12 +134,18 @@ export function BackToTopButton({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.92 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          style={{ willChange: "transform", transform: "translateZ(0)" }}
           className={`fixed bottom-28 sm:bottom-32 md:bottom-36 left-1/2 -translate-x-1/2 lg:bottom-28 xl:bottom-32 lg:left-8 xl:left-12 lg:translate-x-0 z-40 flex items-center justify-center pointer-events-auto select-none ${className}`}
         >
           <button
             ref={buttonRef}
             type="button"
             onClick={scrollToTop}
+            onPointerDown={(e) => {
+              if (e.pointerType === "touch") {
+                scrollToTop(e);
+              }
+            }}
             aria-label={label}
             title={label}
             style={{
@@ -145,7 +166,7 @@ export function BackToTopButton({
               `,
               border: "0.9px solid #18181b",
             }}
-            className="group relative flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-zinc-900 hover:scale-[1.03] active:scale-95 transition-transform duration-200 cursor-pointer select-none overflow-hidden"
+            className="group relative flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-zinc-900 [@media(hover:hover)]:hover:scale-[1.03] active:scale-95 transition-transform duration-200 cursor-pointer select-none overflow-hidden touch-manipulation"
           >
             {/* Reflejo especular superior característico de srdavo/liquid-glass */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/60 via-white/15 to-transparent rounded-full" />

@@ -247,7 +247,10 @@ export function Header() {
   return (
     <>
       <CartDrawer />
-      <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
+      <header 
+        className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none transform-gpu"
+        style={{ transform: "translateZ(0)" }}
+      >
         <div
           ref={headerRef}
           className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full relative transform-gpu max-w-full overflow-visible select-none"
