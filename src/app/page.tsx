@@ -329,9 +329,9 @@ export default function Home() {
   }, []);
 
   // Velo degradado inferior de color puro CSS (0% costo GPU):
-  // Aparece suavemente al hacer scroll hacia abajo para explorar el catálogo y desaparece al subir al Hero
-  const [showCatalogGradient, setShowCatalogGradient] = useState(false);
-  const showCatalogGradientRef = useRef(false);
+  // Oculto en el Hero (scrollY < 400), intenso en el catálogo (opacity-100), y menos presenciable (opacity-25) al llegar abajo del todo para leer el copyright
+  const [gradientState, setGradientState] = useState<"hidden" | "full" | "soft">("hidden");
+  const gradientStateRef = useRef<"hidden" | "full" | "soft">("hidden");
   const gradientRafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -343,22 +343,19 @@ export default function Home() {
         gradientRafRef.current = null;
         const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
 
-        // Comprobar si nos acercamos al pie de página (FAQs / Garantías / Copyright)
-        const footer = document.querySelector("footer") || document.getElementById("envios-garantias");
-        let isNearFooter = false;
-        if (footer) {
-          const rect = footer.getBoundingClientRect();
-          isNearFooter = rect.top < window.innerHeight + 120;
-        } else {
-          const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
-          const distFromBottom = scrollHeight - (scrollY + window.innerHeight);
-          isNearFooter = distFromBottom < 700;
+        // Comprobar si llegamos exactamente abajo del todo (zona copyright / fin de página)
+        const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+        const distFromBottom = scrollHeight - (scrollY + window.innerHeight);
+        const isAtVeryBottom = distFromBottom < 160;
+
+        let nextState: "hidden" | "full" | "soft" = "hidden";
+        if (scrollY > 400) {
+          nextState = isAtVeryBottom ? "soft" : "full";
         }
 
-        const shouldShow = scrollY > 400 && !isNearFooter;
-        if (shouldShow !== showCatalogGradientRef.current) {
-          showCatalogGradientRef.current = shouldShow;
-          setShowCatalogGradient(shouldShow);
+        if (nextState !== gradientStateRef.current) {
+          gradientStateRef.current = nextState;
+          setGradientState(nextState);
         }
       });
     };
@@ -700,7 +697,7 @@ export default function Home() {
               {/* Barra de Filtros / Nichos Rediseñada: Animación física spring, tipografía editorial y tonos bosque brandeados */}
               <div className="relative w-full">
                 <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap py-1.5 px-1 w-full">
-                  {(showAllNicheFilters ? ["Todos", ...categories] : ["Todos", ...categories].slice(0, 5)).map((filter) => {
+                  {(showAllNicheFilters ? ["Todos", ...categories] : ["Todos", ...categories].slice(0, 3)).map((filter) => {
                     const isActive = activeFilter === filter;
                     return (
                       <button 
@@ -723,8 +720,8 @@ export default function Home() {
                     );
                   })}
 
-                  {/* Botón Ver más / Ver menos si hay más de 5 nichos */}
-                  {(["Todos", ...categories].length > 5) && (
+                  {/* Botón Ver más / Ver menos si hay más de 3 nichos */}
+                  {(["Todos", ...categories].length > 3) && (
                     <button
                       type="button"
                       onClick={() => setShowAllNicheFilters(!showAllNicheFilters)}
@@ -733,7 +730,7 @@ export default function Home() {
                       <span>
                         {showAllNicheFilters 
                           ? "Ver menos" 
-                          : `Ver más (+${["Todos", ...categories].length - 5})`}
+                          : `Ver más (+${["Todos", ...categories].length - 3})`}
                       </span>
                       <ChevronDown 
                         className={`w-3.5 h-3.5 transition-transform duration-200 ease-out ${
@@ -778,7 +775,11 @@ export default function Home() {
       <div
         aria-hidden="true"
         className={`fixed bottom-0 left-0 right-0 h-44 sm:h-56 lg:h-64 pointer-events-none z-30 transition-opacity duration-700 ease-out ${
-          showCatalogGradient ? "opacity-100" : "opacity-0"
+          gradientState === "hidden"
+            ? "opacity-0"
+            : gradientState === "soft"
+            ? "opacity-25"
+            : "opacity-100"
         }`}
         style={{
           background:

@@ -57,9 +57,10 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
     return list;
   }, [products, categoryFilter, searchQuery]);
 
-  // Velo degradado inferior de color puro CSS verde bosque (0% GPU overhead, 120 FPS)
-  const [showCatalogGradient, setShowCatalogGradient] = React.useState(false);
-  const showCatalogGradientRef = React.useRef(false);
+  // Velo degradado inferior de color puro CSS verde bosque (0% GPU overhead, 120 FPS):
+  // En la sección de todos los nichos (/shop), siempre visible desde arriba (sin Hero) y suavizado a opacity-25 al llegar abajo del todo para leer el copyright
+  const [isNearBottom, setIsNearBottom] = React.useState(false);
+  const isNearBottomRef = React.useRef(false);
   const gradientRafRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
@@ -71,22 +72,14 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
         gradientRafRef.current = null;
         const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
 
-        // Comprobar si nos acercamos al pie de página (FAQs / Garantías / Copyright)
-        const footer = document.querySelector("footer") || document.getElementById("envios-garantias");
-        let isNearFooter = false;
-        if (footer) {
-          const rect = footer.getBoundingClientRect();
-          isNearFooter = rect.top < window.innerHeight + 120;
-        } else {
-          const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
-          const distFromBottom = scrollHeight - (scrollY + window.innerHeight);
-          isNearFooter = distFromBottom < 700;
-        }
+        // Comprobar si llegamos exactamente abajo del todo (zona copyright / fin de página)
+        const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+        const distFromBottom = scrollHeight - (scrollY + window.innerHeight);
+        const atBottom = distFromBottom < 160;
 
-        const shouldShow = scrollY > 120 && !isNearFooter;
-        if (shouldShow !== showCatalogGradientRef.current) {
-          showCatalogGradientRef.current = shouldShow;
-          setShowCatalogGradient(shouldShow);
+        if (atBottom !== isNearBottomRef.current) {
+          isNearBottomRef.current = atBottom;
+          setIsNearBottom(atBottom);
         }
       });
     };
@@ -191,7 +184,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
       <div
         aria-hidden="true"
         className={`fixed bottom-0 left-0 right-0 h-44 sm:h-56 lg:h-64 pointer-events-none z-30 transition-opacity duration-700 ease-out ${
-          showCatalogGradient ? "opacity-100" : "opacity-0"
+          isNearBottom ? "opacity-25" : "opacity-100"
         }`}
         style={{
           background:
