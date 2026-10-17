@@ -12,18 +12,24 @@ export function buildBrandMetadata(
 ): Metadata {
   const siteUrl = customBrand.meta.siteUrl;
 
+  const baseTitle = "Muebles de Diseño y Decoración Contemporánea · Lumina Home";
+  const persuasiveDescription = "Descubre piezas de autor, iluminación escultural y diseño minimalista. Envíos a todo el país · 15% OFF en tu primera compra.";
+  const absoluteOgImage = customBrand.meta.ogImage.startsWith('http') 
+    ? customBrand.meta.ogImage 
+    : `${siteUrl}${customBrand.meta.ogImage.startsWith('/') ? '' : '/'}${customBrand.meta.ogImage}`;
+
   const base: Metadata = {
     metadataBase: new URL(siteUrl),
     title: {
-      default: "Lumina Home",
-      template: `%s | Lumina Home`,
+      default: baseTitle,
+      template: `%s · ${customBrand.name}`,
     },
-    description: customBrand.description,
-    applicationName: "Lumina Home",
+    description: persuasiveDescription,
+    applicationName: customBrand.name,
     appleWebApp: {
       capable: true,
       statusBarStyle: 'default',
-      title: "Lumina Home",
+      title: customBrand.name,
     },
     keywords: customBrand.meta.keywords,
     authors: [{ name: customBrand.meta.publisher }],
@@ -35,29 +41,31 @@ export function buildBrandMetadata(
       address: false,
     },
     alternates: {
-      canonical: '/',
+      canonical: siteUrl,
     },
     openGraph: {
       type: 'website',
-      locale: customBrand.meta.locale,
+      locale: customBrand.meta.locale || 'es_EC',
       url: siteUrl,
-      siteName: "Lumina Home",
-      title: "Lumina Home",
-      description: customBrand.description,
+      siteName: customBrand.name,
+      title: baseTitle,
+      description: persuasiveDescription,
       images: [
         {
-          url: customBrand.meta.ogImage,
+          url: absoluteOgImage,
+          secureUrl: absoluteOgImage,
           width: 1200,
           height: 630,
-          alt: `${customBrand.name} — Colección de Autor`,
+          type: 'image/jpeg',
+          alt: `${customBrand.name} — Muebles de Diseño Contemporáneo y Piezas de Autor`,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: "Lumina Home",
-      description: customBrand.description,
-      images: [customBrand.meta.ogImage],
+      title: baseTitle,
+      description: persuasiveDescription,
+      images: [absoluteOgImage],
     },
     robots: {
       index: true,

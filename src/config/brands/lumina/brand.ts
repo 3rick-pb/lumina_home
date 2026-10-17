@@ -35,11 +35,11 @@ export const luminaBrandConfig: BrandConfig = {
     pinterest: 'https://pinterest.com/lumina.home',
   },
   meta: {
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://lumina-home.vercel.app',
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://luminahome-3rick.vercel.app',
     locale: 'es_EC',
     creator: 'Lumina Home',
     publisher: 'Lumina Living Studio',
-    ogImage: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=1200&auto=format&fit=crop',
+    ogImage: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://luminahome-3rick.vercel.app'}/og-default.jpg`,
     keywords: [
       'Lumina Home',
       'Lumina',
