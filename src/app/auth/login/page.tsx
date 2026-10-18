@@ -520,7 +520,7 @@ function LoginFormContent() {
           <div className="mt-6 pt-5 border-t border-gray-200/60 text-center text-xs text-gray-600">
             ¿No tienes cuenta aún?{' '}
             <Link href="/auth/register" className="font-semibold text-gray-900 hover:text-[#8c9276] hover:underline underline-offset-2 transition-colors">
-              Regístrate aquí
+              Regístrate gratis
             </Link>
           </div>
         </div>

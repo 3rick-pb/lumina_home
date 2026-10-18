@@ -150,7 +150,7 @@ interface UserState {
   initializeAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
+  register: (email: string, password: string, name: string, birthDate?: string) => Promise<{ error: string | null }>;
   continueAsGuest: () => void;
   exitGuestMode: () => void;
   
@@ -1410,7 +1410,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     } catch {}
   },
   
-  register: async (email, password, name) => {
+  register: async (email, password, name, birthDate) => {
     const cleanEmail = (email || '').trim().toLowerCase();
     if (!cleanEmail || !isValidEmail(cleanEmail)) {
       return { error: 'Por favor, ingresa un correo electrónico válido (ej. usuario@dominio.com).' };
@@ -1426,6 +1426,25 @@ export const useUserStore = create<UserState>((set, get) => ({
       return { error: pwdCheck.error || 'La contraseña no cumple con los requisitos de seguridad.' };
     }
 
+    let calculatedAge: number | null = null;
+    if (birthDate) {
+      const parts = birthDate.split('-');
+      if (parts.length === 3) {
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        const d = parseInt(parts[2], 10);
+        if (y && m && d) {
+          const today = new Date();
+          let age = today.getFullYear() - y;
+          const monthDiff = (today.getMonth() + 1) - m;
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < d)) {
+            age--;
+          }
+          calculatedAge = age;
+        }
+      }
+    }
+
     const snapshotBeforeRegister = {
       isAuthenticated: get().isAuthenticated,
       favorites: [...get().favorites],
@@ -1438,20 +1457,41 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { data, error } = await supabase.auth.signUp({ 
       email: cleanEmail, 
       password,
-      options: { data: { name: cleanName, role } } 
+      options: { 
+        data: { 
+          name: cleanName, 
+          role,
+          birth_date: birthDate || null,
+          verified_age: calculatedAge,
+          age_verified: calculatedAge !== null ? calculatedAge >= 18 : false,
+        } 
+      } 
     });
     if (!error && data?.user) {
       setGuestModeStorage(false);
       const userObj: User = { id: data.user.id, email: cleanEmail, name: cleanName, role, isRootAdmin };
 
-      // Upsert profile into user_profiles table
+      // Upsert profile into user_profiles table & profiles table
       try {
         await supabase.from('user_profiles').upsert({
           user_id: data.user.id,
           display_name: cleanName,
           email: cleanEmail,
+          birth_date: birthDate || null,
+          verified_age: calculatedAge,
+          age_verified: calculatedAge !== null ? calculatedAge >= 18 : false,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
+
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          full_name: cleanName,
+          email: cleanEmail,
+          birth_date: birthDate || null,
+          verified_age: calculatedAge,
+          age_verified: calculatedAge !== null ? calculatedAge >= 18 : false,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
       } catch {}
 
       // Synchronize and merge guest cart + guest favorites/addresses/cards into the new account
