@@ -67,67 +67,45 @@ import {
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
-import {
-  CatalogTabSkeleton,
-  NichesTabSkeleton,
-  AnalyticsTabSkeleton,
-  CartAlertsTabSkeleton,
-  IntegrationsTabSkeleton,
-  DiscountCouponsTabSkeleton,
-  SettingsTabSkeleton,
-  OrdersTabSkeleton,
-  CardsTabSkeleton,
-  FavoritesTabSkeleton,
-} from "@/components/ui/BoneyardSkeletons";
 
-// Dynamic code-split tabs with Boneyard luxury skeletons
+// Dynamic code-split tabs without skeletons to prevent skeleton flash & transition clash
 const CatalogTab = dynamic(() => import("@/components/profile/tabs/CatalogTab").then(m => m.CatalogTab), {
-  loading: () => <CatalogTabSkeleton />,
   ssr: false,
 });
 
 const NichesTab = dynamic(() => import("@/components/profile/tabs/NichesTab").then(m => m.NichesTab), {
-  loading: () => <NichesTabSkeleton />,
   ssr: false,
 });
 
 const AnalyticsTab = dynamic(() => import("@/components/profile/tabs/AnalyticsTab").then(m => m.AnalyticsTab), {
-  loading: () => <AnalyticsTabSkeleton />,
   ssr: false,
 });
 
 const CartAlertsTab = dynamic(() => import("@/components/profile/tabs/CartAlertsTab").then(m => m.CartAlertsTab), {
-  loading: () => <CartAlertsTabSkeleton />,
   ssr: false,
 });
 
 const IntegrationsTab = dynamic(() => import("@/components/profile/tabs/IntegrationsTab").then(m => m.IntegrationsTab), {
-  loading: () => <IntegrationsTabSkeleton />,
   ssr: false,
 });
 
 const DiscountCouponsTab = dynamic(() => import("@/components/profile/tabs/DiscountCouponsTab").then(m => m.DiscountCouponsTab), {
-  loading: () => <DiscountCouponsTabSkeleton />,
   ssr: false,
 });
 
 const SettingsTab = dynamic(() => import("@/components/profile/tabs/SettingsTab").then(m => m.SettingsTab), {
-  loading: () => <SettingsTabSkeleton />,
   ssr: false,
 });
 
 const OrdersTab = dynamic(() => import("@/components/profile/tabs/OrdersTab").then(m => m.OrdersTab), {
-  loading: () => <OrdersTabSkeleton />,
   ssr: false,
 });
 
 const CardsTab = dynamic(() => import("@/components/profile/tabs/CardsTab").then(m => m.CardsTab), {
-  loading: () => <CardsTabSkeleton />,
   ssr: false,
 });
 
 const FavoritesTab = dynamic(() => import("@/components/profile/tabs/FavoritesTab").then(m => m.FavoritesTab), {
-  loading: () => <FavoritesTabSkeleton />,
   ssr: false,
 });
 
@@ -230,6 +208,35 @@ export default function ProfilePage() {
       }
     };
   }, [mode]);
+
+  // Pre-load dynamic tab chunks during browser idle time for zero-lag tab transitions
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const prefetchTabs = () => {
+      import("@/components/profile/tabs/CatalogTab");
+      import("@/components/profile/tabs/NichesTab");
+      import("@/components/profile/tabs/AnalyticsTab");
+      import("@/components/profile/tabs/CartAlertsTab");
+      import("@/components/profile/tabs/IntegrationsTab");
+      import("@/components/profile/tabs/DiscountCouponsTab");
+      import("@/components/profile/tabs/SettingsTab");
+      import("@/components/profile/tabs/OrdersTab");
+      import("@/components/profile/tabs/CardsTab");
+      import("@/components/profile/tabs/FavoritesTab");
+    };
+
+    if ("requestIdleCallback" in window) {
+      const id = (window as unknown as { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(prefetchTabs);
+      return () => {
+        if ("cancelIdleCallback" in window) {
+          (window as unknown as { cancelIdleCallback: (n: number) => void }).cancelIdleCallback(id);
+        }
+      };
+    } else {
+      const timer = setTimeout(prefetchTabs, 800);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Scroll to top immediately when tab changes
   useEffect(() => {
@@ -1845,16 +1852,16 @@ const handleConfirmDeleteNiche = async () => {
  </div>
 
         {/* ========================================================================= */}
-        {/* TAB VIEWS CONTAINER WITH DIAGONAL BOTTOM-LEFT TO TOP-RIGHT ENTRANCE MOTION */}
+        {/* TAB VIEWS CONTAINER WITH SMOOTH DIAGONAL BOTTOM-LEFT TO TOP-RIGHT SWEEP */}
         {/* ========================================================================= */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
             initial={{
               opacity: 0,
-              x: -32,
-              y: 44,
-              scale: 0.97,
+              x: -20,
+              y: 28,
+              scale: 0.985,
               clipPath: "polygon(0 100%, 0 100%, 0 100%, 0 100%)",
             }}
             animate={{
@@ -1866,16 +1873,19 @@ const handleConfirmDeleteNiche = async () => {
             }}
             exit={{
               opacity: 0,
-              x: 20,
-              y: -20,
-              scale: 0.98,
-              transition: { duration: 0.16, ease: "easeIn" },
+              transition: { duration: 0.1, ease: "easeOut" },
             }}
             transition={{
-              duration: 0.48,
+              duration: 0.4,
               ease: [0.16, 1, 0.3, 1],
             }}
-            style={{ transformOrigin: "bottom left" }}
+            style={{
+              transformOrigin: "bottom left",
+              willChange: "transform, opacity, clip-path",
+              WebkitBackfaceVisibility: "hidden",
+              backfaceVisibility: "hidden",
+              transform: "translateZ(0)",
+            }}
             className="w-full flex-1 flex flex-col min-w-0"
           >
             {/* VIEW 1: OVERVIEW (MASTER BENTO GRID) */}

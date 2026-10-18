@@ -370,7 +370,7 @@ export function Header() {
 
               {/* Floating Live Quick Search Results Dropdown */}
               {searchVal.trim().length > 0 && (
-                <div className="fixed left-3 right-3 top-20 sm:absolute sm:left-auto sm:-right-4 sm:top-full mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] sm:max-w-sm bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-3.5 sm:p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto overflow-hidden">
+                <div className="fixed left-3 right-3 top-24 sm:absolute sm:left-auto sm:-right-4 sm:top-full mt-3.5 sm:mt-4 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] sm:max-w-sm bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border border-white/90 dark:border-white/10 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.45)] p-3.5 sm:p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 dark:text-gray-100 pointer-events-auto overflow-hidden">
                   
                   {/* Header info */}
                   <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
