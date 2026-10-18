@@ -3183,111 +3183,206 @@ export function CartDrawer() {
   </motion.div>
 
   {/* ======================================================================= */}
-  {/* PAYPHONE ECUADOR SIMULATION MODAL (Modo Preparación / RUC en trámite) */}
+  {/* PAYPHONE ECUADOR PRIVATE BANKING TERMINAL & 3D SECURE MODAL */}
   {/* ======================================================================= */}
   {isPayPhoneSimOpen && payphoneSimData && (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in font-sans">
-      <div className="w-full max-w-lg bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl rounded-[2.5rem] p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.25)] border border-black/[0.08] dark:border-white/10 space-y-5 animate-scale-up">
-        
-        {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-black/[0.06] dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center border border-black/[0.06] dark:border-white/10">
-              <PayPhoneIcon className="w-6 h-6" />
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-2xl animate-fade-in font-sans">
+      {/* Outer Shell: Double-Bezel Hardware Architecture */}
+      <div className="w-full max-w-[480px] p-2 sm:p-2.5 rounded-[2.5rem] bg-gradient-to-b from-black/10 via-black/5 to-black/10 dark:from-white/15 dark:via-white/5 dark:to-white/10 ring-1 ring-black/10 dark:ring-white/20 shadow-[0_32px_80px_-15px_rgba(0,0,0,0.6)] animate-scale-up">
+        {/* Inner Core */}
+        <div className="w-full rounded-[calc(2.5rem-0.5rem)] bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden border border-black/[0.04] dark:border-white/[0.06]">
+          
+          {/* Ambient Specular Light Flares */}
+          <div className="pointer-events-none absolute -top-24 -right-24 w-60 h-60 bg-gradient-to-br from-[#ff5b00]/15 via-amber-500/10 to-transparent rounded-full blur-3xl opacity-80" />
+          <div className="pointer-events-none absolute -bottom-24 -left-24 w-60 h-60 bg-gradient-to-tr from-emerald-500/15 via-teal-500/10 to-transparent rounded-full blur-3xl opacity-70" />
+
+          {/* Modal Header */}
+          <div className="flex items-center justify-between pb-3.5 border-b border-black/[0.06] dark:border-white/10 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#ff5b00]/20 via-[#ff5b00]/10 to-transparent border border-[#ff5b00]/30 flex items-center justify-center shadow-xs shrink-0">
+                <PayPhoneIcon className="w-7 h-7" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-sm sm:text-base text-gray-950 dark:text-white tracking-tight">
+                    PayPhone® Gateway
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    3D Secure 2.2
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Terminal Bancaria Segura • Autorización Criptográfica
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-extrabold text-base text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                PayPhone Ecuador <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">Modo Pruebas</span>
-              </h3>
-              <p className="text-[11px] text-gray-400">Ambiente de Simulación SRI / RUC en trámite</p>
+
+            <button
+              type="button"
+              onClick={() => setIsPayPhoneSimOpen(false)}
+              disabled={isSimulatingApproval}
+              className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-gray-400 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Cerrar modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Luxury Obsidian Credit Card Preview */}
+          <div className="relative z-10 w-full rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-[#1a1a1d] via-[#111113] to-[#08080a] text-white border border-white/15 shadow-[0_16px_36px_rgba(0,0,0,0.45)] overflow-hidden space-y-3.5 group">
+            {/* Iridescent diagonal reflection */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+            {/* Card Top: EMV Chip + Contactless + Network */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                {/* Metallic Brass EMV Chip */}
+                <div className="w-8 h-6 rounded-md bg-gradient-to-br from-[#f6d365] via-[#fda085] to-[#d4af37] border border-amber-200/50 p-0.5 shadow-inner flex flex-col justify-between">
+                  <div className="h-0.5 w-full bg-amber-950/25" />
+                  <div className="h-0.5 w-full bg-amber-950/25" />
+                  <div className="h-0.5 w-full bg-amber-950/25" />
+                </div>
+                {/* Contactless waves SVG */}
+                <svg className="w-4 h-4 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M8.5 16.5a5 5 0 0 1 0-9" />
+                  <path d="M12 19a8.5 8.5 0 0 0 0-14" />
+                </svg>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  Fondos Verificados
+                </span>
+                <VisaLogo className="h-3" fill="#FFFFFF" />
+              </div>
+            </div>
+
+            {/* Masked Card Number */}
+            <div className="pt-1">
+              <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/40 block mb-0.5">
+                Tarjeta Cuentahabiente
+              </span>
+              <p className="font-mono text-base sm:text-lg font-bold tracking-[0.25em] text-white/95">
+                •••• &nbsp;•••• &nbsp;•••• &nbsp;<span className="text-emerald-400 font-extrabold">4242</span>
+              </p>
+            </div>
+
+            {/* Card Details Footer */}
+            <div className="flex items-end justify-between pt-2 border-t border-white/10 text-xs font-mono">
+              <div>
+                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Titular Autorizado</span>
+                <span className="font-semibold text-white uppercase tracking-wide truncate max-w-[170px] block text-[11px]">
+                  {payphoneSimData.customerName || (user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA")}
+                </span>
+              </div>
+              <div className="text-center">
+                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Vence</span>
+                <span className="font-semibold text-white/90 text-[11px]">09/29</span>
+              </div>
+              <div className="text-right">
+                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Seguridad</span>
+                <span className="font-semibold text-emerald-400 text-[11px]">CVV •••</span>
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsPayPhoneSimOpen(false)}
-            className="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-gray-500 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Order Overview inside Modal */}
-        <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2 text-xs">
-          <div className="flex justify-between font-semibold items-baseline">
-            <span className="text-gray-500 dark:text-gray-400">Total a Autorizar:</span>
-            <span className="text-xl font-black text-gray-900 dark:text-white">${Number(payphoneSimData.total).toFixed(2)} USD</span>
-          </div>
-          <div className="flex justify-between text-gray-600 dark:text-gray-300">
-            <span className="text-gray-400">Pedido ID:</span>
-            <span className="font-mono font-bold">{payphoneSimData.orderId}</span>
-          </div>
-          <div className="flex justify-between text-gray-600 dark:text-gray-300">
-            <span className="text-gray-400">Tx ID (PayPhone):</span>
-            <span className="font-mono text-[10px]">{payphoneSimData.clientTransactionId}</span>
-          </div>
-          <div className="flex justify-between text-gray-600 dark:text-gray-300">
-            <span className="text-gray-400">Cliente / Correo:</span>
-            <span>{payphoneSimData.customerEmail}</span>
-          </div>
-          {payphoneSimData.shippingAddr?.idNumber && (
-            <div className="flex justify-between text-gray-600 dark:text-gray-300">
-              <span className="text-gray-400">Cédula / RUC Comprador:</span>
-              <span className="font-mono font-bold">{payphoneSimData.shippingAddr.idNumber}</span>
+          {/* Symmetrical Financial Ledger */}
+          <div className="relative z-10 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2.5 text-xs">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Monto a Liquidar
+              </span>
+              <div className="text-right">
+                <span className="text-2xl font-black text-gray-950 dark:text-white font-sans tracking-tight">
+                  ${Number(payphoneSimData.total).toFixed(2)}
+                </span>
+                <span className="text-xs font-bold text-gray-400 font-mono ml-1.5">USD</span>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Status Notice */}
-        <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1.5 leading-relaxed">
-          <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-gray-200">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Arquitectura de Pagos Completada al 100%</span>
+            <div className="h-px w-full bg-black/[0.05] dark:bg-white/[0.05]" />
+
+            <div className="grid grid-cols-2 gap-2.5 text-[11px]">
+              <div>
+                <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Pedido Lumina</span>
+                <span className="font-mono font-bold text-gray-900 dark:text-gray-100 truncate block">
+                  {payphoneSimData.orderId}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Protocolo Criptográfico</span>
+                <span className="font-mono text-gray-600 dark:text-gray-300 text-[10px] truncate block" title={payphoneSimData.clientTransactionId}>
+                  {payphoneSimData.clientTransactionId?.slice(0, 16)}...
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Cuentahabiente</span>
+                <span className="text-gray-800 dark:text-gray-200 font-medium truncate block">
+                  {payphoneSimData.customerEmail}
+                </span>
+              </div>
+              {payphoneSimData.shippingAddr?.idNumber && (
+                <div>
+                  <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Cédula / RUC SRI</span>
+                  <span className="font-mono font-bold text-gray-800 dark:text-gray-200 truncate block">
+                    {payphoneSimData.shippingAddr.idNumber}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-          <p>
-            Tu tienda ya tiene listos los endpoints de cobro, el recálculo zero-trust de montos y el despacho automático de facturas. Como el RUC ante el SRI está en trámite, puedes simular la autorización bancaria con 1 clic para validar todo el flujo de pedidos.
-          </p>
+
+          {/* High-End Trust Pill */}
+          <div className="relative z-10 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 text-[11px]">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="leading-snug">
+              Operación autorizada bajo protocolo bancario <strong>PCI-DSS Nivel 1</strong> y tokenización cifrada.
+            </span>
+          </div>
+
+          {/* Interactive Magnetic CTA Button */}
+          <div className="relative z-10 space-y-2.5 pt-1">
+            <button
+              type="button"
+              onClick={handleApprovePayPhoneSimulation}
+              disabled={isSimulatingApproval}
+              className="group relative w-full h-14 rounded-full bg-gray-950 dark:bg-white text-white dark:text-gray-950 font-bold text-sm shadow-[0_12px_28px_rgba(0,0,0,0.2)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.3)] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer flex items-center justify-between pl-6 pr-2 border border-white/20 dark:border-black/10 overflow-hidden"
+            >
+              {isSimulatingApproval ? (
+                <div className="w-full flex items-center justify-center gap-2.5 py-1">
+                  <Loader2 className="w-4 h-4 animate-spin text-white dark:text-gray-950" />
+                  <span className="font-semibold tracking-wide">Liquidando con la red bancaria...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2.5">
+                    <Lock className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
+                    <span className="tracking-tight">Autorizar Transacción Segura</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-full bg-white/10 dark:bg-black/10">
+                      ${Number(payphoneSimData.total).toFixed(2)} USD
+                    </span>
+                    <div className="w-10 h-10 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform group-hover:scale-105 group-hover:translate-x-0.5">
+                      <ArrowRight className="w-4 h-4 text-white dark:text-gray-950" />
+                    </div>
+                  </div>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsPayPhoneSimOpen(false)}
+              disabled={isSimulatingApproval}
+              className="w-full py-2 rounded-full text-xs font-semibold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer text-center"
+            >
+              Cancelar y volver a la bolsa
+            </button>
+          </div>
+
         </div>
-
-        {/* Simulated Card Badges */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-black/[0.03] dark:bg-[#2c2c2e] text-[11px]">
-          <span className="text-gray-500 font-medium">Tarjeta de Prueba:</span>
-          <span className="font-mono font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-            <VisaLogo className="h-2.5" fill="#1A1F71" /> VISA •••• 4242
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="pt-2 space-y-2.5">
-          <button
-            type="button"
-            onClick={handleApprovePayPhoneSimulation}
-            disabled={isSimulatingApproval}
-            className="w-full h-13 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] font-bold text-sm shadow-md flex items-center justify-center gap-2.5 transition-all disabled:opacity-60 cursor-pointer active:scale-[0.99] hover:opacity-95"
-          >
-            {isSimulatingApproval ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Autorizando transacción...</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Simular Pago Aprobado (${Number(payphoneSimData.total).toFixed(2)})</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsPayPhoneSimOpen(false)}
-            disabled={isSimulatingApproval}
-            className="w-full py-2.5 rounded-full text-xs font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer"
-          >
-            Cancelar
-          </button>
-        </div>
-
       </div>
     </div>
   )}
