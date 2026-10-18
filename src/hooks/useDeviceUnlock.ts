@@ -1,242 +1,116 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 
-// Convertidores entre Base64URL y ArrayBuffer sin dependencias externas
-function base64urlToBuffer(base64url: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
-  const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray.buffer;
-}
+/**
+ * Helper para convertir Base64URL <-> ArrayBuffer
+ */
+const toBuffer = (b64: string) =>
+  Uint8Array.from(atob(b64.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
 
-function bufferToBase64url(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window
-    .btoa(binary)
+const toBase64Url = (buf: ArrayBuffer) =>
+  btoa(String.fromCharCode(...new Uint8Array(buf)))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
-    .replace(/=/g, "");
-}
+    .replace(/=+$/, "");
 
-const STORAGE_CRED_ID_KEY = "lumina_webauthn_platform_cred_id_v2";
+/**
+ * Desbloqueo directo contra el hardware local del dispositivo (WebAuthn Platform Authenticator).
+ * - En celulares: Android Biometric (Huella, Rostro, Patrón o PIN de pantalla) / iOS (Face ID, Touch ID o Código).
+ * - En PC: Windows Hello (Huella, Rostro o PIN del sistema) / Mac (Touch ID o Contraseña).
+ * - residentKey: "discouraged" evita que Chrome o Windows pregunten "¿Dónde guardar la Passkey?" en la nube.
+ * - transports: ["internal"] y authenticatorAttachment: "platform" fuerzan el uso exclusivo del sensor local.
+ */
+export async function unlockWithDevice(): Promise<boolean> {
+  if (typeof window === "undefined" || !window.PublicKeyCredential) {
+    throw new Error("Tu navegador no soporta desbloqueo nativo del dispositivo.");
+  }
 
-export interface DeviceUnlockResult {
-  success: boolean;
-  cancelled?: boolean;
-  error?: string;
-  method?: "biometric" | "pin";
+  const rpId = window.location.hostname; // Usar siempre el hostname actual (localhost o dominio de Vercel)
+  const challenge = new Uint8Array(32);
+  window.crypto.getRandomValues(challenge);
+
+  const savedCredId = localStorage.getItem("lumina_device_lock_id");
+
+  // 1. Si el dispositivo ya fue vinculado antes, pedimos solo verificación directa (Huella/FaceID/PIN del teléfono)
+  if (savedCredId) {
+    try {
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          rpId,
+          allowCredentials: [
+            {
+              id: toBuffer(savedCredId),
+              type: "public-key",
+              transports: ["internal"], // Fuerza usar SOLO el sensor interno del celular/PC sin buscar otros dispositivos
+            },
+          ],
+          userVerification: "required", // Fuerza pedir Huella, Face ID o PIN de bloqueo de pantalla del teléfono
+          timeout: 60000,
+        },
+      });
+      if (assertion) return true;
+    } catch (err: unknown) {
+      // Si el usuario canceló voluntariamente el prompt de huella/PIN en su celular, detenemos todo y NO revelamos la tarjeta
+      if (err instanceof Error && err.name === "NotAllowedError") {
+        return false;
+      }
+      // Si la credencial local ya no existe en el teléfono, limpiamos para recrearla abajo
+      localStorage.removeItem("lumina_device_lock_id");
+    }
+  }
+
+  // 2. Vinculación silenciosa en el dispositivo físico (sin gestores en la nube)
+  try {
+    const userId = new Uint8Array(16);
+    window.crypto.getRandomValues(userId);
+
+    const credential = (await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: {
+          name: "Lumina Home",
+          id: rpId,
+        },
+        user: {
+          id: userId,
+          name: "Verificacion de Seguridad",
+          displayName: "Titular de Tarjeta",
+        },
+        pubKeyCredParams: [
+          { alg: -7, type: "public-key" },   // ES256
+          { alg: -257, type: "public-key" }, // RS256
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform", // OBLIGATORIO: Solo sensor integrado en el propio celular/PC
+          residentKey: "discouraged",          // CRÍTICO: Evita que Chrome pregunte "dónde guardar la passkey" en la nube
+          requireResidentKey: false,
+          userVerification: "required",        // Obliga a pedir Huella, Face ID o PIN del sistema operativo
+        },
+        timeout: 60000,
+      },
+    })) as PublicKeyCredential | null;
+
+    if (credential) {
+      localStorage.setItem("lumina_device_lock_id", toBase64Url(credential.rawId));
+      return true;
+    }
+    return false;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "NotAllowedError") {
+      return false;
+    }
+    return false;
+  }
 }
 
 export function useDeviceUnlock() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [requiresPinFallback, setRequiresPinFallback] = useState(false);
-  const pendingUnlockCallbackRef = useRef<(() => void) | null>(null);
   const autoLockTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // 1. Verificar si el dispositivo soporta autenticación de plataforma (Touch ID, Face ID, Windows Hello, Android)
-  const isPlatformAuthSupported = useCallback(async (): Promise<boolean> => {
-    if (typeof window === "undefined") return false;
-    if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-      return false;
-    }
-    if (!window.PublicKeyCredential) return false;
-    try {
-      if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function") {
-        return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-      }
-    } catch {
-      return false;
-    }
-    return false;
-  }, []);
-
-  // 2. Desbloqueo Nativo mediante WebAuthn
-  const triggerNativeAuth = useCallback(
-    async (): Promise<DeviceUnlockResult> => {
-      try {
-        setIsAuthenticating(true);
-        setError(null);
-
-        // a. Solicitar challenge firmado al backend serverless
-        const challengeRes = await fetch("/api/cards/unlock", { method: "GET" });
-        if (!challengeRes.ok) {
-          throw new Error("No se pudo iniciar el protocolo de seguridad con el servidor.");
-        }
-        const challengeData = await challengeRes.json();
-        if (!challengeData.success || !challengeData.challenge || !challengeData.token) {
-          throw new Error(challengeData.error || "Respuesta de reto no válida.");
-        }
-
-        const challengeBuffer = base64urlToBuffer(challengeData.challenge);
-        const savedCredId = localStorage.getItem(STORAGE_CRED_ID_KEY);
-
-        let credential: PublicKeyCredential | null = null;
-
-        // b. Si ya existe una credencial local en este dispositivo, intentar navigator.credentials.get
-        if (savedCredId) {
-          try {
-            const getOptions: CredentialRequestOptions = {
-              publicKey: {
-                challenge: challengeBuffer,
-                allowCredentials: [
-                  {
-                    id: base64urlToBuffer(savedCredId),
-                    type: "public-key",
-                    transports: ["internal"],
-                  },
-                ],
-                userVerification: "required", // OBLIGA al PIN/Biometría del dispositivo
-                timeout: 60000,
-              },
-            };
-            credential = (await navigator.credentials.get(getOptions)) as PublicKeyCredential | null;
-          } catch (getErr: unknown) {
-            // Si el usuario canceló explícitamente en el diálogo del sistema
-            if (getErr instanceof Error && getErr.name === "NotAllowedError") {
-              return { success: false, cancelled: true, error: "Desbloqueo cancelado en el dispositivo." };
-            }
-            // Si la credencial expiró o fue eliminada del almacén del SO, intentar auto-enrollment transparente
-            credential = null;
-          }
-        }
-
-        // c. Si es la primera vez (o falló get), auto-enrollment transparente con navigator.credentials.create
-        if (!credential) {
-          try {
-            const createOptions: CredentialCreationOptions = {
-              publicKey: {
-                challenge: challengeBuffer,
-                rp: {
-                  name: "Lumina Home",
-                },
-                user: {
-                  id: new Uint8Array([118, 101, 114, 105, 102, 121, 45, 99, 97, 114, 100]),
-                  name: "usuario@luminahome.com",
-                  displayName: "Usuario Lumina",
-                },
-                pubKeyCredParams: [
-                  { type: "public-key", alg: -7 },   // ES256
-                  { type: "public-key", alg: -257 }, // RS256
-                ],
-                authenticatorSelection: {
-                  authenticatorAttachment: "platform", // Exclusivamente lector o PIN del propio teléfono/PC
-                  userVerification: "required",        // Forzar Huella, Face ID o PIN de bloqueo
-                  residentKey: "preferred",
-                },
-                timeout: 60000,
-              },
-            };
-
-            credential = (await navigator.credentials.create(createOptions)) as PublicKeyCredential | null;
-          } catch (createErr: unknown) {
-            if (createErr instanceof Error && createErr.name === "NotAllowedError") {
-              return { success: false, cancelled: true, error: "Desbloqueo cancelado en el dispositivo." };
-            }
-            throw createErr;
-          }
-        }
-
-        if (!credential) {
-          throw new Error("El sensor del dispositivo no devolvió credenciales válidas.");
-        }
-
-        // d. Extraer respuesta y guardar credId para futuros desbloqueos en 1 solo paso
-        const credResponse = credential.response as AuthenticatorResponse & {
-          clientDataJSON: ArrayBuffer;
-        };
-
-        const clientDataJSON = bufferToBase64url(credResponse.clientDataJSON);
-        const newCredId = bufferToBase64url(credential.rawId);
-        localStorage.setItem(STORAGE_CRED_ID_KEY, newCredId);
-
-        // e. Validar con el backend serverless
-        const verifyRes = await fetch("/api/cards/unlock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token: challengeData.token,
-            clientDataJSON,
-            credentialId: newCredId,
-          }),
-        });
-
-        const verifyData = await verifyRes.json();
-        if (!verifyRes.ok || !verifyData.success) {
-          throw new Error(verifyData.error || "Validación de seguridad fallida.");
-        }
-
-        return { success: true, method: "biometric" };
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Error durante la autenticación del dispositivo.";
-        setError(msg);
-        return { success: false, error: msg };
-      } finally {
-        setIsAuthenticating(false);
-      }
-    },
-    []
-  );
-
-  // 3. Método unificado para desbloquear una tarjeta al tocar el "ojito"
-  const requestCardUnlock = useCallback(
-    async (
-      cardId: string,
-      isCurrentlyVisible: boolean,
-      onReveal: () => void,
-      onHide: () => void
-    ) => {
-      // Regla 5.1: Ocultar sin pedir huella si ya está visible
-      if (isCurrentlyVisible) {
-        // Limpiar temporizador pendiente si existía
-        const existingTimer = autoLockTimersRef.current.get(cardId);
-        if (existingTimer) {
-          clearTimeout(existingTimer);
-          autoLockTimersRef.current.delete(cardId);
-        }
-        onHide();
-        return;
-      }
-
-      // Verificar si el dispositivo soporta biometría/PIN de plataforma
-      const supported = await isPlatformAuthSupported();
-      if (!supported) {
-        // Fallback para PCs antiguas o navegadores sin biometría nativa
-        pendingUnlockCallbackRef.current = () => {
-          onReveal();
-          scheduleAutoLock(cardId, onHide);
-        };
-        setRequiresPinFallback(true);
-        return;
-      }
-
-      // Invocar autenticación biométrica nativa de plataforma
-      const result = await triggerNativeAuth();
-      if (result.success) {
-        onReveal();
-        scheduleAutoLock(cardId, onHide);
-      } else if (!result.cancelled) {
-        // Si falló por incompatibilidad inesperada, ofrecer fallback sin bloquear
-        pendingUnlockCallbackRef.current = () => {
-          onReveal();
-          scheduleAutoLock(cardId, onHide);
-        };
-        setRequiresPinFallback(true);
-      }
-    },
-    [isPlatformAuthSupported, triggerNativeAuth]
-  );
-
-  // 4. Temporizador de Auto-Lock a los 30 segundos (Regla 5.2)
+  // Temporizador de Auto-Lock a los 30 segundos
   const scheduleAutoLock = (cardId: string, onHide: () => void) => {
     const existingTimer = autoLockTimersRef.current.get(cardId);
     if (existingTimer) clearTimeout(existingTimer);
@@ -249,49 +123,49 @@ export function useDeviceUnlock() {
     autoLockTimersRef.current.set(cardId, timer);
   };
 
-  // 5. Fallback con PIN de seguridad
-  const verifyFallbackPin = useCallback(
-    async (pin: string): Promise<boolean> => {
-      try {
-        const res = await fetch("/api/cards/unlock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fallbackPin: pin }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          if (pendingUnlockCallbackRef.current) {
-            pendingUnlockCallbackRef.current();
-            pendingUnlockCallbackRef.current = null;
-          }
-          setRequiresPinFallback(false);
-          setError(null);
-          return true;
-        } else {
-          setError(data.error || "PIN incorrecto");
-          return false;
+  // Método unificado para desbloquear una tarjeta al tocar el "ojito"
+  const requestCardUnlock = useCallback(
+    async (
+      cardId: string,
+      isCurrentlyVisible: boolean,
+      onReveal: () => void,
+      onHide: () => void
+    ) => {
+      // 1. Ocultar sin pedir huella si ya está visible
+      if (isCurrentlyVisible) {
+        const existingTimer = autoLockTimersRef.current.get(cardId);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          autoLockTimersRef.current.delete(cardId);
         }
-      } catch {
-        setError("Error al verificar PIN de seguridad");
-        return false;
+        onHide();
+        return;
+      }
+
+      // 2. Invocar desbloqueo nativo del sistema operativo
+      try {
+        setIsAuthenticating(true);
+        setError(null);
+
+        const unlocked = await unlockWithDevice();
+        if (unlocked) {
+          onReveal();
+          scheduleAutoLock(cardId, onHide);
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Error al desbloquear el dispositivo.";
+        setError(msg);
+      } finally {
+        setIsAuthenticating(false);
       }
     },
     []
   );
 
-  const closePinFallback = useCallback(() => {
-    setRequiresPinFallback(false);
-    pendingUnlockCallbackRef.current = null;
-    setError(null);
-  }, []);
-
   return {
     isAuthenticating,
     error,
-    requiresPinFallback,
     requestCardUnlock,
-    verifyFallbackPin,
-    closePinFallback,
     autoLockTimersRef,
   };
 }

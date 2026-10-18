@@ -14,7 +14,6 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { playCardEnvelopeSound } from "@/lib/soundUtils";
-import { CardSecurityPinModal } from "@/components/profile/CardSecurityPinModal";
 import { useDeviceUnlock } from "@/hooks/useDeviceUnlock";
 
 function cn(...inputs: ClassValue[]) {
@@ -254,11 +253,7 @@ export function CardFolder({
     onClick?.();
   };
 
-  const {
-    requiresPinFallback,
-    requestCardUnlock,
-    closePinFallback,
-  } = useDeviceUnlock();
+  const { requestCardUnlock } = useDeviceUnlock();
 
   const handleReveal = useCallback(() => {
     if (!detailsControlled) setInternalDetailsVisible(true);
@@ -500,15 +495,6 @@ export function CardFolder({
           <EllipsisVertical className="size-4" aria-hidden="true" />
         </motion.button>
       ) : null}
-
-      <CardSecurityPinModal
-        isOpen={requiresPinFallback}
-        onClose={closePinFallback}
-        onSuccess={() => {
-          handleReveal();
-          closePinFallback();
-        }}
-      />
     </div>
   );
 }
