@@ -41,6 +41,7 @@ import {
 } from "@/lib/locationUtils";
 import { resolveEcuadorExactAddressLngLat } from "../RadarMapboxCanvas";
 import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
+import { GoogleVectorIcon } from "@/components/ui/GoogleVectorIcon";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -95,6 +96,12 @@ export function SettingsTab({
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
   const [isSyncingAddresses, setIsSyncingAddresses] = useState(false);
   const [syncAddressError, setSyncAddressError] = useState<string | null>(null);
+
+  // Google Account Connection State
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [googleConnectFeedback, setGoogleConnectFeedback] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   // Ownership Transfer State
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -171,6 +178,88 @@ export function SettingsTab({
   useEffect(() => {
     if (user?.name) setEditName(user.name);
   }, [user?.name]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkGoogleStatus() {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const gIdentity = authData?.user?.identities?.find((i) => i.provider === "google");
+        if (gIdentity && isMounted) {
+          setIsGoogleConnected(true);
+          const email = (gIdentity.identity_data?.email as string) || authData?.user?.email || null;
+          setGoogleEmail(email);
+          return;
+        }
+
+        if (user?.id) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("google_connected, age_verified, email")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if ((prof?.google_connected || prof?.age_verified) && isMounted) {
+            setIsGoogleConnected(true);
+            setGoogleEmail(prof?.email || user.email || null);
+          }
+        }
+      } catch {}
+    }
+
+    checkGoogleStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("google_linked") === "success") {
+        setGoogleConnectFeedback({
+          msg: "¡Tu cuenta de Google ha sido conectada con éxito y tu mayoría de edad (+18) fue validada!",
+          type: "success",
+        });
+        setIsGoogleConnected(true);
+        urlParams.delete("google_linked");
+        const newQuery = urlParams.toString() ? `?${urlParams.toString()}` : window.location.pathname;
+        window.history.replaceState({}, "", newQuery);
+      }
+    }
+  }, []);
+
+  const handleConnectGoogle = async () => {
+    setIsConnectingGoogle(true);
+    setGoogleConnectFeedback(null);
+    try {
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/auth/callback?linked=true&next=${encodeURIComponent("/profile?tab=settings&google_linked=success")}`;
+
+      const { data, error } = await supabase.auth.linkIdentity({
+        provider: "google",
+        options: {
+          redirectTo,
+          scopes: "openid email profile https://www.googleapis.com/auth/user.birthday.read",
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent select_account",
+          },
+        },
+      });
+
+      if (error) {
+        setGoogleConnectFeedback({ msg: error.message || "No se pudo iniciar la vinculación con Google.", type: "error" });
+        setIsConnectingGoogle(false);
+      } else if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: unknown) {
+      console.error("[SettingsTab] linkIdentity error:", err);
+      setGoogleConnectFeedback({ msg: "Error al iniciar conexión con Google.", type: "error" });
+      setIsConnectingGoogle(false);
+    }
+  };
 
   useEffect(() => {
     if (isAdmin) {
@@ -1006,6 +1095,88 @@ export function SettingsTab({
               />
             </div>
             {newPass.length > 0 && <StrongPasswordMeter password={newPass} />}
+          </div>
+
+          {/* Conexión con Google y Cuentas Vinculadas */}
+          <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 pl-1">
+                Conexión con Google & Acceso Rápido
+              </label>
+              {isGoogleConnected ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold border border-emerald-500/20">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Conectado
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 text-[10px] font-bold">
+                  No vinculado
+                </span>
+              )}
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-black/[0.06] dark:border-white/10 flex items-center justify-center shrink-0 shadow-xs">
+                  <GoogleVectorIcon className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-950 dark:text-white text-xs sm:text-sm">
+                      Google Account
+                    </span>
+                    {isGoogleConnected && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="w-3 h-3" /> Mayoría de edad (+18) verificada
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                    {isGoogleConnected
+                      ? `Vinculado a ${googleEmail || user.email}. Puedes acceder con 1 clic sin contraseñas.`
+                      : "Conecta tu cuenta de Google para iniciar sesión con un solo clic y validar tu mayoría de edad (+18)."}
+                  </p>
+                </div>
+              </div>
+
+              {!isGoogleConnected && (
+                <button
+                  type="button"
+                  onClick={handleConnectGoogle}
+                  disabled={isConnectingGoogle}
+                  className="sm:shrink-0 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-900 dark:text-gray-100 border border-black/[0.08] dark:border-white/15 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-95"
+                >
+                  {isConnectingGoogle ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                      <span>Conectando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <GoogleVectorIcon className="w-3.5 h-3.5" />
+                      <span>Conectar con Google</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {googleConnectFeedback && (
+              <div
+                className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                  googleConnectFeedback.type === "success"
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                    : "bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20"
+                }`}
+              >
+                {googleConnectFeedback.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                )}
+                <span>{googleConnectFeedback.msg}</span>
+              </div>
+            )}
           </div>
 
           {isAdmin && (

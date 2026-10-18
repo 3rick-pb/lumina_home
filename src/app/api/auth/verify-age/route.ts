@@ -88,7 +88,7 @@ interface GoogleBirthday {
 
 interface GooglePersonData {
   birthdays?: GoogleBirthday[];
-  names?: Array<{ displayName?: string }>;
+  names?: Array<{ displayName?: string; givenName?: string; familyName?: string }>;
   photos?: Array<{ url?: string }>;
 }
 
@@ -134,29 +134,105 @@ interface GooglePersonData {
       );
     }
 
-    // Case 3: Legal Age (>= 18 years old) -> Persist verified profile to Supabase
+    // Case 3: Legal Age (>= 18 years old) -> Extract profile data & handle unification
     const birthDateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const fullName =
-      googleData.names?.[0]?.displayName ||
-      (user.user_metadata?.full_name as string) ||
-      (user.user_metadata?.name as string) ||
-      user.email?.split("@")[0] ||
-      "";
+
+    // 1. Thoroughly extract user full name from Google People API or fallbacks
+    const googleNameObj = googleData.names?.[0];
+    let fullName = googleNameObj?.displayName?.trim() || "";
+    if (!fullName && (googleNameObj?.givenName || googleNameObj?.familyName)) {
+      fullName = `${googleNameObj.givenName || ""} ${googleNameObj.familyName || ""}`.trim();
+    }
+    if (!fullName) {
+      fullName =
+        (user.user_metadata?.full_name as string) ||
+        (user.user_metadata?.name as string) ||
+        (user.user_metadata?.given_name as string) ||
+        user.email?.split("@")[0] ||
+        "";
+    }
+
     const avatarUrl =
       googleData.photos?.[0]?.url ||
       (user.user_metadata?.avatar_url as string) ||
       (user.user_metadata?.picture as string) ||
       "";
 
+    const cleanEmail = (user.email || "").toLowerCase().trim();
+
+    // 2. Account Unification Detection:
+    // Check if user_profiles or profiles already had a record for this email
+    const { data: existingUserProfile } = await supabase
+      .from("user_profiles")
+      .select("user_id, display_name, email, role, created_at, google_connected")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, age_verified, google_connected, account_merged, created_at")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    // Check user identities registered in Supabase Auth
+    const identities = user.identities || [];
+    const hasEmailIdentity = identities.some((i) => i.provider === "email");
+    const hasGoogleIdentity = identities.some((i) => i.provider === "google");
+
+    // Account was previously registered manually if:
+    // a) Supabase linked both email/password and google identities to this user
+    // b) There was an existing profile under a previous user_id
+    // c) Existing profile existed before and was created without google_connected
+    const isMergedAccount = Boolean(
+      (hasEmailIdentity && hasGoogleIdentity) ||
+      (existingUserProfile && existingUserProfile.user_id !== user.id) ||
+      (existingProfile && existingProfile.id !== user.id) ||
+      (existingUserProfile && !existingUserProfile.google_connected && existingUserProfile.created_at)
+    );
+
+    // If an existing profile belonged to an older user_id, migrate related data
+    const oldUserId =
+      existingUserProfile?.user_id && existingUserProfile.user_id !== user.id
+        ? existingUserProfile.user_id
+        : existingProfile?.id && existingProfile.id !== user.id
+        ? existingProfile.id
+        : null;
+
+    if (oldUserId) {
+      console.log(`[verify-age] Unifying older account data from ${oldUserId} into ${user.id}`);
+      try {
+        await supabase.from("orders").update({ user_id: user.id }).eq("user_id", oldUserId);
+      } catch (e) {
+        console.warn("[verify-age] Notice migrating orders:", e);
+      }
+      try {
+        await supabase.from("user_addresses").update({ user_id: user.id }).eq("user_id", oldUserId);
+      } catch (e) {
+        console.warn("[verify-age] Notice migrating addresses:", e);
+      }
+      try {
+        await supabase.from("favorites").update({ user_id: user.id }).eq("user_id", oldUserId);
+      } catch (e) {
+        console.warn("[verify-age] Notice migrating favorites:", e);
+      }
+    }
+
+    // Preserve existing role if previously assigned (e.g. ADMIN or SUBADMIN)
+    const targetRole = existingUserProfile?.role || "USER";
+
     // Upsert into public.profiles
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: user.id,
-      email: user.email,
-      full_name: fullName,
+      email: cleanEmail,
+      full_name: fullName || existingUserProfile?.display_name || "",
       avatar_url: avatarUrl,
       birth_date: birthDateStr,
       verified_age: exactAge,
       age_verified: true,
+      google_connected: true,
+      account_merged: isMergedAccount,
+      merged_email: isMergedAccount ? cleanEmail : null,
+      auth_provider: hasEmailIdentity && hasGoogleIdentity ? "both" : "google",
       updated_at: new Date().toISOString(),
     });
 
@@ -170,9 +246,11 @@ interface GooglePersonData {
         .from("user_profiles")
         .upsert({
           user_id: user.id,
-          email: user.email,
-          display_name: fullName,
-          role: "USER",
+          email: cleanEmail,
+          display_name: fullName || existingUserProfile?.display_name || cleanEmail.split("@")[0],
+          role: targetRole,
+          google_connected: true,
+          account_merged: isMergedAccount,
           updated_at: new Date().toISOString(),
         });
       if (userProfError) {
@@ -182,12 +260,27 @@ interface GooglePersonData {
       console.warn("[verify-age] Exception saving to public.user_profiles:", err instanceof Error ? err.message : String(err));
     }
 
+    // Update user_metadata in Supabase Auth so client sessions get it immediately
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          full_name: fullName,
+          name: fullName,
+          avatar_url: avatarUrl,
+        },
+      });
+    } catch (e) {
+      console.warn("[verify-age] Notice updating user metadata:", e);
+    }
+
     return NextResponse.json({
       success: true,
       age: exactAge,
+      isMerged: isMergedAccount,
+      mergedEmail: cleanEmail,
       user: {
         id: user.id,
-        email: user.email,
+        email: cleanEmail,
         name: fullName,
         avatarUrl,
         birthDate: birthDateStr,

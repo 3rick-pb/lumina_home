@@ -148,12 +148,41 @@ function AuthCallbackContent() {
         }
 
         // CASE 3: Legal Age (+18) Verified successfully!
-        setStatusMessage("¡Mayoría de edad confirmada!");
-        setSubMessage(`Acceso concedido (${verifyData.age} años cumplidos). Redirigiendo a Lumina Home...`);
+        const isLinkedFlow = searchParams.get("linked") === "true";
+        const isMerged = Boolean(verifyData.isMerged);
+
+        let finalRedirect = nextTarget;
+
+        if (isMerged) {
+          setStatusMessage("¡Cuenta unificada con éxito!");
+          setSubMessage(
+            `Detectamos tu cuenta previa con ${verifyData.mergedEmail || "este correo"}. Tus datos han sido unificados con Google manteniendo todos tus pedidos y favoritos intactos.`
+          );
+          try {
+            sessionStorage.setItem(
+              "lumina_merged_account_notification",
+              JSON.stringify({
+                email: verifyData.mergedEmail,
+                name: verifyData.user?.name,
+                timestamp: Date.now(),
+              })
+            );
+          } catch {}
+          const separator = finalRedirect.includes("?") ? "&" : "?";
+          finalRedirect = `${finalRedirect}${separator}merged=true`;
+        } else if (isLinkedFlow) {
+          setStatusMessage("¡Cuenta de Google vinculada!");
+          setSubMessage("Tu cuenta ha sido vinculada con Google con éxito y tu mayoría de edad (+18) está verificada.");
+          const separator = finalRedirect.includes("?") ? "&" : "?";
+          finalRedirect = `${finalRedirect}${separator}google_linked=success`;
+        } else {
+          setStatusMessage("¡Mayoría de edad confirmada!");
+          setSubMessage(`Acceso concedido (${verifyData.age} años cumplidos). Redirigiendo a Lumina Home...`);
+        }
 
         setTimeout(() => {
-          router.replace(nextTarget);
-        }, 600);
+          router.replace(finalRedirect);
+        }, isMerged || isLinkedFlow ? 1400 : 700);
       } catch (err) {
         console.error("[auth/callback] Unexpected verification error:", err);
         if (!isCancelled) {

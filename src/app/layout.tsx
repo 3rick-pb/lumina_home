@@ -16,6 +16,7 @@ import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvide
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import { FlyToCartContainer } from "@/components/ui/FlyToCartAnimation";
 import { UrlPreviewInhibitor } from "@/components/ui/UrlPreviewInhibitor";
+import { AccountMergedNotifier } from "@/components/auth/AccountMergedNotifier";
 
 import localFont from "next/font/local";
 
@@ -95,6 +96,9 @@ export default function RootLayout({
           <MacOSScrollbar />
           <FlyToCartContainer />
           <UrlPreviewInhibitor />
+          <Suspense fallback={null}>
+            <AccountMergedNotifier />
+          </Suspense>
           <AppInitializer />
           <AdminCartNotifier />
           <Header />
