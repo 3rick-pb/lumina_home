@@ -4,6 +4,8 @@ import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { motion } from "framer-motion";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { useUserStore, syncFavoritesToCloud } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
@@ -51,7 +53,7 @@ export function FavoritesTab() {
           <p className="text-xs text-gray-500 dark:text-gray-400">Colección personal de artículos que has marcado con el corazón.</p>
         </div>
         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#3a3a3c] px-3 py-1 rounded-full self-start sm:self-auto">
-          {favoritedProductsList.length} guardados
+          <AnimatedNumber value={favoritedProductsList.length} /> guardados
         </span>
       </div>
 
@@ -70,12 +72,18 @@ export function FavoritesTab() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {favoritedProductsList.map((prod) => {
+          {favoritedProductsList.map((prod, prodIdx) => {
             const isInBag = items.some(
               (item) => !item.isBundle && (item.productId === prod.id || item.product?.id === prod.id)
             );
             return (
-            <div key={prod.id} className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-100 dark:border-white/5 p-4 shadow-sm dark:shadow-none hover:shadow-md dark:shadow-none transition-shadow flex flex-col justify-between">
+            <motion.div 
+              key={prod.id} 
+              initial={{ opacity: 0, x: -16, y: 16 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.35, delay: Math.min(prodIdx * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
+              className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-100 dark:border-white/5 p-4 shadow-sm dark:shadow-none hover:shadow-md dark:shadow-none transition-shadow flex flex-col justify-between"
+            >
               <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-gray-50 dark:bg-[#2a2a2c]">
                 <Image 
                   src={prod.imageUrl} 
@@ -122,7 +130,7 @@ export function FavoritesTab() {
                   {isInBag ? "Se agregó a la bolsa" : "Añadir a la Bolsa"}
                 </button>
               </div>
-            </div>
+            </motion.div>
             );
           })}
         </div>

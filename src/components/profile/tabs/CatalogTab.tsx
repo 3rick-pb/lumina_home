@@ -4,6 +4,8 @@ import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Package, Plus, Pencil, ExternalLink, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { useCatalogStore, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
@@ -80,7 +82,12 @@ export function CatalogTab({
             <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Control Total del Inventario
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {products.length} productos activos • Valor total: ${totalInventoryValue.toFixed(2)}
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
+              <AnimatedNumber value={products.length} />
+            </span> productos activos • Valor total:{" "}
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
+              <AnimatedNumber value={totalInventoryValue} decimals={2} prefix="$" />
+            </span>
           </p>
         </div>
 
@@ -138,8 +145,14 @@ export function CatalogTab({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-            {filteredCatalog.map(p => (
-              <tr key={p.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
+            {filteredCatalog.map((p, pIdx) => (
+              <motion.tr 
+                key={p.id}
+                initial={{ opacity: 0, x: -16, y: 16 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                transition={{ duration: 0.35, delay: Math.min(pIdx * 0.03, 0.4), ease: [0.16, 1, 0.3, 1] }}
+                className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors"
+              >
                 <td className="py-3 px-2 flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0 flex items-center justify-center">
                     {p.imageUrl ? (
@@ -209,7 +222,7 @@ export function CatalogTab({
                     </button>
                   </div>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>

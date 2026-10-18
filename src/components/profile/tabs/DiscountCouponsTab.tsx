@@ -36,6 +36,7 @@ import { ExpandableSearchBar } from "@/components/ui/ExpandableSearchBar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/motion/popover";
 import { WheelPicker, type WheelPickerOption } from "@/components/motion/wheel-picker";
 import { ActionSwapButton } from "@/components/motion/action-swap";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 
 // ---------------------------------------------------------------------------
 // Wheel Picker Options for Coupon Expiration Date Selection
@@ -1371,7 +1372,9 @@ export function DiscountCouponsTab() {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Cupones Activos</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.activeCount}</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">
+                <AnimatedNumber value={stats.activeCount} />
+              </p>
             </div>
           </div>
 
@@ -1381,7 +1384,9 @@ export function DiscountCouponsTab() {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Margen Promedio Otorgado</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.avgDiscount}%</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">
+                <AnimatedNumber value={stats.avgDiscount} suffix="%" />
+              </p>
             </div>
           </div>
 
@@ -1391,7 +1396,9 @@ export function DiscountCouponsTab() {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">PNGs Compartidos</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalShares}</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">
+                <AnimatedNumber value={stats.totalShares} />
+              </p>
             </div>
           </div>
 
@@ -1401,7 +1408,9 @@ export function DiscountCouponsTab() {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Canjes Registrados</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalUses}</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">
+                <AnimatedNumber value={stats.totalUses} />
+              </p>
             </div>
           </div>
         </div>
@@ -1413,7 +1422,9 @@ export function DiscountCouponsTab() {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Cupones Disponibles</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.availableCount}</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">
+                <AnimatedNumber value={clientStats.availableCount} />
+              </p>
             </div>
           </div>
 
@@ -1423,7 +1434,9 @@ export function DiscountCouponsTab() {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Mayor Beneficio Activo</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.maxDiscount}% OFF</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">
+                <AnimatedNumber value={clientStats.maxDiscount} suffix="% OFF" />
+              </p>
             </div>
           </div>
 
@@ -1433,7 +1446,9 @@ export function DiscountCouponsTab() {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Cupones Utilizados</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.usedCount}</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">
+                <AnimatedNumber value={clientStats.usedCount} />
+              </p>
             </div>
           </div>
 

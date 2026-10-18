@@ -5,10 +5,7 @@ import dynamic from 'next/dynamic';
 import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 
-import { AnalyticsTabSkeleton } from "@/components/ui/BoneyardSkeletons";
-
 const AnalyticsRadarView = dynamic(() => import('@/components/profile/AnalyticsRadarView'), {
-  loading: () => <AnalyticsTabSkeleton />,
   ssr: false
 });
 
