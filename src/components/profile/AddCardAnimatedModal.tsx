@@ -16,8 +16,6 @@ import {
   Wifi,
 } from "lucide-react";
 import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
-import { hasCardSecurityPin } from "@/lib/cardSecurityStore";
-import { CardSecurityPinModal } from "@/components/profile/CardSecurityPinModal";
 
 export interface AddCardAnimatedModalProps {
   isOpen: boolean;
@@ -257,7 +255,6 @@ export function AddCardAnimatedModal({
   const [isFlipped, setIsFlipped] = useState(false);
   const [step, setStep] = useState<"form" | "processing" | "success">("form");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showSecurityPinModal, setShowSecurityPinModal] = useState(false);
 
   // Ensure scroll is always cleanly restored when modal closes or unmounts
   useEffect(() => {
@@ -410,8 +407,7 @@ export function AddCardAnimatedModal({
   });
 
   return (
-    <>
-      <BeUICenterMorphModal
+    <BeUICenterMorphModal
       open={isOpen}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) handleResetAndClose();
@@ -965,18 +961,5 @@ export function AddCardAnimatedModal({
         </div>
       </div>
     </BeUICenterMorphModal>
-
-    <CardSecurityPinModal
-      isOpen={showSecurityPinModal}
-      mode="register"
-      title="Crea tu PIN de seguridad (5 dígitos)"
-      description="Para resguardar tus tarjetas y autorizar la revelación de datos sensibles, registra un PIN de 5 dígitos."
-      onClose={() => setShowSecurityPinModal(false)}
-      onSuccess={() => {
-        setShowSecurityPinModal(false);
-        executeSaveCard();
-      }}
-    />
-  </>
   );
 }

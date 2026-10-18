@@ -6,6 +6,7 @@ import { X, Lock, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw } from "luci
 
 export interface CardSecurityPinModalProps {
   isOpen: boolean;
+  mode?: "verify" | "register";
   onClose: () => void;
   onSuccess: () => void;
   title?: string;
@@ -18,6 +19,7 @@ export interface CardSecurityPinModalProps {
  */
 export function CardSecurityPinModal({
   isOpen,
+  mode,
   onClose,
   onSuccess,
   title,
