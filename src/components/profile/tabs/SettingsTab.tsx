@@ -1144,16 +1144,16 @@ export function SettingsTab({
                   type="button"
                   onClick={handleConnectGoogle}
                   disabled={isConnectingGoogle}
-                  className="sm:shrink-0 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-900 dark:text-gray-100 border border-black/[0.08] dark:border-white/15 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-95"
+                  className="sm:shrink-0 w-full sm:w-auto px-5 py-2.5 rounded-full bg-white dark:bg-[#131314] hover:bg-[#f8fafd] dark:hover:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#f1f1f1] border border-[#747775]/75 hover:border-[#1f1f1f] dark:border-[#8e918f]/50 dark:hover:border-white/50 text-xs sm:text-sm font-medium transition-all shadow-xs hover:shadow-sm flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.99]"
                 >
                   {isConnectingGoogle ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[#1f1f1f] dark:text-gray-200" />
                       <span>Conectando...</span>
                     </>
                   ) : (
                     <>
-                      <GoogleVectorIcon className="w-3.5 h-3.5" />
+                      <GoogleVectorIcon className="w-4 h-4 shrink-0" />
                       <span>Conectar con Google</span>
                     </>
                   )}
