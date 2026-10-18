@@ -2640,101 +2640,134 @@ export function CartDrawer() {
         </div>
 
         <div className="flex items-center justify-between">
-          <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
-            Información de tarjeta
-          </h4>
-          {selectedSavedCardId !== "new" && (
-            <span className="text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Tarjeta vinculada seleccionada
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#FF5900] animate-pulse" />
+            <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-wider">
+              Datos de Tarjeta Bancaria
+            </h4>
+          </div>
+          {selectedSavedCardId !== "new" ? (
+            <span className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
+              <CheckCircle2 className="w-3 h-3" /> Tarjeta vinculada activa
+            </span>
+          ) : (
+            <span className="text-[10px] font-mono font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+              <Lock className="w-3 h-3 text-[#FF5900]" /> Cifrado TLS 256-Bit
             </span>
           )}
         </div>
 
-        {/* Grouped 3-Row Input Container with Physical Credit Card Embossed Typography */}
-        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-gray-300 dark:divide-white/15 shadow-xs">
-          {/* Row 1: Card Number */}
-          <div className="px-3.5 py-3 flex items-center gap-2.5">
-            <CreditCard className="w-4 h-4 text-[#FF5900] shrink-0" />
-            <input 
-              type="text"
-              inputMode="numeric"
-              autoComplete="cc-number"
-              value={cardNumber}
-              onChange={(e) => {
-                setSelectedSavedCardId("new");
-                const val = e.target.value.replace(/\D/g, "").slice(0, 16);
-                const formatted = val.match(/.{1,4}/g)?.join(" ") || val;
-                setCardNumber(formatted);
-              }}
-              placeholder="0000 0000 0000 0000"
-              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.2em] font-bold uppercase tabular-nums [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
-            />
-          </div>
+        {/* High-Ticket Double-Bezel Card Console with Physical Embossed Typography */}
+        <div className="p-1.5 sm:p-2 rounded-[1.75rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.07] dark:ring-white/10 shadow-[0_6px_28px_rgba(0,0,0,0.02)]">
+          <div className="rounded-[calc(1.75rem-0.375rem)] border border-black/[0.06] dark:border-white/10 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-black/[0.06] dark:divide-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+            {/* Row 1: Card Number + Live Brand Badge */}
+            <div className="px-4 py-3.5 flex items-center justify-between gap-3 bg-gradient-to-b from-transparent to-black/[0.01] dark:to-white/[0.01]">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <CreditCard className="w-4 h-4 text-[#FF5900] shrink-0" />
+                <input 
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  value={cardNumber}
+                  onChange={(e) => {
+                    setSelectedSavedCardId("new");
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 16);
+                    const formatted = val.match(/.{1,4}/g)?.join(" ") || val;
+                    setCardNumber(formatted);
+                  }}
+                  placeholder="0000 0000 0000 0000"
+                  className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder:text-gray-400 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.2em] font-bold uppercase tabular-nums"
+                />
+              </div>
+              <div className="shrink-0 flex items-center">
+                {cardNumber.replace(/\s/g, "").startsWith("4") ? (
+                  <div className="px-2 py-0.5 rounded-md bg-[#1a1f71]/10 dark:bg-white/10 flex items-center">
+                    <VisaLogo className="h-3.5" fill="#1a1f71" />
+                  </div>
+                ) : cardNumber.replace(/\s/g, "").startsWith("5") ? (
+                  <div className="px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 flex items-center">
+                    <MastercardLogo className="h-4" />
+                  </div>
+                ) : (
+                  <span className="text-[10px] font-mono uppercase text-gray-400 tracking-wider">
+                    Crédito / Débito
+                  </span>
+                )}
+              </div>
+            </div>
 
-          {/* Row 2: MM/AA + CVV */}
-          <div className="grid grid-cols-2 divide-x divide-gray-300 dark:divide-white/15">
-            <div className="flex items-center px-3.5 py-3 gap-2">
-              <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+            {/* Row 2: MM/AA + CVV */}
+            <div className="grid grid-cols-2 divide-x divide-black/[0.06] dark:divide-white/10">
+              <div className="flex items-center px-4 py-3.5 gap-2.5">
+                <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                <input 
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="cc-exp"
+                  value={cardExpiry}
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2)}`;
+                    setCardExpiry(val);
+                  }}
+                  placeholder="MM/AA"
+                  maxLength={5}
+                  className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder:text-gray-400 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.18em] font-bold uppercase tabular-nums"
+                />
+              </div>
+              <div className="flex items-center px-4 py-3.5 gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-gray-400 shrink-0" />
+                <input 
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="cc-csc"
+                  value={cardCvv}
+                  onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="CVV"
+                  maxLength={4}
+                  className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder:text-gray-400 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.22em] font-bold uppercase tabular-nums"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Cardholder Name */}
+            <div className="flex items-center px-4 py-3.5 gap-2.5">
+              <User className="w-4 h-4 text-gray-400 shrink-0" />
               <input 
                 type="text"
-                inputMode="numeric"
-                autoComplete="cc-exp"
-                value={cardExpiry}
-                onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                  if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2)}`;
-                  setCardExpiry(val);
-                }}
-                placeholder="MM/AA"
-                maxLength={5}
-                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.18em] font-bold uppercase tabular-nums [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
+                autoComplete="cc-name"
+                value={cardHolder}
+                onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                placeholder="NOMBRE DEL TITULAR"
+                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder:text-gray-400 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.16em] font-bold uppercase"
               />
             </div>
-            <div className="flex items-center px-3.5 py-3 gap-2">
-              <ShieldCheck className="w-4 h-4 text-gray-400 shrink-0" />
-              <input 
-                type="password"
-                inputMode="numeric"
-                autoComplete="cc-csc"
-                value={cardCvv}
-                onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                placeholder="CVV"
-                maxLength={4}
-                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.22em] font-bold uppercase tabular-nums [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
-              />
-            </div>
-          </div>
-
-          {/* Row 3: Cardholder Name */}
-          <div className="flex items-center px-3.5 py-3 gap-2">
-            <User className="w-4 h-4 text-gray-400 shrink-0" />
-            <input 
-              type="text"
-              autoComplete="cc-name"
-              value={cardHolder}
-              onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-              placeholder="NOMBRE DEL TITULAR"
-              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.16em] font-bold uppercase [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
-            />
           </div>
         </div>
       </div>
     ) : (
       <div className="pt-2 space-y-2.5">
-        <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
-          Cuenta PayPhone
-        </h4>
-        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] flex items-center px-3.5 py-3 gap-2 shadow-2xs">
-          <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-          <input 
-            type="tel"
-            value={payphoneAppPhone}
-            onChange={(e) => setPayphoneAppPhone(e.target.value)}
-            placeholder="Número celular PayPhone (Ej: 0991234567)"
-            className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
-          />
+        <div className="flex items-center justify-between">
+          <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-wider">
+            Cuenta PayPhone
+          </h4>
+          <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400">
+            Autorización Push Inmediata
+          </span>
         </div>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed font-sans">
+        <div className="p-1.5 sm:p-2 rounded-[1.75rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.07] dark:ring-white/10 shadow-[0_6px_28px_rgba(0,0,0,0.02)]">
+          <div className="rounded-[calc(1.75rem-0.375rem)] border border-black/[0.06] dark:border-white/10 bg-white dark:bg-[#141416] flex items-center px-4 py-3.5 gap-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+            <Phone className="w-4 h-4 text-[#FF5900] shrink-0" />
+            <input 
+              type="tel"
+              value={payphoneAppPhone}
+              onChange={(e) => setPayphoneAppPhone(e.target.value)}
+              placeholder="Número celular registrado (Ej: 0991234567)"
+              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder-gray-400 font-sans font-medium"
+            />
+          </div>
+        </div>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed font-sans px-1">
           Al presionar pagar, recibirás una solicitud de autorización directa en tu app PayPhone o podrás debitar de tu saldo disponible.
         </p>
       </div>
@@ -2743,24 +2776,51 @@ export function CartDrawer() {
     {/* Hidden Live PayPhone script mount container if live box mode is loaded */}
     <div id="pp-button" className="hidden" />
 
-    {/* Dotted Separator */}
-    <div className="pt-2">
-      <div className="border-b-2 border-dotted border-gray-300 dark:border-white/20" />
-    </div>
-
-    {/* TOTAL Row */}
-    <div className="flex items-center justify-between pt-1">
-      <span className="font-sans font-bold text-base sm:text-lg text-gray-900 dark:text-white tracking-wide">
-        TOTAL:
-      </span>
-      <span className="font-sans font-bold text-lg sm:text-xl text-[#FF5900] tracking-tight">
-        USD {finalTotal.toFixed(2)}
-      </span>
+    {/* High-Ticket Financial Ledger Summary */}
+    <div className="p-4 sm:p-5 rounded-[1.5rem] bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2.5">
+      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span>Subtotal de selección</span>
+        <span className="font-mono font-medium text-gray-700 dark:text-gray-300">USD {finalTotal.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span className="flex items-center gap-1.5">
+          <Package className="w-3.5 h-3.5 text-[#8c9276]" />
+          Empaque de Colección & Protección
+        </span>
+        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-500/20">
+          Cortesía
+        </span>
+      </div>
+      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span className="flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-[#8c9276]" />
+          Seguro de Tránsito Puerta a Puerta
+        </span>
+        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-500/20">
+          Incluido
+        </span>
+      </div>
+      <div className="pt-2.5 border-t border-black/[0.06] dark:border-white/10 flex items-baseline justify-between">
+        <div>
+          <span className="font-sans font-bold text-sm sm:text-base text-gray-950 dark:text-white block">
+            Inversión Total
+          </span>
+          <span className="text-[10.5px] text-gray-400 dark:text-gray-500">
+            Impuestos y cargos bancarios incluidos
+          </span>
+        </div>
+        <div className="text-right">
+          <span className="font-sans font-extrabold text-xl sm:text-2xl text-gray-950 dark:text-white tracking-tight">
+            ${finalTotal.toFixed(2)}
+          </span>
+          <span className="text-xs font-bold text-[#FF5900] ml-1.5 font-mono">USD</span>
+        </div>
+      </div>
     </div>
 
     {/* PayPhone Error Notification if any */}
     {payphoneError && (
-      <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2.5 animate-shake">
+      <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2.5 animate-shake">
         <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
         <div className="space-y-0.5">
           <p className="font-bold font-sans">Error al procesar el pago</p>
@@ -2769,21 +2829,31 @@ export function CartDrawer() {
       </div>
     )}
 
-    {/* Action Button: Single "Pagar" Button in PayPhone Orange */}
+    {/* Action Button: High-Ticket "Button-in-Button" Island */}
     <div className="pt-1">
       <button
         type="button"
         onClick={handleTriggerPaymentWithAnimation}
         disabled={isProcessing}
-        className="w-full py-3.5 sm:py-4 rounded-xl bg-[#FF5900] hover:bg-[#e04f00] text-white font-sans font-bold text-base transition-all shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+        className="group relative w-full h-15 sm:h-16 rounded-full bg-gradient-to-r from-[#FF5900] via-[#ff6817] to-[#f04e00] hover:from-[#ea5200] hover:to-[#df4600] text-white font-sans font-bold text-sm sm:text-base transition-all duration-300 shadow-[0_12px_32px_rgba(255,89,0,0.35)] hover:shadow-[0_16px_44px_rgba(255,89,0,0.45)] active:scale-[0.985] flex items-center justify-between px-4 sm:px-5 cursor-pointer disabled:opacity-60 overflow-hidden"
       >
         {isProcessing ? (
-          <>
+          <div className="w-full flex items-center justify-center gap-3">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Procesando pago...</span>
-          </>
+            <span className="tracking-wide">Procesando autorización segura...</span>
+          </div>
         ) : (
-          <span>Pagar</span>
+          <>
+            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+              <Lock className="w-4 h-4 text-white" />
+            </div>
+            <span className="tracking-wide font-extrabold">
+              Autorizar Pago Seguro · ${finalTotal.toFixed(2)} USD
+            </span>
+            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:translate-x-1 group-active:scale-95 transition-all">
+              <ArrowRight className="w-4 h-4 text-white stroke-[2.5]" />
+            </div>
+          </>
         )}
       </button>
     </div>
@@ -2798,7 +2868,7 @@ export function CartDrawer() {
 
     {/* Footer Disclaimer */}
     <p className="text-[11px] sm:text-[11.5px] text-gray-500 dark:text-gray-400 text-center leading-relaxed pt-1 font-sans max-w-sm mx-auto">
-      Pago procesado por Payphone ({isPayphoneSimulated ? "Pruebas" : "Producción"}) · tarjeta de crédito, débito o saldo Payphone. Recibirás la confirmación por correo.
+      Transacción encriptada con cifrado bancario TLS 256-Bit. Procesada bajo certificación PCI-DSS por la pasarela PayPhone ({isPayphoneSimulated ? "Modo Pruebas" : "Producción"}).
     </p>
 
   </div>
@@ -2811,44 +2881,106 @@ export function CartDrawer() {
   {/* STEP 3: ORDER CONFIRMED CELEBRATION + WALLET PASS & QR CODE */}
   {/* ======================================================================= */}
   {step === "success" && lastPlacedOrder && (
-  <div className="max-w-xl mx-auto py-8 sm:py-10 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
+  <div className="max-w-xl mx-auto py-6 sm:py-8 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
   
-  <div className="relative w-20 h-20 rounded-full bg-[#FAF8F5] dark:bg-white/5 border border-black/[0.08] dark:border-white/10 text-gray-900 dark:text-white flex items-center justify-center shadow-md">
-    <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
+  <div className="relative inline-flex items-center justify-center">
+    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500/20 via-teal-500/15 to-[#8c9276]/20 flex items-center justify-center p-1.5 ring-1 ring-emerald-500/30">
+      <div className="w-full h-full rounded-full bg-white dark:bg-[#1f1f23] flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-md">
+        <Check className="w-8 h-8 stroke-[2.8]" />
+      </div>
+    </div>
     <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shadow-md">
       <Sparkles className="w-3.5 h-3.5" />
     </div>
   </div>
 
   <div>
-    <h3 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-white tracking-tight">¡Pedido Confirmado!</h3>
-    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md leading-relaxed">
-      Tu compra ha sido procesada con éxito. Recibirás tu guía de rastreo apenas el pedido sea despachado con la transportadora.
+    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-[0.2em] border border-emerald-200/60 dark:border-emerald-500/20 mb-2">
+      <ShieldCheck className="w-3.5 h-3.5" /> Adquisición Confirmada · Atelier Lumina
+    </span>
+    <h3 className="font-display italic font-semibold text-3xl sm:text-4xl text-gray-950 dark:text-white tracking-tight mt-1">
+      Una adquisición de distinción.
+    </h3>
+    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto leading-relaxed">
+      Tu compra ha sido procesada con éxito. Hemos iniciado la preparación en nuestro atelier bajo empaque sellado de colección.
     </p>
   </div>
 
-  {/* Receipt Summary Card */}
-  <div className="w-full p-6 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-sm text-left space-y-3.5">
-    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
-      <span className="text-gray-400 font-medium">Orden de Compra</span>
-      <span className="font-mono font-bold text-gray-900 dark:text-gray-100">{lastPlacedOrder.id}</span>
+  {/* 4-Step Linear Atelier Progress Tracker */}
+  <div className="w-full p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/5 space-y-2.5">
+    <div className="flex items-center justify-between text-[10.5px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1">
+      <span>Itinerario del Pedido</span>
+      <span className="text-[#8c9276] font-mono">Fase 2 de 4</span>
     </div>
-    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
-      <span className="text-gray-400 font-medium">Estado Actual</span>
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-bold">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-        Procesando en Atelier
-      </span>
+    
+    <div className="grid grid-cols-4 gap-2 pt-0.5">
+      <div className="space-y-1 text-center">
+        <div className="h-1.5 rounded-full bg-emerald-500" />
+        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block truncate">
+          ✓ Autorizado
+        </span>
+      </div>
+      <div className="space-y-1 text-center">
+        <div className="h-1.5 rounded-full bg-amber-500 animate-pulse" />
+        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 block truncate">
+          Atelier
+        </span>
+      </div>
+      <div className="space-y-1 text-center">
+        <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
+        <span className="text-[10px] font-medium text-gray-400 block truncate">
+          Inspección
+        </span>
+      </div>
+      <div className="space-y-1 text-center">
+        <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
+        <span className="text-[10px] font-medium text-gray-400 block truncate">
+          Despacho
+        </span>
+      </div>
     </div>
-    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
-      <span className="text-gray-400 font-medium">Guía de Transportadora</span>
-      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Se asignará al despachar</span>
-    </div>
-    <div className="flex items-center justify-between pt-1 text-xs sm:text-sm">
-      <span className="font-bold text-gray-700 dark:text-gray-300">Total Pagado</span>
-      <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white">
-        ${Number(lastPlacedOrder?.total || 0).toFixed(2)} USD
-      </span>
+  </div>
+
+  {/* Double-Bezel Receipt Summary Card */}
+  <div className="w-full p-1.5 sm:p-2 rounded-[2rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.06] dark:ring-white/10">
+    <div className="rounded-[calc(2rem-0.375rem)] bg-white dark:bg-[#141416] border border-black/[0.06] dark:border-white/10 p-5 sm:p-6 shadow-xs text-left space-y-3.5">
+      <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
+        <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Número de Orden</span>
+        <span className="font-mono font-bold text-gray-950 dark:text-white text-sm">{lastPlacedOrder.id}</span>
+      </div>
+      <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
+        <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Estado Actual</span>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-bold">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          Preparación en Atelier
+        </span>
+      </div>
+      <div className="space-y-1.5 pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
+        <div className="flex justify-between text-gray-500 dark:text-gray-400">
+          <span>Empaque de Colección:</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Cortesía</span>
+        </div>
+        <div className="flex justify-between text-gray-500 dark:text-gray-400">
+          <span>Seguro de Tránsito:</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Incluido</span>
+        </div>
+      </div>
+      <div className="flex items-baseline justify-between pt-1">
+        <div>
+          <span className="font-sans font-bold text-gray-950 dark:text-white text-sm block">
+            Total Pagado
+          </span>
+          <span className="text-[10px] text-gray-400 font-mono">
+            Modalidad: {lastPlacedOrder.paymentMethod || "PayPhone Card Gateway"}
+          </span>
+        </div>
+        <div className="text-right">
+          <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white">
+            ${Number(lastPlacedOrder?.total || 0).toFixed(2)}
+          </span>
+          <span className="text-xs font-mono font-bold text-[#8c9276] ml-1">USD</span>
+        </div>
+      </div>
     </div>
   </div>
 
