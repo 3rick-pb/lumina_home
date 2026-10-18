@@ -336,10 +336,16 @@ export function OrdersTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-              {filteredOrders.map((ord) => {
+              {filteredOrders.map((ord, ordIdx) => {
                 const avatarProps = resolveCustomerAvatar(ord);
                 return (
-                  <tr key={ord.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
+                  <motion.tr 
+                    key={ord.id} 
+                    initial={{ opacity: 0, x: -20, y: 20 }}
+                    animate={{ opacity: 1, x: 0, y: 0 }}
+                    transition={{ duration: 0.35, delay: Math.min(ordIdx * 0.035, 0.4), ease: [0.16, 1, 0.3, 1] }}
+                    className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors"
+                  >
                     <td className="py-4 px-3 font-mono font-bold text-gray-900 dark:text-gray-100">{ord.id}</td>
                     <td className="py-4 px-3">
                       <div className="flex items-center gap-2.5">
@@ -426,7 +432,7 @@ export function OrdersTab({
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>

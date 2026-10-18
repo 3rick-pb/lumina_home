@@ -21,6 +21,8 @@ import { BeUIOrderStatusSelector, type LuminaOrderStatus } from "@/components/ui
 import { getLenis } from "@/components/providers/SmoothScrollProvider";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import { formatOrderDate, formatOrderTime } from "@/lib/dateUtils";
+import { motion } from "framer-motion";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 
 interface OverviewTabProps {
   isAdmin: boolean;
@@ -419,7 +421,7 @@ export function OverviewTab({
             </span>
           </div>
           <p className="text-4xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-2">
-            ${(isAdmin ? totalInventoryValue : totalUserSpend).toFixed(2)}
+            <AnimatedNumber value={isAdmin ? totalInventoryValue : totalUserSpend} decimals={2} prefix="$" />
           </p>
           <p className="text-xs text-gray-400">
             {isAdmin 
@@ -461,7 +463,9 @@ export function OverviewTab({
             </div>
           </div>
           <div>
-            <p className="text-3xl font-display font-bold text-white">{isAdmin ? products.length : orders.length}</p>
+            <p className="text-3xl font-display font-bold text-white">
+              <AnimatedNumber value={isAdmin ? products.length : orders.length} />
+            </p>
             <p className="text-[10px] text-white/80 mt-1">
               {isAdmin ? `${discountPercentageOfCatalog}% con descuento` : (orders.length === 0 ? "Sin pedidos activos" : "Pedidos confirmados")}
             </p>
@@ -483,7 +487,7 @@ export function OverviewTab({
           </div>
           <div>
             <p className="text-3xl font-display font-bold text-gray-900 dark:text-gray-100">
-              {isAdmin ? categories.length : favorites.length}
+              <AnimatedNumber value={isAdmin ? categories.length : favorites.length} />
             </p>
             <p className="text-[10px] text-gray-400 mt-1">
               {isAdmin 
@@ -505,7 +509,7 @@ export function OverviewTab({
           </div>
           <div>
             <p className="text-3xl font-display font-bold text-gray-900 dark:text-gray-100">
-              {isAdmin ? `${discountedCount}` : `${loyaltyPoints} pts`}
+              <AnimatedNumber value={isAdmin ? discountedCount : loyaltyPoints} suffix={isAdmin ? "" : " pts"} />
             </p>
             <p className={`text-[10px] font-semibold mt-1 ${isAdmin ? "text-amber-700 dark:text-amber-400" : loyaltyTier.color}`}>
               {isAdmin ? `${discountPercentageOfCatalog}% del catálogo` : loyaltyTier.name}
@@ -525,7 +529,11 @@ export function OverviewTab({
           </div>
           <div>
             <p className="text-3xl font-display font-bold text-gray-900 dark:text-gray-100">
-              {isAdmin ? `$${totalUserSpend.toFixed(0)}` : cards.length}
+              {isAdmin ? (
+                <AnimatedNumber value={totalUserSpend} decimals={0} prefix="$" />
+              ) : (
+                <AnimatedNumber value={cards.length} />
+              )}
             </p>
             <p className="text-[10px] text-gray-400 mt-1">
               {isAdmin ? `${orders.length} ventas procesadas` : (cards.length === 0 ? "Sin métodos de pago" : `${cards.length} activa(s)`)}
@@ -659,15 +667,17 @@ export function OverviewTab({
                         {bar.count}
                       </span>
 
-                      <div 
-                        className={`w-full rounded-2xl transition-all duration-200 relative ${
+                      <motion.div 
+                        initial={{ height: 0 }}
+                        animate={{ height: `${bar.heightPct}%` }}
+                        transition={{ duration: 0.7, delay: idx * 0.035, ease: [0.16, 1, 0.3, 1] }}
+                        className={`w-full rounded-2xl transition-colors duration-200 relative ${
                           hasItems 
                             ? isHovered 
                             ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md shadow-[#e07a3f]/30 ring-2 ring-[#e07a3f]/40" 
                             : "bg-[#e07a3f] shadow-2xs hover:brightness-105" 
                             : "bg-gray-200/90 dark:bg-[#48484a]/90"
                         }`} 
-                        style={{ height: `${bar.heightPct}%` }}
                       />
                     </div>
 
@@ -730,15 +740,17 @@ export function OverviewTab({
                     )}
 
                     <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
-                      <div 
-                        className={`w-full rounded-2xl transition-all duration-300 relative ${
+                      <motion.div 
+                        initial={{ height: 0 }}
+                        animate={{ height: `${bar.heightPct}%` }}
+                        transition={{ duration: 0.7, delay: idx * 0.035, ease: [0.16, 1, 0.3, 1] }}
+                        className={`w-full rounded-2xl transition-colors duration-300 relative ${
                           bar.hasData 
                             ? isHovered 
                             ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md dark:shadow-none shadow-[#e07a3f]/30" 
                             : "bg-[#e07a3f]" 
                             : "bg-gray-200 dark:bg-[#48484a]"
                         }`} 
-                        style={{ height: `${bar.heightPct}%` }}
                       />
                     </div>
 
@@ -895,8 +907,15 @@ export function OverviewTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {orders.filter(Boolean).slice(0, 4).map((ord) => (
-                  <tr key={ord.id || Math.random()} className="hover:bg-gray-50/50 dark:hover:bg-[#2c2c2e]/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
+                {orders.filter(Boolean).slice(0, 4).map((ord, oIdx) => (
+                  <motion.tr 
+                    key={ord.id || Math.random()} 
+                    initial={{ opacity: 0, x: -16, y: 16 }}
+                    animate={{ opacity: 1, x: 0, y: 0 }}
+                    transition={{ duration: 0.35, delay: oIdx * 0.06, ease: [0.16, 1, 0.3, 1] }}
+                    className="hover:bg-gray-50/50 dark:hover:bg-[#2c2c2e]/50 transition-colors cursor-pointer" 
+                    onClick={() => setSelectedOrder(ord)}
+                  >
                     <td className="py-3.5 px-2 font-mono font-semibold text-gray-900 dark:text-gray-100">{ord.id || "ORD"}</td>
                     {isAdmin && (
                       <td className="py-3.5 px-2">
@@ -943,7 +962,7 @@ export function OverviewTab({
                         <Eye className="w-4 h-4" />
                       </button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>

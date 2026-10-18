@@ -1844,147 +1844,158 @@ const handleConfirmDeleteNiche = async () => {
  )}
  </div>
 
- {/* ========================================================================= */}
- {/* VIEW 1: OVERVIEW (MASTER BENTO GRID) */}
- {/* ========================================================================= */}
-        {activeTab === "overview" && (
-          <ProfileTabErrorBoundary tabName="Vista General">
-            <OverviewTab
-              isAdmin={isAdmin}
-              setActiveTab={setActiveTab}
-              setSelectedOrder={setSelectedOrder}
-              setShowCardModal={setShowCardModal}
-              onRequestDeleteNiche={handleRequestDeleteNiche}
-            />
-          </ProfileTabErrorBoundary>
-        )}
+        {/* ========================================================================= */}
+        {/* TAB VIEWS CONTAINER WITH DIAGONAL BOTTOM-LEFT TO TOP-RIGHT ENTRANCE MOTION */}
+        {/* ========================================================================= */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{
+              opacity: 0,
+              x: -32,
+              y: 44,
+              scale: 0.97,
+              clipPath: "polygon(0 100%, 0 100%, 0 100%, 0 100%)",
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              y: 0,
+              scale: 1,
+              clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
+            }}
+            exit={{
+              opacity: 0,
+              x: 20,
+              y: -20,
+              scale: 0.98,
+              transition: { duration: 0.16, ease: "easeIn" },
+            }}
+            transition={{
+              duration: 0.48,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            style={{ transformOrigin: "bottom left" }}
+            className="w-full flex-1 flex flex-col min-w-0"
+          >
+            {/* VIEW 1: OVERVIEW (MASTER BENTO GRID) */}
+            {activeTab === "overview" && (
+              <ProfileTabErrorBoundary tabName="Vista General">
+                <OverviewTab
+                  isAdmin={isAdmin}
+                  setActiveTab={setActiveTab}
+                  setSelectedOrder={setSelectedOrder}
+                  setShowCardModal={setShowCardModal}
+                  onRequestDeleteNiche={handleRequestDeleteNiche}
+                />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 2: ORDERS & ACTIVITIES TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "orders" && (
-          <ProfileTabErrorBoundary tabName="Pedidos">
-            <OrdersTab
-              isAdmin={isAdmin}
-              searchQuery={searchQuery}
-              setSelectedOrder={setSelectedOrder}
-            />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 2: ORDERS & ACTIVITIES TAB */}
+            {activeTab === "orders" && (
+              <ProfileTabErrorBoundary tabName="Pedidos">
+                <OrdersTab
+                  isAdmin={isAdmin}
+                  searchQuery={searchQuery}
+                  setSelectedOrder={setSelectedOrder}
+                />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 3: CARDS & WALLET TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "cards" && (
-          <ProfileTabErrorBoundary tabName="Billetera">
-            <CardsTab
-              setShowCardModal={setShowCardModal}
-            />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 3: CARDS & WALLET TAB */}
+            {activeTab === "cards" && (
+              <ProfileTabErrorBoundary tabName="Billetera">
+                <CardsTab
+                  setShowCardModal={setShowCardModal}
+                />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 4: FAVORITES TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "favorites" && (
-          <ProfileTabErrorBoundary tabName="Favoritos">
-            <FavoritesTab />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 4: FAVORITES TAB */}
+            {activeTab === "favorites" && (
+              <ProfileTabErrorBoundary tabName="Favoritos">
+                <FavoritesTab />
+              </ProfileTabErrorBoundary>
+            )}
 
- {/* ========================================================================= */}
- {/* VIEW 5: ADMIN CATALOG & INVENTORY TAB */}
- {/* ========================================================================= */}
-        {/* ========================================================================= */}
-        {/* VIEW 5: ADMIN CATALOG & INVENTORY TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "catalog" && isAdmin && (
-          <ProfileTabErrorBoundary tabName="Inventario">
-            <CatalogTab
-              searchQuery={searchQuery}
-              onOpenCreateProduct={() => {
-                requestMobileLandscapeFullscreen();
-                setShowProductModal(true);
-              }}
-              onOpenEditProduct={(p) => {
-                requestMobileLandscapeFullscreen();
-                handleOpenEditProduct(p);
-              }}
-              onDeleteProduct={(p) => {
-                setDeleteProductError(null);
-                setProductToDelete(p);
-              }}
-            />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 5: ADMIN CATALOG & INVENTORY TAB */}
+            {activeTab === "catalog" && isAdmin && (
+              <ProfileTabErrorBoundary tabName="Inventario">
+                <CatalogTab
+                  searchQuery={searchQuery}
+                  onOpenCreateProduct={() => {
+                    requestMobileLandscapeFullscreen();
+                    setShowProductModal(true);
+                  }}
+                  onOpenEditProduct={(p) => {
+                    requestMobileLandscapeFullscreen();
+                    handleOpenEditProduct(p);
+                  }}
+                  onDeleteProduct={(p) => {
+                    setDeleteProductError(null);
+                    setProductToDelete(p);
+                  }}
+                />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 6: ADMIN NICHES TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "niches" && isAdmin && (
-          <ProfileTabErrorBoundary tabName="Nichos">
-            <NichesTab
-              onRequestDeleteNiche={handleRequestDeleteNiche}
-            />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 6: ADMIN NICHES TAB */}
+            {activeTab === "niches" && isAdmin && (
+              <ProfileTabErrorBoundary tabName="Nichos">
+                <NichesTab
+                  onRequestDeleteNiche={handleRequestDeleteNiche}
+                />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 7: ANALYTICS RADAR TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "analytics" && isAdmin && (
-          <div className="flex-1 flex flex-col min-h-0 w-full">
-            <ProfileTabErrorBoundary tabName="Analíticas">
-              <AnalyticsTab
-                onNavigateToAddresses={() => {
-                  setActiveTab("settings");
-                  setShowAddressForm(true);
-                }}
-              />
-            </ProfileTabErrorBoundary>
-          </div>
-        )}
+            {/* VIEW 7: ANALYTICS RADAR TAB */}
+            {activeTab === "analytics" && isAdmin && (
+              <div className="flex-1 flex flex-col min-h-0 w-full">
+                <ProfileTabErrorBoundary tabName="Analíticas">
+                  <AnalyticsTab
+                    onNavigateToAddresses={() => {
+                      setActiveTab("settings");
+                      setShowAddressForm(true);
+                    }}
+                  />
+                </ProfileTabErrorBoundary>
+              </div>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 8: ADMIN CART ALERTS TAB (SILEO PLAYGROUND) */}
-        {/* ========================================================================= */}
-        {activeTab === "cart_alerts" && isAdmin && (
-          <ProfileTabErrorBoundary tabName="Alertas de Carrito">
-            <CartAlertsTab />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 8: ADMIN CART ALERTS TAB (SILEO PLAYGROUND) */}
+            {activeTab === "cart_alerts" && isAdmin && (
+              <ProfileTabErrorBoundary tabName="Alertas de Carrito">
+                <CartAlertsTab />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 8B: ADMIN INTEGRATIONS & VERCEL SMTP TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "integrations" && isAdmin && (
-          <ProfileTabErrorBoundary tabName="Integraciones">
-            <IntegrationsTab />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 8B: ADMIN INTEGRATIONS & VERCEL SMTP TAB */}
+            {activeTab === "integrations" && isAdmin && (
+              <ProfileTabErrorBoundary tabName="Integraciones">
+                <IntegrationsTab />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 8C: ADMIN DISCOUNT COUPONS GENERATOR & MANAGER                       */}
-        {/* ========================================================================= */}
-        {activeTab === "loyalty" && (
-          <ProfileTabErrorBoundary tabName="Cupones">
-            <DiscountCouponsTab />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 8C: ADMIN DISCOUNT COUPONS GENERATOR & MANAGER */}
+            {activeTab === "loyalty" && (
+              <ProfileTabErrorBoundary tabName="Cupones">
+                <DiscountCouponsTab />
+              </ProfileTabErrorBoundary>
+            )}
 
-        {/* ========================================================================= */}
-        {/* VIEW 9: SETTINGS & ADDRESS TAB */}
-        {/* ========================================================================= */}
-        {activeTab === "settings" && (
-          <ProfileTabErrorBoundary tabName="Ajustes">
-            <SettingsTab
-              isAdmin={isAdmin}
-              isRootAdmin={isRootAdmin}
-              showAddressForm={showAddressForm}
-              setShowAddressForm={setShowAddressForm}
-            />
-          </ProfileTabErrorBoundary>
-        )}
+            {/* VIEW 9: SETTINGS & ADDRESS TAB */}
+            {activeTab === "settings" && (
+              <ProfileTabErrorBoundary tabName="Ajustes">
+                <SettingsTab
+                  isAdmin={isAdmin}
+                  isRootAdmin={isRootAdmin}
+                  showAddressForm={showAddressForm}
+                  setShowAddressForm={setShowAddressForm}
+                />
+              </ProfileTabErrorBoundary>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
  </main>
 

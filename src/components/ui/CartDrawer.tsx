@@ -945,27 +945,24 @@ export function CartDrawer() {
   const cartModalVariants: Variants = {
     hidden: {
       opacity: 0,
-      scale: 0.1,
-      x: startX * 0.72,
-      y: startY * 0.72,
+      scale: 0.96,
+      y: 20,
     },
     visible: {
       opacity: 1,
       scale: 1,
-      x: 0,
       y: 0,
       transition: {
-        duration: 0.34,
+        duration: 0.28,
         ease: [0.16, 1, 0.3, 1],
       }
     },
     exit: {
       opacity: 0,
-      scale: 0.1,
-      x: startX * 0.72,
-      y: startY * 0.72,
+      scale: 0.97,
+      y: 16,
       transition: {
-        duration: 0.24,
+        duration: 0.2,
         ease: [0.32, 0, 0.67, 0],
       }
     }
@@ -980,24 +977,24 @@ export function CartDrawer() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             style={{ willChange: "opacity" }}
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-md transform-gpu"
+            className="fixed inset-0 bg-slate-950/65 sm:backdrop-blur-md transform-gpu"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* LUXURY CART CANVAS - INSTANT & FLUID */}
+          {/* LUXURY CART CANVAS - INSTANT & FLUID (Optimized GPU Containment) */}
           <motion.div
             variants={cartModalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            style={{ willChange: "transform, opacity", transform: "translateZ(0)" }}
-            className="relative w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[92vh] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl rounded-3xl sm:rounded-[2.5rem] border border-white/90 dark:border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden z-10 transform-gpu"
+            style={{ willChange: "transform, opacity", transform: "translateZ(0)", contain: "paint" }}
+            className="relative w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[92vh] bg-white dark:bg-[#18181b] sm:backdrop-blur-xl rounded-3xl sm:rounded-[2.5rem] border border-gray-300/80 dark:border-white/20 shadow-[0_25px_80px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10 transform-gpu"
           >
 
-  {/* Top Bar Header */}
-  <header className="px-4 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 shrink-0 shadow-sm dark:shadow-none">
+  {/* Top Bar Header with crisp high-contrast border */}
+  <header className="px-4 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-[#202023] border-b border-gray-200 dark:border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 shrink-0 shadow-xs">
  
   {/* Top line on mobile: Left Title + Right Close Button */}
   <div className="flex items-center justify-between w-full sm:w-auto">
@@ -1214,7 +1211,7 @@ export function CartDrawer() {
   </div>
 
  {/* Table Column Headers (Aligned 5 + 3 + 3 + 1 = 12 cols) */}
- <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 dark:border-white/5 px-3.5 sm:px-4 items-center">
+ <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-200 dark:border-white/15 px-3.5 sm:px-4 items-center">
  <span className="col-span-5">Producto</span>
  <span className="col-span-3 text-center">Cantidad</span>
  <span className="col-span-3 text-right pr-4">Subtotal</span>
@@ -1245,10 +1242,10 @@ export function CartDrawer() {
     return (
       <div
         key={item.id}
-        className="p-3.5 sm:p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-[#1e1e20] dark:to-[#1a1a1c] shadow-sm space-y-4 transition-all"
+        className="p-3.5 sm:p-5 rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-[#1e1e20] dark:to-[#1a1a1c] shadow-sm space-y-4 transition-all"
       >
         {/* Bundle Header Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/15">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/30">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
               <Package className="w-4 h-4" />
@@ -1268,7 +1265,7 @@ export function CartDrawer() {
               </p>
             </div>
           </div>
-          <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-white/70 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-emerald-500/10">
+          <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-white/90 dark:bg-white/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
             {bundleProducts.length} {bundleProducts.length === 1 ? "pieza incluida" : "piezas incluidas"}
           </span>
         </div>
@@ -1278,7 +1275,7 @@ export function CartDrawer() {
           {bundleProducts.map((bp, bpIdx) => (
             <div 
               key={`${bp.id}-${bpIdx}`}
-              className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white/90 dark:bg-[#252528] border border-gray-100 dark:border-white/5 shadow-2xs group/bitem"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white/95 dark:bg-[#252528] border border-gray-200 dark:border-white/15 shadow-2xs group/bitem"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div 
@@ -1397,8 +1394,8 @@ export function CartDrawer() {
       key={item.id} 
       className={`p-3 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 sm:items-center group transition-all rounded-2xl ${
         itemIsAgotado 
-          ? "bg-red-50/40 border border-red-200/80 shadow-xs" 
-          : "border border-gray-200/70 dark:border-white/10 sm:border-transparent bg-white/80 dark:bg-white/[0.03] sm:bg-transparent sm:dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#151515]/50 hover:border-gray-200 dark:hover:border-white/10 shadow-xs sm:shadow-none"
+          ? "bg-red-50/40 border border-red-300 dark:border-red-900/60 shadow-xs" 
+          : "border border-gray-200 dark:border-white/15 bg-white dark:bg-white/[0.03] hover:bg-gray-50/80 dark:hover:bg-white/[0.06] hover:border-gray-300 dark:hover:border-white/25 shadow-2xs"
       }`}
     >
       {/* Product Info (5 cols on sm+) */}
@@ -1575,20 +1572,20 @@ export function CartDrawer() {
  {/* ---------------------------------------------------- */}
  {/* Right Column: Order Summary Card (4 cols - Luxury Pearl Card) */}
  {/* ---------------------------------------------------- */}
-  <div className="lg:col-span-4 bg-white/80 dark:bg-[#1e1e22]/90 backdrop-blur-2xl rounded-3xl border border-black/[0.06] dark:border-white/10 p-4 sm:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.03)] space-y-5 sm:space-y-6">
+  <div className="lg:col-span-4 bg-white/95 dark:bg-[#1e1e22]/95 sm:backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-white/15 p-4 sm:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.04)] space-y-5 sm:space-y-6">
   
     {/* Header with Item Counter */}
-    <div className="flex items-center justify-between pb-3.5 border-b border-black/[0.06] dark:border-white/10">
+    <div className="flex items-center justify-between pb-3.5 border-b border-gray-200 dark:border-white/15">
       <h3 className="font-display font-bold text-lg sm:text-xl text-gray-950 dark:text-white tracking-tight">
         Resumen del Pedido
       </h3>
-      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/10 text-gray-700 dark:text-gray-300">
+      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10">
         {items.length} {items.length === 1 ? "artículo" : "artículos"}
       </span>
     </div>
 
     {/* Free Shipping Progress Capsule */}
-    <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/5 space-y-2.5">
+    <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-gray-200 dark:border-white/15 space-y-2.5">
       <div className="flex items-center justify-between text-xs font-medium">
         <span className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -1608,7 +1605,7 @@ export function CartDrawer() {
 
     {/* Coupon Code Form with Symmetrical Pill Input */}
     <div className="space-y-2">
-      <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1.5 pl-4 rounded-2xl bg-white/90 dark:bg-white/5 border border-black/[0.06] dark:border-white/15 shadow-xs focus-within:border-black/25 dark:focus-within:border-white/30 transition-all">
+      <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1.5 pl-4 rounded-2xl bg-white dark:bg-white/5 border border-gray-300 dark:border-white/20 shadow-xs focus-within:border-black/50 dark:focus-within:border-white/40 transition-all">
         <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
         <div className="relative flex-1 flex items-center">
           <input 
@@ -1714,7 +1711,7 @@ export function CartDrawer() {
     </div>
 
     {/* Breakdown Lines Symmetrical Table */}
-    <div className="space-y-3 pt-2 border-t border-black/[0.05] dark:border-white/10">
+    <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-white/15">
       <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400">
         <span>Subtotal</span>
         <BeUIRollingPrice
@@ -1742,7 +1739,7 @@ export function CartDrawer() {
         </span>
       </div>
 
-      <div className="pt-3.5 border-t border-black/[0.06] dark:border-white/10 flex items-baseline justify-between">
+      <div className="pt-3.5 border-t border-gray-200 dark:border-white/15 flex items-baseline justify-between">
         <div>
           <span className="text-sm sm:text-base font-bold text-gray-950 dark:text-white block">Total a Pagar</span>
           <span className="text-[11px] text-gray-400">IVA e impuestos incluidos</span>
@@ -1805,10 +1802,10 @@ export function CartDrawer() {
   {step === "payment" && (
   <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
   
-  <div className="border-b border-black/[0.06] dark:border-white/5 pb-4">
+  <div className="border-b border-gray-200 dark:border-white/15 pb-4">
     <button 
       onClick={() => setStep("bag")}
-      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-white/5 border border-black/[0.06] dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 shadow-2xs hover:shadow-xs transition-all mb-3 cursor-pointer group"
+      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/15 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 shadow-2xs hover:shadow-xs transition-all mb-3 cursor-pointer group"
     >
       <div className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center group-hover:-translate-x-0.5 transition-transform">
         <ArrowLeft className="w-3 h-3 text-gray-700 dark:text-gray-300" />
@@ -1826,7 +1823,7 @@ export function CartDrawer() {
   <div className="max-w-xl mx-auto space-y-6">
   
   {/* Shipping Address */}
-  <div id="cart-address-section" className="p-5 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
+  <div id="cart-address-section" className="p-5 sm:p-7 rounded-[2rem] bg-white/95 dark:bg-[#18181b]/95 sm:backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white">
