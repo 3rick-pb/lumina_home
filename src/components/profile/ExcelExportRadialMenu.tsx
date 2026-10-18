@@ -1131,7 +1131,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
                 animate={{ scale: 1.6, opacity: 0.8 }}
                 exit={{ scale: 0, opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="absolute -inset-12 rounded-full bg-gradient-to-tr from-emerald-500/30 via-emerald-400/20 to-transparent blur-2xl pointer-events-none -z-10"
+                className="absolute -inset-12 rounded-full bg-gradient-to-tr from-red-500/30 via-rose-400/20 to-transparent dark:from-emerald-500/30 dark:via-emerald-400/20 dark:to-transparent blur-2xl pointer-events-none -z-10"
               />
 
               {subButtons.map((btn, index) => {
@@ -1273,14 +1273,14 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
 
         {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC LIQUID METAL SILVER EFFECT */}
         <div className="relative inline-flex items-center justify-center shrink-0">
-          {/* Ambient chromatic light spill - highly saturated and vivid in Light Mode, deep celestial aura in Dark Mode */}
+          {/* Ambient chromatic light spill - calibrated with vibrant red base in Light Mode, deep celestial aura in Dark Mode */}
           <div 
             aria-hidden="true" 
-            className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-emerald-500/60 via-teal-400/55 to-cyan-500/60 dark:from-cyan-500/35 dark:via-blue-500/30 dark:to-purple-500/35 blur-md sm:blur-lg opacity-90 dark:opacity-75 -z-10" 
+            className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-red-500/70 via-rose-500/65 to-red-600/70 dark:from-cyan-500/35 dark:via-blue-500/30 dark:to-purple-500/35 blur-md sm:blur-lg opacity-90 dark:opacity-75 -z-10" 
           />
           <div 
             aria-hidden="true" 
-            className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-tr from-cyan-400/50 via-teal-400/40 to-indigo-500/50 dark:from-cyan-500/25 dark:via-blue-500/20 dark:to-purple-500/25 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
+            className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-tr from-red-500/55 via-rose-400/45 to-orange-500/50 dark:from-cyan-500/25 dark:via-blue-500/20 dark:to-purple-500/25 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
           />
 
           {canvasReady && (
