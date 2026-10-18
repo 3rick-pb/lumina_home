@@ -496,12 +496,20 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   applyCoupon: async (code: string) => {
-    const clean = code.trim().toUpperCase();
+    const clean = code.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
     const currentUserId = get().currentUserId;
     const subtotal = get().getSubtotal();
 
     if (!clean) {
       return { success: false, message: 'Por favor ingresa un código de cupón válido.' };
+    }
+
+    if (get().items.length === 0 || subtotal <= 0) {
+      return { success: false, message: 'Tu bolsa de compras está vacía. Añade piezas para aplicar un cupón.' };
+    }
+
+    if (get().couponCode && get().couponCode?.toUpperCase() === clean) {
+      return { success: false, message: 'Este cupón ya se encuentra aplicado a tu orden.' };
     }
 
     try {
@@ -530,16 +538,30 @@ export const useCartStore = create<CartState>((set, get) => ({
       const data = await res.json();
 
       if (!res.ok || !data.valid) {
+        // Fallback: check official configured default coupons
+        const fallback = storeConfig.defaultCoupons.find(c => c.code.toUpperCase() === clean);
+        if (fallback) {
+          const payload: CartStoragePayload = {
+            items: get().items,
+            couponCode: fallback.code,
+            discountPercent: fallback.discountPercent,
+            isFreeShippingCoupon: fallback.isFreeShipping,
+          };
+          syncCartToDatabase(currentUserId, payload);
+          set({ couponCode: fallback.code, discountPercent: fallback.discountPercent, isFreeShippingCoupon: fallback.isFreeShipping });
+          return { success: true, message: fallback.message || (fallback.isFreeShipping ? '¡Envío bonificado aplicado con éxito!' : `¡Descuento del ${fallback.discountPercent}% aplicado con éxito!`) };
+        }
+
         return {
           success: false,
-          message: data.message || `El código "${clean}" no es válido o ha expirado.`,
+          message: data.message || 'El código ingresado no es válido o ha expirado.',
         };
       }
 
       const codeName = data.coupon.code;
       const discount = Number(data.coupon.discountPercent) || 0;
       const freeShipping = Boolean(data.isFreeShipping);
-      const message = data.message || `¡Cupón ${codeName} aplicado con éxito!`;
+      const message = data.message || (freeShipping ? '¡Envío 100% bonificado aplicado con éxito!' : `¡Descuento del ${discount}% aplicado con éxito!`);
 
       const payload: CartStoragePayload = {
         items: get().items,
@@ -557,16 +579,16 @@ export const useCartStore = create<CartState>((set, get) => ({
       console.warn('Network issue during coupon validation, checking offline fallback:', e);
 
       // Offline fallback: check default coupons
-      const fallback = storeConfig.defaultCoupons.find(c => c.code === clean);
+      const fallback = storeConfig.defaultCoupons.find(c => c.code.toUpperCase() === clean);
       if (fallback) {
         const payload: CartStoragePayload = {
           items: get().items,
-          couponCode: clean,
+          couponCode: fallback.code,
           discountPercent: fallback.discountPercent,
           isFreeShippingCoupon: fallback.isFreeShipping,
         };
         syncCartToDatabase(currentUserId, payload);
-        set({ couponCode: clean, discountPercent: fallback.discountPercent, isFreeShippingCoupon: fallback.isFreeShipping });
+        set({ couponCode: fallback.code, discountPercent: fallback.discountPercent, isFreeShippingCoupon: fallback.isFreeShipping });
         return { success: true, message: fallback.message };
       }
 

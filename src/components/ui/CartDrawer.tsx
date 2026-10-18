@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Package,
   Eye,
+  EyeOff,
   Calendar,
   User,
   Phone,
@@ -223,6 +224,16 @@ export function CartDrawer() {
  // Coupon state
  const [couponInput, setCouponInput] = useState("");
  const [couponFeedback, setCouponFeedback] = useState<{ msg: string; success: boolean } | null>(null);
+ const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+ const [revealCouponInput, setRevealCouponInput] = useState(false);
+ const [revealAppliedCoupon, setRevealAppliedCoupon] = useState(false);
+
+ // Mask sensitive coupon code for privacy / screen shares (e.g. "LUMINA10" -> "LU•••••0")
+ const maskCouponCode = (code: string) => {
+   if (!code) return "";
+   if (code.length <= 4) return "••••";
+   return `${code.slice(0, 2)}${"•".repeat(Math.max(3, code.length - 3))}${code.slice(-1)}`;
+ };
 
   // PayPhone Ecuador Exclusive Gateway State (Admin Configured: "box" | "redirect")
   const [, setPayphoneMode] = useState<"box" | "redirect">("box");
@@ -478,11 +489,27 @@ export function CartDrawer() {
 
   const handleApplyCoupon = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!couponInput.trim()) return;
-    const res = await applyCoupon(couponInput);
-    setCouponFeedback({ msg: res.message, success: res.success });
-    if (res.success) {
-      setCouponInput("");
+    const clean = couponInput.trim();
+    if (!clean) {
+      setCouponFeedback({ msg: "Ingresa un código de cupón para validar.", success: false });
+      return;
+    }
+    if (items.length === 0 || subtotal <= 0) {
+      setCouponFeedback({ msg: "Tu bolsa de compras está vacía. Añade piezas para aplicar un cupón.", success: false });
+      return;
+    }
+    setIsApplyingCoupon(true);
+    setCouponFeedback(null);
+    try {
+      const res = await applyCoupon(clean);
+      setCouponFeedback({ msg: res.message, success: res.success });
+      if (res.success) {
+        setCouponInput("");
+      }
+    } catch {
+      setCouponFeedback({ msg: "No pudimos validar el cupón en este momento. Intenta de nuevo.", success: false });
+    } finally {
+      setIsApplyingCoupon(false);
     }
   };
 
@@ -1583,40 +1610,105 @@ export function CartDrawer() {
     <div className="space-y-2">
       <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1.5 pl-4 rounded-2xl bg-white/90 dark:bg-white/5 border border-black/[0.06] dark:border-white/15 shadow-xs focus-within:border-black/25 dark:focus-within:border-white/30 transition-all">
         <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-        <input 
-          type="text" 
-          value={couponInput}
-          onChange={e => setCouponInput(e.target.value)}
-          placeholder="Código de descuento"
-          className="w-full bg-transparent text-xs font-medium outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
-        />
+        <div className="relative flex-1 flex items-center">
+          <input 
+            type={revealCouponInput ? "text" : "password"} 
+            value={couponInput}
+            onChange={e => {
+              setCouponInput(e.target.value.toUpperCase());
+              if (couponFeedback) setCouponFeedback(null);
+            }}
+            placeholder="Código confidencial"
+            autoComplete="new-password"
+            autoCorrect="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            data-lpignore="true"
+            className="w-full bg-transparent text-xs font-mono font-medium tracking-wider outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 pr-7"
+          />
+          {couponInput.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setRevealCouponInput(!revealCouponInput)}
+              className="absolute right-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 cursor-pointer"
+              title={revealCouponInput ? "Ocultar código" : "Mostrar código"}
+              aria-label="Alternar visibilidad del código"
+            >
+              {revealCouponInput ? (
+                <EyeOff className="w-3.5 h-3.5" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+        </div>
         <button 
           type="submit"
-          className="px-4 py-2 rounded-xl font-sans font-bold text-xs text-white dark:text-gray-950 bg-gray-950 dark:bg-white hover:bg-black dark:hover:bg-gray-100 shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
+          disabled={isApplyingCoupon || !couponInput.trim()}
+          className="px-4 py-2 rounded-xl font-sans font-bold text-xs text-white dark:text-gray-950 bg-gray-950 dark:bg-white hover:bg-black dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 min-w-[76px]"
         >
-          Aplicar
+          {isApplyingCoupon ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Validando</span>
+            </>
+          ) : (
+            <span>Aplicar</span>
+          )}
         </button>
       </form>
 
       {couponFeedback && (
-        <p className={`text-xs font-semibold px-2 ${couponFeedback.success ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-          {couponFeedback.msg}
-        </p>
+        <div className={clsx(
+          "flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl border animate-in fade-in slide-in-from-top-1 duration-200",
+          couponFeedback.success 
+            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300" 
+            : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400"
+        )}>
+          {couponFeedback.success ? (
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+          )}
+          <span className="flex-1">{couponFeedback.msg}</span>
+        </div>
       )}
 
       {couponCode && (
-        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-500/10 text-gray-800 dark:text-gray-200 text-xs font-medium border border-emerald-500/20">
-          <span className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-500/10 text-gray-800 dark:text-gray-200 text-xs font-medium border border-emerald-500/20 backdrop-blur-xs">
+          <span className="flex items-center gap-2 min-w-0">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>Cupón: <strong className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{couponCode}</strong> ({discountPercent}% dto)</span>
+            <span className="truncate">
+              Cupón: <strong className="font-mono font-bold text-emerald-700 dark:text-emerald-300 tracking-wider">
+                {revealAppliedCoupon ? couponCode : maskCouponCode(couponCode)}
+              </strong>
+              {isFreeShippingCoupon ? " (Envío bonificado)" : ` (${discountPercent}% dto)`}
+            </span>
           </span>
-          <button 
-            onClick={removeCoupon} 
-            className="w-5 h-5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center text-gray-500 hover:text-rose-600 transition-colors cursor-pointer"
-            title="Eliminar cupón"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0 ml-2">
+            <button
+              type="button"
+              onClick={() => setRevealAppliedCoupon(!revealAppliedCoupon)}
+              className="p-1 rounded-md hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer"
+              title={revealAppliedCoupon ? "Ocultar código confidencial" : "Revelar código"}
+              aria-label="Alternar visualización de cupón"
+            >
+              {revealAppliedCoupon ? (
+                <EyeOff className="w-3.5 h-3.5" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
+            </button>
+            <button 
+              type="button"
+              onClick={removeCoupon} 
+              className="p-1 rounded-md hover:bg-rose-500/20 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+              title="Eliminar cupón"
+              aria-label="Eliminar cupón"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
     </div>

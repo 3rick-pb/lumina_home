@@ -63,16 +63,137 @@ export async function POST(request: Request) {
 
     const supabase = getScopedSupabaseClient(request);
 
+    const OFFICIAL_COUPONS_FALLBACK = [
+      {
+        code: 'LUMINA10',
+        title: 'Bienvenida Lumina Home',
+        description: '10% de descuento directo en todo el catálogo.',
+        discount_percent: 10,
+        discount_type: 'percent',
+        fixed_amount: 0,
+        scope: 'all',
+        target_niche: null,
+        min_order_amount: 0,
+        max_uses: null,
+        max_uses_per_user: 1,
+        used_count: 0,
+        is_active: true,
+        expires_at: null,
+      },
+      {
+        code: 'VIP20',
+        title: 'Pase Exclusivo VIP',
+        description: '20% OFF en toda la tienda para compras superiores a $30.',
+        discount_percent: 20,
+        discount_type: 'percent',
+        fixed_amount: 0,
+        scope: 'all',
+        target_niche: null,
+        min_order_amount: 30,
+        max_uses: null,
+        max_uses_per_user: 1,
+        used_count: 0,
+        is_active: true,
+        expires_at: null,
+      },
+      {
+        code: 'AMIGOS-VIP20',
+        title: 'Pase Exclusivo Amigos & Familia',
+        description: '20% OFF en toda la tienda para compartir con tus amigos y grupos.',
+        discount_percent: 20,
+        discount_type: 'percent',
+        fixed_amount: 0,
+        scope: 'all',
+        target_niche: null,
+        min_order_amount: 30,
+        max_uses: 50,
+        max_uses_per_user: 1,
+        used_count: 0,
+        is_active: true,
+        expires_at: null,
+      },
+      {
+        code: 'BIENVENIDO',
+        title: 'Bienvenida Boutique',
+        description: '15% de descuento en tu primera compra.',
+        discount_percent: 15,
+        discount_type: 'percent',
+        fixed_amount: 0,
+        scope: 'all',
+        target_niche: null,
+        min_order_amount: 0,
+        max_uses: null,
+        max_uses_per_user: 1,
+        used_count: 0,
+        is_active: true,
+        expires_at: null,
+      },
+      {
+        code: 'LUX-LIGHTS25',
+        title: 'Flash Sale Iluminación de Autor',
+        description: '25% OFF en lámparas esculturales y luminarias de diseño.',
+        discount_percent: 25,
+        discount_type: 'percent',
+        fixed_amount: 0,
+        scope: 'niche',
+        target_niche: 'Iluminación',
+        min_order_amount: 50,
+        max_uses: 30,
+        max_uses_per_user: 1,
+        used_count: 0,
+        is_active: true,
+        expires_at: null,
+      },
+      {
+        code: 'ENVIOGRATIS',
+        title: 'Envío Bonificado 100%',
+        description: 'Cubre el costo de despacho garantizado a cualquier ciudad del Ecuador.',
+        discount_percent: 0,
+        discount_type: 'free_shipping',
+        fixed_amount: 0,
+        scope: 'all',
+        target_niche: null,
+        min_order_amount: 30,
+        max_uses: null,
+        max_uses_per_user: 1,
+        used_count: 0,
+        is_active: true,
+        expires_at: null,
+      },
+    ];
+
     // 1. Fetch coupon record from database
-    const { data: coupon, error } = await supabase
+    const { data: dbCoupon, error } = await supabase
       .from('coupons')
       .select('*')
       .ilike('code', cleanCode)
       .maybeSingle();
 
-    if (error || !coupon) {
+    let coupon = dbCoupon;
+
+    // Check official system coupons if not found in database table
+    if (!coupon) {
+      const match = OFFICIAL_COUPONS_FALLBACK.find(c => c.code === cleanCode);
+      if (match) {
+        coupon = {
+          id: `sys-${match.code.toLowerCase()}`,
+          ...match,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any;
+      }
+    }
+
+    if (error && !coupon) {
       return NextResponse.json(
-        { valid: false, message: `El código "${cleanCode}" no es válido o ha expirado.` },
+        { valid: false, message: 'El código ingresado no es válido o ha expirado.' },
+        { status: 404 }
+      );
+    }
+
+    if (!coupon) {
+      return NextResponse.json(
+        { valid: false, message: 'El código ingresado no es válido o ha expirado.' },
         { status: 404 }
       );
     }
@@ -80,7 +201,7 @@ export async function POST(request: Request) {
     // 2. Active status check
     if (!coupon.is_active) {
       return NextResponse.json(
-        { valid: false, message: `El cupón "${coupon.code}" está inactivo actualmente.` },
+        { valid: false, message: 'Este cupón se encuentra inactivo actualmente.' },
         { status: 400 }
       );
     }
@@ -95,7 +216,7 @@ export async function POST(request: Request) {
           year: 'numeric',
         });
         return NextResponse.json(
-          { valid: false, message: `El cupón "${coupon.code}" expiró el ${formattedDate}.` },
+          { valid: false, message: `Este cupón expiró el ${formattedDate}.` },
           { status: 400 }
         );
       }
@@ -106,7 +227,7 @@ export async function POST(request: Request) {
       const usedCount = Number(coupon.used_count) || 0;
       if (usedCount >= Number(coupon.max_uses)) {
         return NextResponse.json(
-          { valid: false, message: `El cupón "${coupon.code}" ha alcanzado el límite máximo de canjes disponibles.` },
+          { valid: false, message: 'Este cupón ha alcanzado el límite máximo de canjes disponibles.' },
           { status: 400 }
         );
       }
@@ -195,13 +316,13 @@ export async function POST(request: Request) {
     }
 
     // Success response
-    let successMessage = `¡Cupón "${coupon.code}" aplicado con éxito!`;
+    let successMessage = '¡Cupón aplicado con éxito!';
     if (isFreeShipping) {
-      successMessage = `¡Cupón "${coupon.code}" aplicado! Envío 100% bonificado.`;
+      successMessage = '¡Cupón aplicado con éxito! Envío 100% bonificado.';
     } else if (coupon.discount_type === 'percent') {
-      successMessage = `¡Cupón "${coupon.code}" aplicado! ${coupon.discount_percent}% de descuento (-$${discountAmount.toFixed(2)} USD).`;
+      successMessage = `¡Cupón aplicado con éxito! ${coupon.discount_percent}% de descuento (-$${discountAmount.toFixed(2)} USD).`;
     } else if (coupon.discount_type === 'fixed') {
-      successMessage = `¡Cupón "${coupon.code}" aplicado! Descuento directo de -$${discountAmount.toFixed(2)} USD.`;
+      successMessage = `¡Cupón aplicado con éxito! Descuento directo de -$${discountAmount.toFixed(2)} USD.`;
     }
 
     return NextResponse.json({
