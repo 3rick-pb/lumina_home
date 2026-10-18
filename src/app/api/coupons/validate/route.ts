@@ -180,7 +180,7 @@ export async function POST(request: Request) {
           ...match,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        } as any;
+        } as unknown as typeof dbCoupon;
       }
     }
 

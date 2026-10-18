@@ -23,8 +23,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const siteUrl = brandConfig.meta.siteUrl || "https://luminahome-3rick.vercel.app";
   const defaultOgImage = `${siteUrl}/og-default.jpg`;
 
+  interface ProductMetadataSource {
+    title?: string;
+    title_highlight?: string;
+    titleHighlight?: string;
+    description?: string;
+    price?: number | string;
+    image_url?: string;
+    images?: string[];
+    [key: string]: unknown;
+  }
+
   // 1. Intentar obtener producto desde Supabase
-  let product: any = null;
+  let product: ProductMetadataSource | null = null;
   try {
     const { data } = await supabase
       .from("products")

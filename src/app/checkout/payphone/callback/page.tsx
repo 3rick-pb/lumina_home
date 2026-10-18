@@ -307,12 +307,13 @@ function PayPhoneCallbackContent() {
                       </span>
                       <div className="space-y-2.5">
                         {confirmedOrder.items.map((item, idx) => {
-                          const itemTitle = item.product?.title || (item as any).title || "Pieza Lumina";
-                          const itemImage = item.product?.imageUrl || (item as any).imageUrl || (item as any).image || "";
-                          const itemCategory = item.product?.category || (item as any).category || "Atelier";
+                          const rawItem = item as unknown as Record<string, unknown>;
+                          const itemTitle = item.product?.title || (typeof rawItem.title === "string" ? rawItem.title : "Pieza Lumina");
+                          const itemImage = item.product?.imageUrl || (typeof rawItem.imageUrl === "string" ? rawItem.imageUrl : (typeof rawItem.image === "string" ? rawItem.image : ""));
+                          const itemCategory = item.product?.category || (typeof rawItem.category === "string" ? rawItem.category : "Atelier");
                           const itemPrice = typeof item.product?.price === "number" 
                             ? item.product.price 
-                            : (Number((item as any).price) || 0);
+                            : (Number(rawItem.price) || 0);
 
                           return (
                             <div 
