@@ -1103,8 +1103,8 @@ export function CartDrawer() {
   <div ref={cartScrollRef} data-lenis-prevent className={`flex-1 overflow-y-auto ${
     items.length === 0 && step === "bag"
       ? "p-2.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3 flex flex-col"
-      : "p-2.5 sm:p-6 lg:p-10"
-  } [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-5 sm:space-y-10`}>
+      : "p-3 sm:p-6 lg:p-8"
+  } scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700 hover:scrollbar-thumb-stone-400 dark:hover:scrollbar-thumb-stone-600 scrollbar-track-transparent space-y-5 sm:space-y-8`}>
 
   {/* ======================================================================= */}
   {/* STEP 1: CART PAGE VIEW (Skyrise Decor / Crescendo Spacious Studio) */}
@@ -1800,27 +1800,47 @@ export function CartDrawer() {
  {/* STEP 2: PAYMENT METHOD & SHIPPING VIEW (Spacious & Interactive) */}
   {/* ======================================================================= */}
   {step === "payment" && (
-  <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+  <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 animate-fade-in pb-8 sm:pb-12">
   
-  <div className="border-b border-gray-200 dark:border-white/15 pb-4">
-    <button 
-      onClick={() => setStep("bag")}
-      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/15 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 shadow-2xs hover:shadow-xs transition-all mb-3 cursor-pointer group"
-    >
-      <div className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center group-hover:-translate-x-0.5 transition-transform">
-        <ArrowLeft className="w-3 h-3 text-gray-700 dark:text-gray-300" />
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-200 dark:border-white/15 pb-4">
+    <div>
+      <button 
+        onClick={() => setStep("bag")}
+        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/15 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 shadow-2xs hover:shadow-xs transition-all mb-2.5 cursor-pointer group"
+      >
+        <div className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center group-hover:-translate-x-0.5 transition-transform">
+          <ArrowLeft className="w-3 h-3 text-gray-700 dark:text-gray-300" />
+        </div>
+        <span>Volver a la Bolsa</span>
+      </button>
+      <h2 className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight">
+        Método de Pago y Entrega
+      </h2>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Configura tu dirección y autoriza tu pedido de manera segura.
+      </p>
+    </div>
+
+    {/* Quick Top Indicator for Desktop */}
+    <div className="hidden sm:flex items-center gap-3.5 bg-stone-50 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 px-4 py-2.5 rounded-2xl shadow-2xs">
+      <div className="w-9 h-9 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center text-xs font-bold shadow-xs">
+        {items.length}
       </div>
-      <span>Volver a la Bolsa</span>
-    </button>
-    <h2 className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight">
-      Método de Pago y Entrega
-    </h2>
-    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-      Configura tu dirección y autoriza tu pedido.
-    </p>
+      <div className="text-right">
+        <span className="text-[10px] uppercase font-mono font-bold text-gray-400 dark:text-gray-500 block">
+          Inversión Total
+        </span>
+        <span className="text-sm font-extrabold font-mono text-gray-900 dark:text-white">
+          ${finalTotal.toFixed(2)} <span className="text-[10px] font-bold text-[#FF5900]">USD</span>
+        </span>
+      </div>
+    </div>
   </div>
 
-  <div className="max-w-xl mx-auto space-y-6">
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start w-full">
+  
+  {/* Left Column (7 cols): Shipping Address & Payment Gateway Forms */}
+  <div className="lg:col-span-7 space-y-6">
   
   {/* Shipping Address */}
   <div id="cart-address-section" className="p-5 sm:p-7 rounded-[2rem] bg-white/95 dark:bg-[#18181b]/95 sm:backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
@@ -2864,13 +2884,74 @@ export function CartDrawer() {
 
     {/* Hidden Live PayPhone script mount container if live box mode is loaded */}
     <div id="pp-button" className="hidden" />
+  </div>
 
-    {/* High-Ticket Financial Ledger Summary */}
-    <div className="p-4 sm:p-5 rounded-[1.5rem] bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2.5">
+  </div>
+
+  {/* Right Column (5 cols, sticky on lg): Order Items Breakdown + Financial Ledger + Action Button */}
+  <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-4">
+    {/* 1. Mini Items Review Card */}
+    <div className="p-4 sm:p-5 rounded-[1.75rem] bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/15 shadow-xs space-y-3">
+      <div className="flex items-center justify-between pb-2.5 border-b border-black/[0.06] dark:border-white/10">
+        <div className="flex items-center gap-2">
+          <Package className="w-4 h-4 text-[#8c9276]" />
+          <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-white">
+            Resumen de Artículos ({items.length})
+          </h4>
+        </div>
+        <button
+          type="button"
+          onClick={() => setStep("bag")}
+          className="text-[11px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+        >
+          Editar
+        </button>
+      </div>
+
+      <div className="max-h-48 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
+                <Image 
+                  src={item.product?.imageUrl || (item.product?.images && item.product.images[0]) || "/placeholder.jpg"} 
+                  alt={item.product?.title || "Producto"} 
+                  fill 
+                  className="object-cover" 
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-[11.5px]">
+                  {item.isBundle ? (item.bundleName || "Pack Promocional") : item.product?.title}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                  Cant: {item.quantity} {item.color ? `· ${item.color}` : ""}
+                </p>
+              </div>
+            </div>
+            <span className="font-mono font-bold text-gray-900 dark:text-white shrink-0 text-xs">
+              ${((item.bundleCustomPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* 2. High-Ticket Financial Ledger Summary */}
+    <div className="p-4 sm:p-5 rounded-[1.75rem] bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2.5">
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <span>Subtotal de selección</span>
-        <span className="font-mono font-medium text-gray-700 dark:text-gray-300">USD {finalTotal.toFixed(2)}</span>
+        <span className="font-mono font-medium text-gray-700 dark:text-gray-300">USD {getSubtotal().toFixed(2)}</span>
       </div>
+      {getDiscountAmount() > 0 && (
+        <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400">
+          <span className="flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5" />
+            Cupón {couponCode ? `(${couponCode})` : ""}
+          </span>
+          <span className="font-mono font-bold">-USD {getDiscountAmount().toFixed(2)}</span>
+        </div>
+      )}
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1.5">
           <Package className="w-3.5 h-3.5 text-[#8c9276]" />
@@ -2936,7 +3017,7 @@ export function CartDrawer() {
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
               <Lock className="w-4 h-4 text-white" />
             </div>
-            <span className="tracking-wide font-extrabold">
+            <span className="tracking-wide font-extrabold text-xs sm:text-sm">
               Autorizar Pago Seguro · ${finalTotal.toFixed(2)} USD
             </span>
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:translate-x-1 group-active:scale-95 transition-all">
@@ -2967,163 +3048,272 @@ export function CartDrawer() {
   )}
 
   {/* ======================================================================= */}
-  {/* STEP 3: ORDER CONFIRMED CELEBRATION + WALLET PASS & QR CODE */}
+  {/* STEP 3: ORDER CONFIRMED CELEBRATION + WALLET PASS & QR CODE (Spacious 2-Col) */}
   {/* ======================================================================= */}
   {step === "success" && lastPlacedOrder && (
-  <div className="max-w-xl mx-auto py-6 sm:py-8 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
+  <div className="w-full max-w-6xl mx-auto py-4 sm:py-6 space-y-6 sm:space-y-8 animate-fade-in pb-12 sm:pb-16">
   
-  <div className="relative inline-flex items-center justify-center">
-    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500/20 via-teal-500/15 to-[#8c9276]/20 flex items-center justify-center p-1.5 ring-1 ring-emerald-500/30">
-      <div className="w-full h-full rounded-full bg-white dark:bg-[#1f1f23] flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-md">
-        <Check className="w-8 h-8 stroke-[2.8]" />
+  {/* Celebration Header */}
+  <div className="text-center space-y-3">
+    <div className="relative inline-flex items-center justify-center">
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-emerald-500/20 via-teal-500/15 to-[#8c9276]/20 flex items-center justify-center p-1.5 ring-1 ring-emerald-500/30">
+        <div className="w-full h-full rounded-full bg-white dark:bg-[#1f1f23] flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-md">
+          <Check className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.8]" />
+        </div>
+      </div>
+      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shadow-md">
+        <Sparkles className="w-3.5 h-3.5" />
       </div>
     </div>
-    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shadow-md">
-      <Sparkles className="w-3.5 h-3.5" />
+
+    <div>
+      <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-[0.2em] border border-emerald-200/60 dark:border-emerald-500/20 mb-2">
+        <ShieldCheck className="w-3.5 h-3.5" /> Adquisición Confirmada · Atelier Lumina
+      </span>
+      <h3 className="font-display italic font-semibold text-2xl sm:text-4xl text-gray-950 dark:text-white tracking-tight mt-1">
+        Una adquisición de distinción.
+      </h3>
+      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 max-w-lg mx-auto leading-relaxed">
+        Tu compra ha sido procesada con éxito. Hemos iniciado la preparación en nuestro atelier bajo empaque sellado de colección.
+      </p>
+    </div>
+
+    {/* 4-Step Linear Atelier Progress Tracker */}
+    <div className="max-w-2xl mx-auto p-3.5 sm:p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/5 space-y-2.5">
+      <div className="flex items-center justify-between text-[10.5px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1">
+        <span>Itinerario del Pedido</span>
+        <span className="text-[#8c9276] font-mono">Fase 2 de 4</span>
+      </div>
+      
+      <div className="grid grid-cols-4 gap-2 pt-0.5">
+        <div className="space-y-1 text-center">
+          <div className="h-1.5 rounded-full bg-emerald-500" />
+          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block truncate">
+            ✓ Autorizado
+          </span>
+        </div>
+        <div className="space-y-1 text-center">
+          <div className="h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 block truncate">
+            Atelier
+          </span>
+        </div>
+        <div className="space-y-1 text-center">
+          <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
+          <span className="text-[10px] font-medium text-gray-400 block truncate">
+            Inspección
+          </span>
+        </div>
+        <div className="space-y-1 text-center">
+          <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
+          <span className="text-[10px] font-medium text-gray-400 block truncate">
+            Despacho
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div>
-    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-[0.2em] border border-emerald-200/60 dark:border-emerald-500/20 mb-2">
-      <ShieldCheck className="w-3.5 h-3.5" /> Adquisición Confirmada · Atelier Lumina
-    </span>
-    <h3 className="font-display italic font-semibold text-3xl sm:text-4xl text-gray-950 dark:text-white tracking-tight mt-1">
-      Una adquisición de distinción.
-    </h3>
-    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto leading-relaxed">
-      Tu compra ha sido procesada con éxito. Hemos iniciado la preparación en nuestro atelier bajo empaque sellado de colección.
-    </p>
-  </div>
-
-  {/* 4-Step Linear Atelier Progress Tracker */}
-  <div className="w-full p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/5 space-y-2.5">
-    <div className="flex items-center justify-between text-[10.5px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1">
-      <span>Itinerario del Pedido</span>
-      <span className="text-[#8c9276] font-mono">Fase 2 de 4</span>
-    </div>
+  {/* 2-Column Responsive Layout */}
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start w-full">
     
-    <div className="grid grid-cols-4 gap-2 pt-0.5">
-      <div className="space-y-1 text-center">
-        <div className="h-1.5 rounded-full bg-emerald-500" />
-        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block truncate">
-          ✓ Autorizado
-        </span>
+    {/* Left Column (7 cols): Double-Bezel Receipt Summary + Destination Address + Items */}
+    <div className="lg:col-span-7 space-y-5">
+      {/* Double-Bezel Receipt Summary Card */}
+      <div className="w-full p-1.5 sm:p-2 rounded-[2rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.06] dark:ring-white/10">
+        <div className="rounded-[calc(2rem-0.375rem)] bg-white dark:bg-[#141416] border border-black/[0.06] dark:border-white/10 p-5 sm:p-6 shadow-xs text-left space-y-3.5">
+          <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
+            <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Número de Orden</span>
+            <span className="font-mono font-bold text-gray-950 dark:text-white text-sm">{lastPlacedOrder.id}</span>
+          </div>
+          <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
+            <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Estado Actual</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Preparación en Atelier
+            </span>
+          </div>
+          <div className="space-y-1.5 pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
+            <div className="flex justify-between text-gray-500 dark:text-gray-400">
+              <span>Empaque de Colección:</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Cortesía</span>
+            </div>
+            <div className="flex justify-between text-gray-500 dark:text-gray-400">
+              <span>Seguro de Tránsito:</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Incluido</span>
+            </div>
+          </div>
+          <div className="flex items-baseline justify-between pt-1">
+            <div>
+              <span className="font-sans font-bold text-gray-950 dark:text-white text-sm block">
+                Total Pagado
+              </span>
+              <span className="text-[10px] text-gray-400 font-mono">
+                Modalidad: {lastPlacedOrder.paymentMethod || "PayPhone Card Gateway"}
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white">
+                ${Number(lastPlacedOrder?.total || 0).toFixed(2)}
+              </span>
+              <span className="text-xs font-mono font-bold text-[#8c9276] ml-1">USD</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="space-y-1 text-center">
-        <div className="h-1.5 rounded-full bg-amber-500 animate-pulse" />
-        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 block truncate">
-          Atelier
-        </span>
-      </div>
-      <div className="space-y-1 text-center">
-        <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
-        <span className="text-[10px] font-medium text-gray-400 block truncate">
-          Inspección
-        </span>
-      </div>
-      <div className="space-y-1 text-center">
-        <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
-        <span className="text-[10px] font-medium text-gray-400 block truncate">
-          Despacho
-        </span>
-      </div>
-    </div>
-  </div>
 
-  {/* Double-Bezel Receipt Summary Card */}
-  <div className="w-full p-1.5 sm:p-2 rounded-[2rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.06] dark:ring-white/10">
-    <div className="rounded-[calc(2rem-0.375rem)] bg-white dark:bg-[#141416] border border-black/[0.06] dark:border-white/10 p-5 sm:p-6 shadow-xs text-left space-y-3.5">
-      <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
-        <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Número de Orden</span>
-        <span className="font-mono font-bold text-gray-950 dark:text-white text-sm">{lastPlacedOrder.id}</span>
-      </div>
-      <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
-        <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Estado Actual</span>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          Preparación en Atelier
-        </span>
-      </div>
-      <div className="space-y-1.5 pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
-        <div className="flex justify-between text-gray-500 dark:text-gray-400">
-          <span>Empaque de Colección:</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Cortesía</span>
-        </div>
-        <div className="flex justify-between text-gray-500 dark:text-gray-400">
-          <span>Seguro de Tránsito:</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Incluido</span>
-        </div>
-      </div>
-      <div className="flex items-baseline justify-between pt-1">
-        <div>
-          <span className="font-sans font-bold text-gray-950 dark:text-white text-sm block">
-            Total Pagado
-          </span>
-          <span className="text-[10px] text-gray-400 font-mono">
-            Modalidad: {lastPlacedOrder.paymentMethod || "PayPhone Card Gateway"}
-          </span>
-        </div>
-        <div className="text-right">
-          <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white">
-            ${Number(lastPlacedOrder?.total || 0).toFixed(2)}
-          </span>
-          <span className="text-xs font-mono font-bold text-[#8c9276] ml-1">USD</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {/* ======================================================================= */}
-  {/* QR CODE (@beui/tilt-card) & GOOGLE WALLET IN-PAGE POPUP */}
-  {/* ======================================================================= */}
-  <div className="w-full rounded-[2rem] p-6 sm:p-7 bg-gradient-to-br from-[#141417] via-[#1c1b20] to-[#111114] text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-left relative overflow-hidden">
-    <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
-    <div className="relative z-10 flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
-      {/* Scannable 3D Tilt Card QR Code (@beui/tilt-card) */}
-      <BeUITiltCard maxTilt={15} scaleOnHover={1.04} glareOpacity={0.32} className="shrink-0 rounded-2xl">
-        <button
-          type="button"
-          onClick={() => setWalletPopupPlatform("google")}
-          className="group/qr p-3.5 rounded-2xl bg-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] border border-white/30 flex flex-col items-center gap-1.5 cursor-pointer"
-          title="Abrir Pase Digital y Código QR en ventana interactiva"
-        >
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=6&data=${encodeURIComponent(
-              `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/api/wallet/pass?type=order&orderId=${encodeURIComponent(lastPlacedOrder.id)}&total=${encodeURIComponent(String(lastPlacedOrder.total || 0))}&status=${encodeURIComponent(lastPlacedOrder.status || "Procesando")}&customer=${encodeURIComponent(lastPlacedOrder.customerName || user?.name || "Cliente Lumina")}&date=${encodeURIComponent(lastPlacedOrder.date || "Reciente")}`
-            )}`}
-            alt={`QR Pase de Pedido ${lastPlacedOrder.id}`}
-            className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg object-contain select-none"
-          />
-          <span className="text-[9.5px] font-mono font-extrabold uppercase tracking-wider text-gray-900 flex items-center gap-1">
-            <QrCode className="w-3 h-3 text-[#8c9276]" />
-            Escanear o Ampliar
-          </span>
-        </button>
-      </BeUITiltCard>
-
-      {/* Wallet Pass Info & In-Page Popup Action Buttons */}
-      <div className="flex-1 space-y-3.5 text-center sm:text-left">
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-[10px] font-bold uppercase tracking-widest">
-            Pase Digital en Tiempo Real · Tilt Card 3D
-          </span>
-          <h4 className="font-display font-bold text-lg sm:text-xl text-white mt-1.5">
-            Guarda tu Pedido en tu Billetera
+      {/* Shipping Destination Card */}
+      <div className="p-4 sm:p-5 rounded-[1.75rem] bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/10 shadow-xs space-y-2.5 text-left">
+        <div className="flex items-center gap-2 pb-2 border-b border-black/[0.06] dark:border-white/10">
+          <MapPin className="w-4 h-4 text-[#8c9276]" />
+          <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-white">
+            Destino de Entrega Registrado
           </h4>
-          <p className="text-xs text-white/70 leading-relaxed mt-1">
-            Escanea el código QR 3D o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> aquí mismo. Recibirás actualizaciones automáticas cuando tu pedido pase a <span className="text-amber-300 font-semibold">Enviado</span> y <span className="text-emerald-300 font-semibold">Entregado</span>.
+        </div>
+        <div className="space-y-1 text-xs">
+          <p className="font-bold text-gray-900 dark:text-white">
+            {formatCleanName(lastPlacedOrder.customerName || lastPlacedOrder.recipient || user?.name || "Cliente Lumina")}
+          </p>
+          <p className="text-gray-600 dark:text-gray-300">
+            {lastPlacedOrder.shippingAddress?.street || address?.street || "Dirección confirmada"}
+            {(lastPlacedOrder.shippingAddress?.exteriorNumber || address?.exteriorNumber) ? ` #${lastPlacedOrder.shippingAddress?.exteriorNumber || address?.exteriorNumber}` : ""}
+            {(lastPlacedOrder.shippingAddress?.interiorNumber || address?.interiorNumber) ? ` (${lastPlacedOrder.shippingAddress?.interiorNumber || address?.interiorNumber})` : ""}
+          </p>
+          <p className="text-gray-400 dark:text-gray-500 text-[11px]">
+            {lastPlacedOrder.shippingAddress?.city || address?.city || "Ecuador"}{lastPlacedOrder.shippingAddress?.state || address?.state ? `, ${lastPlacedOrder.shippingAddress?.state || address?.state}` : ""} · {lastPlacedOrder.shippingAddress?.country || address?.country || "Ecuador"}
           </p>
         </div>
+      </div>
 
-        <div className="pt-1.5 flex justify-center sm:justify-start">
-          <GoogleWalletButton
-            onClick={() => setWalletPopupPlatform("google")}
-            topText="Agregar a"
-            className="w-full sm:w-auto"
-          />
+      {/* Purchased Items Mini-Gallery */}
+      {lastPlacedOrder.items && lastPlacedOrder.items.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-[1.75rem] bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/10 shadow-xs space-y-3 text-left">
+          <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-[#8c9276]" />
+              <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-white">
+                Piezas en Preparación ({lastPlacedOrder.items.length})
+              </h4>
+            </div>
+            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-500/20">
+              En Atelier
+            </span>
+          </div>
+          <div className="max-h-52 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
+            {lastPlacedOrder.items.map((item, idx) => (
+              <div key={`${item.id || idx}`} className="flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
+                    <Image 
+                      src={item.product?.imageUrl || (item.product?.images && item.product.images[0]) || "/placeholder.jpg"} 
+                      alt={item.product?.title || "Producto"} 
+                      fill 
+                      className="object-cover" 
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-[11.5px]">
+                      {item.isBundle ? (item.bundleName || "Pack Promocional") : item.product?.title}
+                    </p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                      Cant: {item.quantity} {item.color ? `· ${item.color}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <span className="font-mono font-bold text-gray-900 dark:text-white shrink-0 text-xs">
+                  ${((item.bundleCustomPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Right Column (5 cols, sticky on lg): 3D Tilt QR Code + Google Wallet + Action Buttons */}
+    <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-4">
+      {/* Scannable 3D Tilt Card QR Code (@beui/tilt-card) & Google Wallet */}
+      <div className="w-full rounded-[2rem] p-5 sm:p-6 bg-gradient-to-br from-[#141417] via-[#1c1b20] to-[#111114] text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-left relative overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row lg:flex-col items-center gap-4 sm:gap-5 text-center lg:text-left">
+          {/* 3D Tilt Card QR */}
+          <BeUITiltCard maxTilt={15} scaleOnHover={1.04} glareOpacity={0.32} className="shrink-0 rounded-2xl mx-auto">
+            <button
+              type="button"
+              onClick={() => setWalletPopupPlatform("google")}
+              className="group/qr p-3 rounded-2xl bg-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] border border-white/30 flex flex-col items-center gap-1.5 cursor-pointer"
+              title="Abrir Pase Digital y Código QR en ventana interactiva"
+            >
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=6&data=${encodeURIComponent(
+                  `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/api/wallet/pass?type=order&orderId=${encodeURIComponent(lastPlacedOrder.id)}&total=${encodeURIComponent(String(lastPlacedOrder.total || 0))}&status=${encodeURIComponent(lastPlacedOrder.status || "Procesando")}&customer=${encodeURIComponent(lastPlacedOrder.customerName || user?.name || "Cliente Lumina")}&date=${encodeURIComponent(lastPlacedOrder.date || "Reciente")}`
+                )}`}
+                alt={`QR Pase de Pedido ${lastPlacedOrder.id}`}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg object-contain select-none"
+              />
+              <span className="text-[9px] font-mono font-extrabold uppercase tracking-wider text-gray-900 flex items-center gap-1">
+                <QrCode className="w-3 h-3 text-[#8c9276]" />
+                Escanear o Ampliar
+              </span>
+            </button>
+          </BeUITiltCard>
+
+          {/* Wallet Pass Details */}
+          <div className="flex-1 space-y-2.5 text-center lg:text-left">
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-[9.5px] font-bold uppercase tracking-widest">
+                Pase Digital en Tiempo Real
+              </span>
+              <h4 className="font-display font-bold text-base sm:text-lg text-white mt-1">
+                Guarda tu Pedido en tu Billetera
+              </h4>
+              <p className="text-[11.5px] text-white/70 leading-relaxed mt-0.5">
+                Escanea el QR o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> para recibir actualizaciones en tiempo real.
+              </p>
+            </div>
+
+            <div className="pt-1 flex justify-center lg:justify-start">
+              <GoogleWalletButton
+                onClick={() => setWalletPopupPlatform("google")}
+                topText="Agregar a"
+                className="w-full sm:w-auto"
+              />
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Action Buttons */}
+      <div className="w-full space-y-2.5 pt-1">
+        <button 
+          onClick={() => {
+            setIsOpen(false);
+            router.push("/profile");
+          }}
+          className="group w-full h-13 sm:h-14 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] font-bold text-xs sm:text-sm flex items-center justify-between px-5 shadow-[0_10px_28px_rgba(0,0,0,0.18)] hover:opacity-95 transition-all cursor-pointer"
+        >
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-[#18181b]" />
+          </div>
+          <span>Ver Pedido en mi Perfil</span>
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+          </div>
+        </button>
+
+        <button 
+          onClick={() => {
+            setIsOpen(false);
+            setStep("bag");
+          }}
+          className="w-full py-3 sm:py-3.5 px-6 rounded-full bg-black/[0.04] dark:bg-white/5 hover:bg-black/[0.07] dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 text-xs sm:text-sm font-bold transition-all cursor-pointer"
+        >
+          Seguir Explorando Colecciones
+        </button>
+      </div>
+
     </div>
+
   </div>
 
   {/* In-Page Wallet Pass Popup Modal (No external tab!) */}
@@ -3140,35 +3330,6 @@ export function CartDrawer() {
     date={lastPlacedOrder.date}
     initialPlatform="google"
   />
-
-  {/* Action Buttons with 2IXO Capsule Design */}
-  <div className="w-full space-y-3 pt-2">
-    <button 
-      onClick={() => {
-        setIsOpen(false);
-        router.push("/profile");
-      }}
-      className="group w-full h-14 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] font-bold text-sm flex items-center justify-between px-5 shadow-[0_10px_28px_rgba(0,0,0,0.18)] hover:opacity-95 transition-all cursor-pointer"
-    >
-      <div className="w-8 h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center">
-        <Sparkles className="w-4 h-4 text-white dark:text-[#18181b]" />
-      </div>
-      <span>Ver Pedido en mi Perfil</span>
-      <div className="w-8 h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-        <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-      </div>
-    </button>
-
-    <button 
-      onClick={() => {
-        setIsOpen(false);
-        setStep("bag");
-      }}
-      className="w-full py-3.5 px-6 rounded-full bg-black/[0.04] dark:bg-white/5 hover:bg-black/[0.07] dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 text-xs sm:text-sm font-bold transition-all cursor-pointer"
-    >
-      Seguir Explorando Colecciones
-    </button>
-  </div>
 
   </div>
   )}
