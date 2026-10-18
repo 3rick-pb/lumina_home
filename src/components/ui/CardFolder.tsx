@@ -253,7 +253,7 @@ export function CardFolder({
     onClick?.();
   };
 
-  const { requestCardUnlock } = useDeviceUnlock();
+  const { isUnlocking, requestCardUnlock } = useDeviceUnlock();
 
   const handleReveal = useCallback(() => {
     if (!detailsControlled) setInternalDetailsVisible(true);
@@ -380,11 +380,13 @@ export function CardFolder({
             <motion.button
               key="card-details-visibility"
               type="button"
-              disabled={disabled}
+              disabled={disabled || isUnlocking}
               tabIndex={isOpen ? -1 : undefined}
               aria-label={
                 areDetailsVisible
                   ? "Ocultar detalles de tarjeta"
+                  : isUnlocking
+                  ? "Verificando identidad..."
                   : "Mostrar detalles de tarjeta"
               }
               aria-pressed={areDetailsVisible}
@@ -394,11 +396,12 @@ export function CardFolder({
               className={cn(
                 "z-30 flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400 outline-none transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#8c9276] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
                 isOpen ? "pointer-events-none" : "pointer-events-auto",
+                isUnlocking && "animate-pulse text-[#8c9276] dark:text-[#a3aa8c] bg-[#8c9276]/10 dark:bg-white/10"
               )}
             >
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.span
-                  key={areDetailsVisible ? "hide" : "show"}
+                  key={isUnlocking ? "unlocking" : areDetailsVisible ? "hide" : "show"}
                   initial={
                     reduce
                       ? { opacity: 0 }
@@ -415,12 +418,15 @@ export function CardFolder({
                       ? { duration: 0.12 }
                       : { type: "spring", duration: 0.3, bounce: 0 }
                   }
-                  className="flex items-center justify-center"
+                  className={cn("flex items-center justify-center", isUnlocking && "animate-pulse")}
                 >
                   {areDetailsVisible ? (
                     <EyeOff className="size-4" aria-hidden="true" />
                   ) : (
-                    <Eye className="size-4" aria-hidden="true" />
+                    <Eye
+                      className={cn("size-4 transition-all duration-300", isUnlocking && "scale-105 opacity-80")}
+                      aria-hidden="true"
+                    />
                   )}
                 </motion.span>
               </AnimatePresence>
@@ -468,9 +474,15 @@ export function CardFolder({
               glyphClassName={
                 areDetailsVisible
                   ? "text-neutral-900 dark:text-neutral-100"
-                  : "text-neutral-500 dark:text-neutral-400"
+                  : cn(
+                      "text-neutral-500 dark:text-neutral-400 transition-all duration-300",
+                      isUnlocking && "animate-pulse opacity-60 text-[#8c9276] dark:text-[#a3aa8c]"
+                    )
               }
-              suffixClassName="text-neutral-900 dark:text-neutral-100 font-bold"
+              suffixClassName={cn(
+                "text-neutral-900 dark:text-neutral-100 font-bold transition-all duration-300",
+                isUnlocking && "animate-pulse opacity-75"
+              )}
               className="truncate font-mono text-[11px] sm:text-xs tracking-[0.06em] tabular-nums"
             />
           </span>

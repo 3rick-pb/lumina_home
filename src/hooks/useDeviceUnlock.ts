@@ -75,8 +75,8 @@ export async function unlockWithDevice(): Promise<boolean> {
         },
         user: {
           id: userId,
-          name: "Verificacion de Seguridad",
-          displayName: "Titular de Tarjeta",
+          name: "Lumina Home • Bóveda",
+          displayName: "Autorizar visualización de tarjeta",
         },
         pubKeyCredParams: [
           { alg: -7, type: "public-key" },   // ES256
@@ -106,7 +106,7 @@ export async function unlockWithDevice(): Promise<boolean> {
 }
 
 export function useDeviceUnlock() {
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoLockTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
@@ -144,7 +144,7 @@ export function useDeviceUnlock() {
 
       // 2. Invocar desbloqueo nativo del sistema operativo
       try {
-        setIsAuthenticating(true);
+        setIsUnlocking(true);
         setError(null);
 
         const unlocked = await unlockWithDevice();
@@ -156,14 +156,15 @@ export function useDeviceUnlock() {
         const msg = err instanceof Error ? err.message : "Error al desbloquear el dispositivo.";
         setError(msg);
       } finally {
-        setIsAuthenticating(false);
+        setIsUnlocking(false);
       }
     },
     []
   );
 
   return {
-    isAuthenticating,
+    isUnlocking,
+    isAuthenticating: isUnlocking,
     error,
     requestCardUnlock,
     autoLockTimersRef,
