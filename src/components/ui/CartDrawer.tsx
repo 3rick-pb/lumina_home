@@ -2470,103 +2470,135 @@ export function CartDrawer() {
             (() => {
               const activeCard =
                 cards.find((c) => c.id === selectedSavedCardId) || cards[0] || null;
-              const nonActiveCards = cards.filter((c) => c.id !== activeCard?.id);
-              // Order cards: activeCard at the end so it renders at the front of the stack (depthFromFront = 0)
-              const orderedCards = activeCard ? [...nonActiveCards, activeCard] : cards;
+
+              // Format price parts for exact typography: "$ 4,018.00"
+              const [intPart, decPart] = finalTotal.toFixed(2).split(".");
+              const formattedInt = Number(intPart).toLocaleString("en-US");
+
+              // Base cards matching the 3 cards from the reference image
+              const baseSpecimens = [
+                {
+                  id: "specimen-obsidian",
+                  number: activeCard?.number || "•••• •••• •••• 4242",
+                  holder: activeCard?.holder || (user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA"),
+                  exp: activeCard?.exp || "12/28",
+                  type: activeCard?.type || ("visa" as const),
+                  design: "obsidian" as const,
+                },
+                {
+                  id: "specimen-holo",
+                  number: "•••• •••• •••• 4916",
+                  holder: user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA",
+                  exp: "08/29",
+                  type: "visa" as const,
+                  design: "holographic" as const,
+                },
+                {
+                  id: "specimen-navy",
+                  number: "•••• •••• •••• 8821",
+                  holder: user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA",
+                  exp: "04/30",
+                  type: "visa" as const,
+                  design: "navy" as const,
+                },
+              ];
+
+              // Always ensure a full deck matching the image
+              const effectiveCards = cards && cards.length >= 3
+                ? cards.map((c, i) => ({
+                    ...c,
+                    design: i === 0 ? ("obsidian" as const) : i === 1 ? ("holographic" as const) : ("navy" as const),
+                  }))
+                : cards && cards.length > 0
+                ? [
+                    ...cards.map((c, i) => ({
+                      ...c,
+                      design: i === 0 ? ("obsidian" as const) : ("holographic" as const),
+                    })),
+                    ...baseSpecimens.slice(cards.length),
+                  ]
+                : baseSpecimens;
+
+              const activeEffective = effectiveCards.find((c) => c.id === activeCard?.id) || effectiveCards[0];
+              const nonActiveCards = effectiveCards.filter((c) => c.id !== activeEffective.id);
+              // Active card at the end of orderedCards -> depthFromFront = 0 (renders at front)
+              const orderedCards = [...nonActiveCards, activeEffective];
 
               return (
                 <>
-                  {/* LUXURY INTERACTIVE DIGITAL WALLET WITH "TOTAL A PAGAR" */}
+                  {/* WALLET FRAME MATCHING REFERENCE IMAGE */}
                   <div
-                    className={`relative w-full max-w-[420px] mx-auto select-none transition-all duration-300 ease-out ${
-                      isMiniWalletOpen ? "pt-36 sm:pt-40 pb-2" : "pt-8 sm:pt-10 pb-2"
+                    className={`relative w-full max-w-[390px] mx-auto select-none rounded-[2.5rem] bg-[#222224] border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.4)] p-4 sm:p-5 pt-3.5 overflow-hidden transition-all duration-400 ease-out ${
+                      isMiniWalletOpen ? "pb-4" : "pb-4"
                     }`}
                   >
-                    {/* Background Base of Wallet Pocket with bottom-only rounded clipPath */}
+                    {/* Top Header: "Wallet" (centered as in reference image) */}
+                    <div className="flex items-center justify-between w-full px-1 mb-2 relative z-20">
+                      <div className="w-12" />
+                      <span className="text-xs sm:text-[13px] font-medium text-white/40 tracking-wide text-center">
+                        Wallet
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nextState = !isMiniWalletOpen;
+                          playEnvelopeSound(nextState ? "open" : "close");
+                          setIsMiniWalletOpen(nextState);
+                          setHoveredCardId(null);
+                        }}
+                        className="text-[10px] font-sans font-semibold text-white/50 hover:text-white px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
+                      >
+                        {isMiniWalletOpen ? "Cerrar ✕" : "Ver ▾"}
+                      </button>
+                    </div>
+
+                    {/* Cards Deck Stage */}
                     <div
-                      onClick={() => {
-                        const nextState = !isMiniWalletOpen;
-                        playEnvelopeSound(nextState ? "open" : "close");
-                        setIsMiniWalletOpen(nextState);
-                        setHoveredCardId(null);
-                      }}
-                      className="relative w-full h-[180px] rounded-[1.75rem] bg-gradient-to-b from-[#14151b] via-[#0f1015] to-[#08080c] border border-amber-500/20 shadow-[0_18px_40px_-6px_rgba(0,0,0,0.55),0_6px_18px_-2px_rgba(0,0,0,0.35)] overflow-visible cursor-pointer ring-1 ring-white/10"
-                      style={{
-                        clipPath: "inset(-500px -16px 0px -16px round 0px 0px 1.75rem 1.75rem)",
-                      }}
+                      className={`relative w-full transition-all duration-400 ease-out ${
+                        isMiniWalletOpen ? "pt-36 sm:pt-40" : "pt-12 sm:pt-14"
+                      }`}
                     >
-                      {/* Inner Shadow & Bespoke Leather Texture Depth */}
-                      <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.08),transparent_70%)] pointer-events-none" />
-                      <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.03),transparent_60%)] pointer-events-none" />
+                      {/* Subtle White Card Peek on Far Right (just like in reference image) */}
+                      {!isMiniWalletOpen && (
+                        <div
+                          className="absolute right-[3%] top-2 w-[80%] h-[120px] rounded-2xl bg-gradient-to-tr from-[#e2e8f0] to-[#ffffff] border border-white/80 shadow-md rotate-[6deg] pointer-events-none opacity-85 transition-opacity duration-300"
+                          style={{ zIndex: 12 }}
+                        />
+                      )}
 
-                      {/* Layered Cards Fanning Upwards Outside the Wallet */}
+                      {/* Stacked Cards */}
                       {orderedCards.map((card, idx) => {
-                        let theme = {
-                          bg: "bg-gradient-to-tr from-[#0a0a0d] via-[#15161f] to-[#232533]",
-                          text: "text-white",
-                          border: "border-amber-400/40 ring-1 ring-amber-400/20",
-                          shadow: "shadow-[0_14px_32px_rgba(0,0,0,0.5)]",
-                          logoColor: "#FFFFFF",
-                          accentColor: "text-amber-300",
-                          name: "OBSIDIAN NOIR",
-                        };
-
-                        if (card.number.includes("4916")) {
-                          theme = {
-                            bg: "bg-gradient-to-tr from-[#1a202c] via-[#2d3748] to-[#4a5568]",
-                            text: "text-slate-100",
-                            border: "border-slate-300/45 ring-1 ring-white/20",
-                            shadow: "shadow-[0_14px_32px_rgba(0,0,0,0.4)]",
-                            logoColor: "#F8FAFC",
-                            accentColor: "text-slate-200",
-                            name: "TITANIUM ELITE",
-                          };
-                        } else if (card.number.includes("0019") || idx % 3 === 1) {
-                          theme = {
-                            bg: "bg-gradient-to-tr from-[#021b14] via-[#093e2d] to-[#125e44]",
-                            text: "text-emerald-50",
-                            border: "border-emerald-400/40 ring-1 ring-emerald-400/25",
-                            shadow: "shadow-[0_14px_32px_rgba(2,27,20,0.5)]",
-                            logoColor: "#FFFFFF",
-                            accentColor: "text-emerald-300",
-                            name: "EMERALD RESERVE",
-                          };
-                        } else if (idx % 3 === 2) {
-                          theme = {
-                            bg: "bg-gradient-to-tr from-[#091124] via-[#102347] to-[#1c3c78]",
-                            text: "text-blue-50",
-                            border: "border-sky-400/40 ring-1 ring-sky-400/25",
-                            shadow: "shadow-[0_14px_32px_rgba(9,17,36,0.5)]",
-                            logoColor: "#FFFFFF",
-                            accentColor: "text-sky-300",
-                            name: "ROYAL SAPPHIRE",
-                          };
-                        }
-
-                        const isSelected = activeCard ? card.id === activeCard.id : false;
-                        const isCardHovered = isMiniWalletOpen && hoveredCardId === card.id;
-
-                        // Total cards and depth calculation:
-                        // activeCard is last in orderedCards, so depthFromFront = 0
                         const totalCards = orderedCards.length;
                         const depthFromFront = totalCards - 1 - idx;
+                        const isSelected = activeEffective ? card.id === activeEffective.id : false;
+                        const isCardHovered = isMiniWalletOpen && hoveredCardId === card.id;
 
-                        // Closed state: neatly nested inside pocket
-                        const closedY = 8 - depthFromFront * 6;
-                        const closedScale = 1 - depthFromFront * 0.03;
-                        const closedOpacity = 1 - depthFromFront * 0.14;
+                        // CLOSED POSITIONS: Exact tilts and peek offsets from the image
+                        // depth 2 (Back card, navy gold): tilted right 3.8deg
+                        // depth 1 (Middle card, holo silver): tilted left -2.2deg
+                        // depth 0 (Front card, obsidian noir): straight 0deg
+                        const closedY = depthFromFront === 0 ? 0 : depthFromFront === 1 ? -12 : -22;
+                        const closedRotate = depthFromFront === 0 ? 0 : depthFromFront === 1 ? -2.2 : 3.8;
+                        const closedX = depthFromFront === 0 ? 0 : depthFromFront === 1 ? -5 : 6;
+                        const closedScale = 1 - depthFromFront * 0.015;
 
-                        // Open state: cards fan OUT of the wallet with generous clearance
-                        // Active card stays at y = 0, while cards behind fan upwards by 48px each
-                        const openY = -depthFromFront * 48;
+                        // OPEN POSITIONS: Fanning UPWARDS OUT OF THE POCKET
+                        const openY = -depthFromFront * 54;
+                        const openRotate = 0;
+                        const openX = 0;
                         const openScale = 1;
-                        const openOpacity = 1;
 
-                        // Z-Index: active card has highest base z-index (25); hovered card lifts to 35
-                        const baseZ = 25 - depthFromFront * 2;
+                        const baseZ = 20 - depthFromFront * 2;
                         const targetZ = isCardHovered ? 35 : baseZ;
                         const targetY = isCardHovered ? openY - 12 : (isMiniWalletOpen ? openY : closedY);
-                        const targetScale = isCardHovered ? 1.02 : (isMiniWalletOpen ? openScale : closedScale);
+                        const targetRotate = isMiniWalletOpen ? openRotate : closedRotate;
+                        const targetX = isMiniWalletOpen ? openX : closedX;
+                        const targetScale = isCardHovered ? 1.025 : (isMiniWalletOpen ? openScale : closedScale);
+
+                        // Visual Card Styles
+                        const isHolo = card.design === "holographic" || card.number.includes("4916");
+                        const isNavy = card.design === "navy" || idx === 0;
 
                         return (
                           <motion.div
@@ -2586,173 +2618,160 @@ export function CartDrawer() {
                             initial={false}
                             animate={{
                               y: targetY,
+                              x: targetX,
+                              rotate: targetRotate,
                               scale: targetScale,
-                              opacity: isMiniWalletOpen ? openOpacity : closedOpacity,
                               zIndex: targetZ,
                             }}
                             transition={{
                               type: "spring",
-                              stiffness: 350,
-                              damping: 28,
+                              stiffness: 340,
+                              damping: 26,
                               mass: 0.7,
                             }}
                             style={{ transformStyle: "preserve-3d" }}
-                            className={`absolute left-[4%] w-[92%] h-[126px] sm:h-[132px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all duration-200 overflow-hidden ${
+                            className={`absolute inset-x-1.5 h-[126px] sm:h-[132px] rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between cursor-pointer select-none transition-all duration-200 overflow-hidden ${
+                              isHolo
+                                ? "border border-slate-300/70 shadow-[0_12px_28px_rgba(0,0,0,0.35)] text-slate-900"
+                                : isNavy
+                                ? "bg-gradient-to-tr from-[#0a0f1d] via-[#121c33] to-[#1c2e56] border-t-2 border-t-amber-300/85 border-x border-b border-sky-400/30 shadow-[0_14px_32px_rgba(0,0,0,0.5)] text-white"
+                                : "bg-gradient-to-tr from-[#131315] via-[#1a1a1d] to-[#242429] border border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.55)] text-white"
+                            } ${
                               isCardHovered
-                                ? "border-amber-300 ring-2 ring-amber-400/80 shadow-[0_0_24px_rgba(245,158,11,0.45),0_12px_28px_rgba(0,0,0,0.5)] brightness-[1.06]"
-                                : isSelected && isMiniWalletOpen
-                                ? "border-amber-400/80 ring-1 ring-amber-400/60 shadow-[0_0_18px_rgba(245,158,11,0.25)]"
-                                : `${theme.border}`
+                                ? "ring-2 ring-amber-400/80 brightness-[1.06] shadow-[0_0_24px_rgba(245,158,11,0.4)]"
+                                : ""
                             }`}
                           >
-                            {/* Iridescent luxury glint reflection */}
+                            {/* Holographic Prismatic Rainbow Gradient Layer (Card 2) */}
+                            {isHolo && (
+                              <div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{
+                                  background:
+                                    "linear-gradient(108deg, #cfd3dc 15%, #fde047 38%, #38bdf8 52%, #c084fc 68%, #e2e8f0 85%)",
+                                }}
+                              />
+                            )}
+
+                            {/* Specular gloss glint */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                            <div
-                              className={`absolute inset-[1px] rounded-[15px] border pointer-events-none transition-colors duration-200 ${
-                                isCardHovered ? "border-amber-300/50" : "border-white/15"
-                              }`}
-                            />
 
-                            {/* Top rim specular highlight on hover */}
-                            <div
-                              className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300 to-transparent transition-opacity duration-200 pointer-events-none ${
-                                isCardHovered ? "opacity-100" : "opacity-0"
-                              }`}
-                            />
-
-                            {/* Card Top Row: Network & Status */}
+                            {/* Card Top Row: VISA wordmark logo (authentic italic bold from image) */}
                             <div className="flex items-center justify-between relative z-10">
+                              <span
+                                className={`font-['Arial',sans-serif] font-black italic text-xl sm:text-2xl tracking-wider select-none ${
+                                  isHolo ? "text-[#1a1a1d]" : "text-white"
+                                }`}
+                              >
+                                VISA
+                              </span>
+
                               <div className="flex items-center gap-2">
-                                <span className={`font-mono text-[10px] font-bold tracking-[0.18em] uppercase ${theme.accentColor}`}>
-                                  {theme.name}
-                                </span>
-                                {isSelected && (
-                                  <span className="flex items-center gap-1 text-[9px] font-sans font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 shadow-xs">
+                                {isSelected && isMiniWalletOpen && (
+                                  <span className="flex items-center gap-1 text-[9px] font-sans font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/40">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                     Activa
                                   </span>
                                 )}
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <ContactlessIcon className="w-3.5 h-3.5 opacity-70" />
-                                {card.type === "visa" ? (
-                                  <VisaLogo className="h-3.5 sm:h-4 w-auto object-contain" fill={theme.logoColor} />
-                                ) : (
-                                  <MastercardLogo className="h-4 sm:h-[18px] w-auto object-contain" />
-                                )}
+                                <ContactlessIcon
+                                  className={`w-3.5 h-3.5 ${isHolo ? "opacity-60 text-slate-800" : "opacity-70 text-white"}`}
+                                />
                               </div>
                             </div>
 
-                            {/* Card Number */}
+                            {/* Card Number (revealed when open) */}
                             <div className="relative z-10 my-auto">
-                              <p className="font-mono font-bold text-sm sm:text-base tracking-[0.22em] drop-shadow-sm opacity-95">
+                              <p
+                                className={`font-mono font-bold text-sm sm:text-base tracking-[0.22em] drop-shadow-sm transition-opacity duration-200 ${
+                                  isHolo ? "text-slate-900" : "text-white/95"
+                                } ${isMiniWalletOpen ? "opacity-100" : "opacity-0 sm:opacity-20"}`}
+                              >
                                 {card.number}
                               </p>
                             </div>
 
-                            {/* Card Bottom Row: Chip & Holder */}
-                            <div className="flex items-end justify-between relative z-10 pt-1.5 border-t border-white/15 text-[9.5px]">
-                              <div className="flex items-center gap-2.5">
-                                <div className="scale-80 origin-left">
+                            {/* Card Bottom Row: Chip & Holder (revealed when open) */}
+                            <div
+                              className={`flex items-end justify-between relative z-10 pt-1.5 border-t text-[9.5px] transition-opacity duration-200 ${
+                                isHolo ? "border-slate-800/15" : "border-white/15"
+                              } ${isMiniWalletOpen ? "opacity-100" : "opacity-0"}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="scale-75 origin-left">
                                   <EmvChip />
                                 </div>
-                                <span className="font-mono font-bold uppercase truncate max-w-[150px] opacity-90 tracking-wider">
+                                <span className="font-mono font-bold uppercase truncate max-w-[150px] tracking-wider">
                                   {card.holder}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 font-mono font-bold opacity-85">
-                                <span className="text-[8px] opacity-60 uppercase font-sans">Exp</span>
-                                <span>{card.exp}</span>
-                              </div>
+                              <span className="font-mono font-bold opacity-85">
+                                {card.exp}
+                              </span>
                             </div>
                           </motion.div>
                         );
                       })}
 
-                      {/* Front Flap Overlay of Digital Wallet with "Total a Pagar" */}
+                      {/* FRONT LEATHER POCKET WITH STITCHED BORDER & "TOTAL A PAGAR" */}
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={() => {
                           const nextState = !isMiniWalletOpen;
                           playEnvelopeSound(nextState ? "open" : "close");
                           setIsMiniWalletOpen(nextState);
                           setHoveredCardId(null);
                         }}
-                        className="absolute bottom-0 inset-x-0 h-[132px] rounded-b-[1.75rem] rounded-t-2xl bg-gradient-to-b from-[#15171e]/98 via-[#101116]/98 to-[#090a0d] border-t border-amber-400/35 border-x border-b border-white/10 shadow-[0_-6px_24px_-2px_rgba(0,0,0,0.4),0_12px_28px_rgba(0,0,0,0.5)] backdrop-blur-xl p-3.5 sm:p-4 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-amber-400/50 active:scale-[0.995]"
+                        className="relative w-full h-[155px] sm:h-[165px] rounded-[1.85rem] bg-gradient-to-b from-[#18181b] via-[#201416] to-[#3a1416] p-4 flex flex-col justify-center items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.22),inset_0_-2px_6px_rgba(0,0,0,0.5),0_12px_32px_rgba(0,0,0,0.5)] overflow-hidden cursor-pointer z-30 transition-all hover:brightness-[1.03] active:scale-[0.99]"
                       >
-                        {/* Top Pocket Arc Lip & Specular Highlight */}
-                        <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-300 to-transparent opacity-80" />
-                        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-9 h-1 rounded-full bg-amber-400/25" />
+                        {/* Crimson / Cherry Ambient Light Glow at Bottom */}
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(220,38,38,0.55),rgba(153,27,27,0.25)_45%,transparent_75%)] pointer-events-none" />
 
-                        {/* Wallet Header Bar */}
-                        <div className="flex items-center justify-between pt-0.5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-md bg-amber-500/15 text-amber-300 flex items-center justify-center border border-amber-400/30">
-                              <CreditCard className="w-3 h-3" />
-                            </div>
-                            <span className="font-mono text-[10px] font-bold text-amber-100 tracking-[0.2em] uppercase">
-                              BILLETERA DIGITAL
-                            </span>
-                          </div>
-                          <span className="font-sans text-[10px] font-semibold text-amber-200/95 bg-amber-950/70 hover:bg-amber-900/60 px-2.5 py-0.5 rounded-full border border-amber-500/40 shadow-xs flex items-center gap-1 transition-all">
-                            {isMiniWalletOpen ? (
-                              <>
-                                <ChevronUp className="w-3 h-3 text-amber-300" />
-                                Cerrar billetera
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="w-3 h-3 text-amber-300" />
-                                Ver tarjetas ({cards.length})
-                              </>
-                            )}
+                        {/* Authentic Leather Stitched Perimeter Border */}
+                        <svg
+                          className="absolute inset-0 w-full h-full pointer-events-none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <rect
+                            x="6"
+                            y="6"
+                            width="calc(100% - 12px)"
+                            height="calc(100% - 12px)"
+                            rx="24"
+                            fill="none"
+                            stroke="rgba(255, 255, 255, 0.28)"
+                            strokeWidth="1.2"
+                            strokeDasharray="5 4"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+
+                        {/* Top Label: "Total a Pagar" */}
+                        <p className="text-center text-xs sm:text-[13px] font-medium text-white/50 tracking-wide mb-1 relative z-10 select-none">
+                          Total a Pagar
+                        </p>
+
+                        {/* Large Formatted Amount: "$ 4,018.00" */}
+                        <div className="flex items-baseline justify-center relative z-10 select-none">
+                          <span className="font-sans font-bold text-3xl sm:text-[36px] text-white tracking-tight mr-1.5">
+                            $
+                          </span>
+                          <span className="font-sans font-bold text-3xl sm:text-[36px] text-white tracking-tight">
+                            {formattedInt}
+                          </span>
+                          <span className="font-sans font-semibold text-2xl sm:text-[28px] text-white/60">
+                            .{decPart}
                           </span>
                         </div>
 
-                        {/* Central "Total a Pagar" Display (Replacing "Total balance") */}
-                        <div className="py-0.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-[9.5px] font-bold tracking-[0.24em] text-amber-300/85 uppercase">
-                              TOTAL A PAGAR
-                            </span>
-                            {isMiniWalletOpen ? (
-                              <span className="text-[10px] font-sans font-medium text-amber-200/70 animate-pulse">
-                                Toca para elegir
-                              </span>
-                            ) : null}
-                          </div>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className="font-sans font-black text-2xl sm:text-[28px] text-white tracking-tight drop-shadow-sm">
-                              ${finalTotal.toFixed(2)}
-                            </span>
-                            <span className="font-mono font-bold text-xs text-amber-300/75 tracking-wider">
-                              USD
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Active Card Indicator on Front Flap */}
-                        <div className="flex items-center justify-between text-xs text-slate-300 pt-2 border-t border-white/10">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="font-sans text-[10.5px] font-medium text-gray-300">
-                              Tarjeta activa:
-                            </span>
-                            <span className="font-mono text-[11px] font-bold text-white tracking-wider">
-                              •••• {activeCard?.number ? activeCard.number.slice(-4) : ""}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {activeCard?.type === "visa" ? (
-                              <VisaLogo className="h-3 w-auto object-contain" fill="#FFFFFF" />
-                            ) : (
-                              <MastercardLogo className="h-3.5 w-auto object-contain" />
-                            )}
-                            <span className="text-[9.5px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                              Seleccionada
-                            </span>
-                          </div>
+                        {/* Micro Status Cue */}
+                        <div className="flex items-center gap-1.5 text-[10.5px] text-white/40 mt-2.5 relative z-10 select-none">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="font-mono text-white/80 font-bold">
+                            •••• {activeEffective?.number ? activeEffective.number.slice(-4) : "4242"}
+                          </span>
+                          <span>·</span>
+                          <span className="text-white/60 hover:text-white transition-colors">
+                            {isMiniWalletOpen ? "Toca para guardar" : "Toca para desplegar"}
+                          </span>
                         </div>
                       </div>
                     </div>
