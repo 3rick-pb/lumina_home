@@ -40,8 +40,7 @@ import {
   User,
   Phone,
   QrCode,
-  Lock,
-  FileText
+  Lock
 } from "lucide-react";
 import { playEnvelopeSound } from "./CardFolder";
 import { useCartStore } from "@/lib/store";
@@ -254,11 +253,6 @@ export function CartDrawer() {
   const [, setIsBoxScriptLoaded] = useState(false);
   const [, setIsBoxRendered] = useState(false);
 
-  // PayPhone Simulation Modal (Modo Preparación / RUC en trámite)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [payphoneSimData, setPayphoneSimData] = useState<any>(null);
-  const [isPayPhoneSimOpen, setIsPayPhoneSimOpen] = useState(false);
-  const [isSimulatingApproval, setIsSimulatingApproval] = useState(false);
   const [payphoneError, setPayphoneError] = useState<string | null>(null);
 
   // PayPhone Embedded Form Interactive State (Official In-Page Checkout Presentation)
@@ -836,27 +830,92 @@ export function CartDrawer() {
       });
 
       const data = await res.json();
-      setIsProcessing(false);
 
       if (!res.ok || !data.success) {
+        setIsProcessing(false);
         setPayphoneError(data.error || "No se pudo preparar la pasarela de pagos de PayPhone.");
         return;
       }
 
       if (data.isSimulated) {
-        // Open interactive test simulator modal (RUC pending)
-        setPayphoneSimData({
-          paymentId: data.paymentId,
-          clientTransactionId: data.clientTransactionId,
-          orderId,
-          total: data.verifiedTotal || finalTotal,
-          shippingAddr,
-          customerEmail,
-          customerName,
-          recipientName,
-          items: [...items]
-        });
-        setIsPayPhoneSimOpen(true);
+        // Direct order confirmation without intermediate modal
+        try {
+          const confirmRes = await fetch("/api/payphone/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: data.paymentId,
+              clientTxId: data.clientTransactionId,
+              orderData: {
+                orderId,
+                total: data.verifiedTotal || finalTotal,
+                items: [...items],
+                customerName,
+                customerEmail,
+                recipient: recipientName,
+                customerIdNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
+                customerPhone: shippingAddr?.phone || addrPhone.trim() || undefined,
+                paymentMethod: selectedPayMethod === "card"
+                  ? `Tarjeta ${detectedCardBrand.toUpperCase()} •••• ${cardNumber.replace(/\D/g, "").slice(-4) || "4242"}`
+                  : `PayPhone (+593 ${payphoneAppPhone ? `0${payphoneAppPhone.replace(/\D/g, "").slice(-9)}` : "Celular"})`,
+                shippingAddress: shippingAddr ? {
+                  recipient: recipientName,
+                  idNumber: shippingAddr.idNumber,
+                  phone: shippingAddr.phone,
+                  email: customerEmail,
+                  street: shippingAddr.street,
+                  exteriorNumber: shippingAddr.exteriorNumber,
+                  neighborhood: shippingAddr.neighborhood,
+                  interiorNumber: shippingAddr.interiorNumber,
+                  crossStreets: shippingAddr.crossStreets,
+                  addressType: shippingAddr.addressType,
+                  deliveryInstructions: shippingAddr.deliveryInstructions,
+                  hasElevator: shippingAddr.hasElevator,
+                  floorLevel: shippingAddr.floorLevel,
+                  label: shippingAddr.label,
+                  city: shippingAddr.city,
+                  state: shippingAddr.state,
+                  postalCode: shippingAddr.postalCode,
+                  country: shippingAddr.country
+                } : (addrStreet ? {
+                  recipient: recipientName,
+                  idNumber: addrIdNumber.trim() || undefined,
+                  phone: addrPhone.trim() || undefined,
+                  email: customerEmail,
+                  street: addrStreet,
+                  exteriorNumber: addrExteriorNumber.trim() || undefined,
+                  neighborhood: addrNeighborhood.trim() || undefined,
+                  interiorNumber: addrInteriorNumber.trim() || undefined,
+                  crossStreets: addrCrossStreets.trim() || undefined,
+                  addressType: addrAddressType,
+                  deliveryInstructions: addrDeliveryInstructions.trim() || undefined,
+                  hasElevator: addrHasElevator,
+                  floorLevel: addrFloorLevel.trim() || undefined,
+                  label: addrLabel.trim() || undefined,
+                  city: addrCity,
+                  state: addrState,
+                  postalCode: addrPostal,
+                  country: addrCountry
+                } : undefined)
+              }
+            })
+          });
+
+          const confirmData = await confirmRes.json();
+          setIsProcessing(false);
+
+          if (confirmRes.ok && confirmData.success && confirmData.order) {
+            addOrder(confirmData.order);
+            setLastPlacedOrder(confirmData.order);
+            clearCart();
+            setStep("success");
+          } else {
+            setPayphoneError(confirmData.error || "No se pudo confirmar la transacción.");
+          }
+        } catch {
+          setIsProcessing(false);
+          setPayphoneError("Error de conexión al procesar el pago.");
+        }
       } else if (data.mode === "box" && data.token) {
         // Live PayPhone Cajita Widget Initialization
         const win = typeof window !== "undefined" ? (window as unknown as { PPaymentButtonBox: new (opts: Record<string, unknown>) => { render: (id: string) => void } }) : null;
@@ -948,86 +1007,7 @@ export function CartDrawer() {
     handleConfirmOrder();
   };
 
-  const handleApprovePayPhoneSimulation = async () => {
-    if (!payphoneSimData) return;
-    setIsSimulatingApproval(true);
-    setPayphoneError(null);
-    try {
-      const res = await fetch("/api/payphone/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: payphoneSimData.paymentId,
-          clientTxId: payphoneSimData.clientTransactionId,
-          orderData: {
-            orderId: payphoneSimData.orderId,
-            total: payphoneSimData.total,
-            items: payphoneSimData.items,
-            customerName: payphoneSimData.customerName,
-            customerEmail: payphoneSimData.customerEmail,
-            recipient: payphoneSimData.recipientName,
-            customerIdNumber: payphoneSimData.shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
-            customerPhone: payphoneSimData.shippingAddr?.phone || addrPhone.trim() || undefined,
-            shippingAddress: payphoneSimData.shippingAddr ? {
-              recipient: payphoneSimData.recipientName,
-              idNumber: payphoneSimData.shippingAddr.idNumber,
-              phone: payphoneSimData.shippingAddr.phone,
-              email: payphoneSimData.customerEmail,
-              street: payphoneSimData.shippingAddr.street,
-              exteriorNumber: payphoneSimData.shippingAddr.exteriorNumber,
-              neighborhood: payphoneSimData.shippingAddr.neighborhood,
-              interiorNumber: payphoneSimData.shippingAddr.interiorNumber,
-              crossStreets: payphoneSimData.shippingAddr.crossStreets,
-              addressType: payphoneSimData.shippingAddr.addressType,
-              deliveryInstructions: payphoneSimData.shippingAddr.deliveryInstructions,
-              hasElevator: payphoneSimData.shippingAddr.hasElevator,
-              floorLevel: payphoneSimData.shippingAddr.floorLevel,
-              label: payphoneSimData.shippingAddr.label,
-              city: payphoneSimData.shippingAddr.city,
-              state: payphoneSimData.shippingAddr.state,
-              postalCode: payphoneSimData.shippingAddr.postalCode,
-              country: payphoneSimData.shippingAddr.country
-            } : (addrStreet ? {
-              recipient: payphoneSimData.recipientName,
-              idNumber: addrIdNumber.trim() || undefined,
-              phone: addrPhone.trim() || undefined,
-              email: payphoneSimData.customerEmail,
-              street: addrStreet,
-              exteriorNumber: addrExteriorNumber.trim() || undefined,
-              neighborhood: addrNeighborhood.trim() || undefined,
-              interiorNumber: addrInteriorNumber.trim() || undefined,
-              crossStreets: addrCrossStreets.trim() || undefined,
-              addressType: addrAddressType,
-              deliveryInstructions: addrDeliveryInstructions.trim() || undefined,
-              hasElevator: addrHasElevator,
-              floorLevel: addrFloorLevel.trim() || undefined,
-              label: addrLabel.trim() || undefined,
-              city: addrCity,
-              state: addrState,
-              postalCode: addrPostal,
-              country: addrCountry
-            } : undefined)
-          }
-        })
-      });
 
-      const data = await res.json();
-      setIsSimulatingApproval(false);
-      setIsPayPhoneSimOpen(false);
-
-      if (res.ok && data.success && data.order) {
-        addOrder(data.order);
-        setLastPlacedOrder(data.order);
-        clearCart();
-        setStep("success");
-      } else {
-        setPayphoneError(data.error || "No se pudo confirmar la transacción simulada de PayPhone.");
-      }
-    } catch {
-      setIsSimulatingApproval(false);
-      setPayphoneError("Error de conexión al confirmar la simulación con PayPhone.");
-    }
-  };
 
 
  // Recommended products for the bottom of the cart page
@@ -3175,248 +3155,7 @@ export function CartDrawer() {
   <MacOSScrollbar containerRef={cartScrollRef} insetTop={76} insetBottom={28} />
   </motion.div>
 
-  {/* ======================================================================= */}
-  {/* RESUMEN DE FACTURA Y COMPROBANTE DE ORDEN */}
-  {/* ======================================================================= */}
-  {isPayPhoneSimOpen && payphoneSimData && (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-md animate-fade-in font-sans">
-      <div className="w-full max-w-[500px] max-h-[92vh] flex flex-col rounded-[2rem] bg-white dark:bg-[#121215] text-gray-900 dark:text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.5)] border border-gray-200/90 dark:border-white/10 overflow-hidden animate-scale-up">
-        
-        {/* Encabezado Principal de Factura */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.02] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#FF5900] flex items-center justify-center shrink-0 border border-[#FF5900]/20">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base text-gray-950 dark:text-white tracking-tight">
-                  Resumen de Factura
-                </h3>
-                <span className="font-mono text-[10.5px] font-bold text-gray-600 dark:text-gray-300 bg-gray-200/70 dark:bg-white/10 px-2 py-0.5 rounded-md">
-                  {payphoneSimData.orderId}
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Lumina Home • Factura Oficial Consumidor
-              </p>
-            </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={() => setIsPayPhoneSimOpen(false)}
-            disabled={isSimulatingApproval}
-            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Cerrar"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Cuerpo Scrolleable con Toda la Información Principal */}
-        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-3.5 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
-          
-          {/* Banner de Estado */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/80 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs">
-            <div className="flex items-center gap-2 min-w-0">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="font-semibold text-[11.5px] truncate">Datos verificados · Listo para emitir</span>
-            </div>
-            <span className="font-mono text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/90 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded-full shrink-0">
-              Liquidación Activa
-            </span>
-          </div>
-
-          {/* 1. Datos del Cliente / Facturación SRI */}
-          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-gray-500 dark:text-gray-400">
-                <User className="w-3.5 h-3.5 text-[#FF5900]" /> Datos de Facturación
-              </span>
-              <span className="font-mono text-[11px] font-bold text-gray-700 dark:text-gray-300">
-                RUC/C.I: {payphoneSimData.shippingAddr?.idNumber || addrIdNumber || "9999999999999"}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs pt-1.5 border-t border-gray-200/60 dark:border-white/5">
-              <div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Cuentahabiente / Titular</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate block text-[11.5px]">
-                  {payphoneSimData.customerName || (user?.name ? formatCleanName(user.name) : "Cliente Lumina")}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Correo Electrónico</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200 truncate block text-[11.5px]" title={payphoneSimData.customerEmail}>
-                  {payphoneSimData.customerEmail}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Teléfono de Contacto</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200 text-[11.5px]">
-                  {payphoneSimData.shippingAddr?.phone || addrPhone || "No especificado"}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Forma de Pago</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200 text-[11.5px] flex items-center gap-1.5 truncate">
-                  {selectedPayMethod === "card" ? (
-                    <>
-                      <CreditCard className="w-3.5 h-3.5 text-[#FF5900] shrink-0" />
-                      <span className="capitalize">{detectedCardBrand}</span> •••• {cardNumber.replace(/\D/g, "").slice(-4) || "4242"}
-                    </>
-                  ) : (
-                    <>
-                      <PayPhoneIcon className="w-3.5 h-3.5 rounded-xs shrink-0" />
-                      <span>PayPhone</span> {payphoneAppPhone ? `0${payphoneAppPhone.replace(/\D/g, "").slice(-9)}` : ""}
-                    </>
-                  )}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Destino de Entrega */}
-          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-gray-500 dark:text-gray-400">
-                <Truck className="w-3.5 h-3.5 text-[#FF5900]" /> Destino de Entrega
-              </span>
-              <span className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                Despacho Asegurado
-              </span>
-            </div>
-
-            <div className="text-xs pt-1 border-t border-gray-200/60 dark:border-white/5 space-y-0.5">
-              <p className="font-semibold text-gray-900 dark:text-gray-100 text-[12px]">
-                {payphoneSimData.recipientName || payphoneSimData.customerName || "Cliente"}
-              </p>
-              <p className="text-gray-600 dark:text-gray-300 text-[11.5px] leading-relaxed">
-                {payphoneSimData.shippingAddr?.street || addrStreet || "Dirección Principal"}
-                {payphoneSimData.shippingAddr?.exteriorNumber ? ` #${payphoneSimData.shippingAddr.exteriorNumber}` : (addrExteriorNumber ? ` #${addrExteriorNumber}` : "")}
-                {(payphoneSimData.shippingAddr?.neighborhood || addrNeighborhood) ? `, Sector ${payphoneSimData.shippingAddr?.neighborhood || addrNeighborhood}` : ""}
-              </p>
-              <p className="text-gray-500 dark:text-gray-400 text-[11px]">
-                {payphoneSimData.shippingAddr?.city || addrCity || "Quito"}, {payphoneSimData.shippingAddr?.state || addrState || "Pichincha"} • Ecuador
-              </p>
-              {(payphoneSimData.shippingAddr?.crossStreets || addrCrossStreets || payphoneSimData.shippingAddr?.deliveryInstructions || addrDeliveryInstructions) && (
-                <p className="text-[10.5px] text-gray-500 dark:text-gray-400 italic pt-1">
-                  Indicaciones: {payphoneSimData.shippingAddr?.crossStreets || addrCrossStreets || payphoneSimData.shippingAddr?.deliveryInstructions || addrDeliveryInstructions}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* 3. Productos en Factura */}
-          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-gray-500 dark:text-gray-400">
-                <Package className="w-3.5 h-3.5 text-[#FF5900]" /> Detalle de Artículos ({payphoneSimData.items?.length || items.length})
-              </span>
-            </div>
-
-            <div className="max-h-36 overflow-y-auto space-y-2 pr-1 divide-y divide-gray-200/60 dark:divide-white/5 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
-              {(payphoneSimData.items || items).map((item: any, idx: number) => {
-                const unitPrice = item.bundleCustomPrice ?? item.product?.price ?? item.price ?? 0;
-                const lineTotal = unitPrice * (item.quantity || 1);
-                const title = item.isBundle ? (item.bundleName || "Pack Promocional") : (item.product?.title || item.title || "Producto");
-                const imgUrl = item.product?.imageUrl || (item.product?.images && item.product.images[0]) || item.imageUrl || "/placeholder.jpg";
-                return (
-                  <div key={item.id || idx} className="pt-2 first:pt-0 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
-                        <Image src={imgUrl} alt={title} fill className="object-cover" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-gray-100 truncate text-[11.5px]">
-                          {title}
-                        </p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                          Cantidad: {item.quantity || 1} {item.color ? `· ${item.color}` : ""} {item.size ? `· ${item.size}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-mono font-bold text-gray-900 dark:text-white shrink-0 text-xs">
-                      ${lineTotal.toFixed(2)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 4. Desglose Financiero de Factura */}
-          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-2 text-xs">
-            <div className="flex justify-between text-gray-500 dark:text-gray-400">
-              <span>Subtotal neto</span>
-              <span className="font-mono font-semibold text-gray-800 dark:text-gray-200">
-                ${getSubtotal().toFixed(2)} USD
-              </span>
-            </div>
-            {getDiscountAmount() > 0 && (
-              <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                <span>Descuento promocional</span>
-                <span className="font-mono font-semibold">
-                  -${getDiscountAmount().toFixed(2)} USD
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between text-gray-500 dark:text-gray-400">
-              <span>Costo de envío a domicilio</span>
-              <span className="font-mono font-semibold text-gray-800 dark:text-gray-200">
-                {getShipping() === 0 ? "Gratis" : `$${getShipping().toFixed(2)} USD`}
-              </span>
-            </div>
-            <div className="h-px bg-gray-200/70 dark:bg-white/10 my-1" />
-            <div className="flex items-baseline justify-between pt-0.5">
-              <div>
-                <span className="font-bold text-sm text-gray-900 dark:text-white block">
-                  Total a Pagar
-                </span>
-                <span className="text-[10px] text-gray-400">Factura final con impuestos de ley</span>
-              </div>
-              <div className="text-right">
-                <span className="text-xl sm:text-2xl font-black text-gray-950 dark:text-white font-sans tracking-tight">
-                  ${Number(payphoneSimData.total).toFixed(2)}
-                </span>
-                <span className="text-xs font-bold text-[#FF5900] font-mono ml-1.5">USD</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Garantía y Seguridad */}
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-emerald-900 dark:text-emerald-300 text-[11px] leading-relaxed">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>
-              Tu compra cuenta con <strong>garantía de satisfacción Lumina</strong> y envío asegurado con número de rastreo directo.
-            </span>
-          </div>
-
-        </div>
-
-        {/* Barra Inferior: Únicamente el Botón "Finalizar" */}
-        <div className="p-4 sm:p-5 border-t border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.02] shrink-0">
-          <button
-            type="button"
-            onClick={handleApprovePayPhoneSimulation}
-            disabled={isSimulatingApproval}
-            className="w-full h-13 sm:h-14 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] hover:from-[#FF7322] hover:to-[#DD4800] text-white font-sans font-bold text-base tracking-wide shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_8px_24px_rgba(234,82,0,0.32)] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2 select-none"
-          >
-            {isSimulatingApproval ? (
-              <div className="flex items-center justify-center gap-2.5">
-                <Loader2 className="w-5 h-5 animate-spin text-white" />
-                <span>Procesando orden...</span>
-              </div>
-            ) : (
-              <span>Finalizar</span>
-            )}
-          </button>
-        </div>
-
-      </div>
-    </div>
-  )}
 
       </div>
     )}
