@@ -32,10 +32,9 @@ import {
   CornerDownLeft,
   ArrowRight,
   ChevronLeft,
-  ChevronRight,
   Database,
-  Cpu,
-  User as UserIcon
+  MonitorSmartphone,
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -180,7 +179,16 @@ export default function ProfilePage() {
   const edgeRef = useRef<HTMLDivElement | null>(null);
   const computeRef = useRef<HTMLDivElement | null>(null);
   const dbRef = useRef<HTMLDivElement | null>(null);
-  const beam = { containerRef, pathDashArray: "0.1 8", duration: 4 };
+  const beam = { 
+    containerRef, 
+    pathDashArray: "0.1 8", 
+    duration: 4,
+    pathColor: "#27272a",
+    pathOpacity: 0.5,
+    pathWidth: 2,
+    gradientStartColor: "#ffffff",
+    gradientStopColor: "#ffffff"
+  };
 
   const { mode } = useThemeStore();
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -1507,70 +1515,88 @@ const handleConfirmDeleteNiche = async () => {
     </div>
   </div>
 
-  {/* --- 2. VISTA DESKTOP (md:flex): Brand & Top Navigation Pill Bar --- */}
-  <div className="hidden md:flex items-center justify-start gap-3 md:gap-4 lg:gap-5 min-w-0 shrink-0">
-  {/* Desktop Brand Logo (Lateral Izquierdo en Desktop) */}
-  <Link 
-    href="/" 
-    className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5 mr-0.5" 
-    title="Ir a la tienda"
-  >
-    <Image
-      src="/brand/lumina-wordmark.png"
-      alt={brand.name || "Lumina"}
-      width={1058}
-      height={272}
-      priority
-      className="h-6 sm:h-6.5 w-auto object-contain dark:invert"
-    />
-  </Link>
-
-  {/* GodUI AnimatedBeam Architecture Pipeline (Client -> Edge -> Compute -> DB) */}
-  <div
-    ref={containerRef}
-    className="relative flex items-center justify-between gap-5 sm:gap-7 px-3.5 py-1.5 h-10 rounded-2xl bg-stone-100/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-xs select-none shrink-0 overflow-hidden"
-  >
-    {/* 1. Client Node */}
-    <div
-      ref={clientRef}
-      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-amber-500/35 bg-white dark:bg-[#202024] shadow-xs text-amber-600 dark:text-amber-400"
-      title="Cliente Lumina"
+  {/* --- 2. VISTA DESKTOP (md:flex): Brand Logo on Left, Centered GodUI Animated Beam, Right Actions --- */}
+  <div className="hidden md:flex items-center gap-3 shrink-0">
+    {/* Desktop Brand Logo */}
+    <Link 
+      href="/" 
+      className="flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5" 
+      title="Ir a la tienda"
     >
-      <UserIcon className="w-3.5 h-3.5" />
-    </div>
-
-    {/* 2. Edge Node */}
-    <div
-      ref={edgeRef}
-      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-blue-500/35 bg-white dark:bg-[#202024] shadow-xs text-blue-600 dark:text-blue-400"
-      title="Red Edge Global (CDN & DNS)"
-    >
-      <Globe className="w-3.5 h-3.5" />
-    </div>
-
-    {/* 3. Compute Node */}
-    <div
-      ref={computeRef}
-      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-emerald-500/35 bg-white dark:bg-[#202024] shadow-xs text-emerald-600 dark:text-emerald-400"
-      title="Motor de Cómputo (Next.js Serverless)"
-    >
-      <Cpu className="w-3.5 h-3.5" />
-    </div>
-
-    {/* 4. Database Node */}
-    <div
-      ref={dbRef}
-      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-purple-500/35 bg-white dark:bg-[#202024] shadow-xs text-purple-600 dark:text-purple-400"
-      title="Base de Datos Blindada (Supabase PostgreSQL)"
-    >
-      <Database className="w-3.5 h-3.5" />
-    </div>
-
-    {/* Animated Beams */}
-    <AnimatedBeam {...beam} fromRef={clientRef} toRef={edgeRef} delay={0} />
-    <AnimatedBeam {...beam} fromRef={edgeRef} toRef={computeRef} delay={0.6} />
-    <AnimatedBeam {...beam} fromRef={computeRef} toRef={dbRef} delay={1.2} />
+      <Image
+        src="/brand/lumina-wordmark.png"
+        alt={brand.name || "Lumina"}
+        width={1058}
+        height={272}
+        priority
+        className="h-6 sm:h-6.5 w-auto object-contain dark:invert"
+      />
+    </Link>
   </div>
+
+  {/* GodUI AnimatedBeam Architecture Pipeline (Client -> Edge -> Compute -> Database) */}
+  <div className="hidden md:flex flex-1 items-center justify-center min-w-0 px-2 lg:px-4">
+    <div
+      ref={containerRef}
+      className="relative flex items-center justify-between w-full max-w-[460px] lg:max-w-[500px] px-6 sm:px-8 py-3.5 rounded-2xl bg-[#09090b] border border-zinc-800/80 dark:border-white/10 shadow-xl select-none overflow-hidden"
+      style={{
+        backgroundImage: "radial-gradient(circle, rgba(255, 255, 255, 0.12) 1px, transparent 1px)",
+        backgroundSize: "16px 16px",
+      }}
+    >
+      {/* 1. Client Node */}
+      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+        <div
+          ref={clientRef}
+          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#141417] shadow-sm text-white select-none transition-transform hover:scale-105"
+          title="Client"
+        >
+          <MonitorSmartphone className="w-5 h-5 text-white/90" />
+        </div>
+        <span className="text-[11px] font-normal text-zinc-400 select-none">Client</span>
+      </div>
+
+      {/* 2. Edge Node */}
+      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+        <div
+          ref={edgeRef}
+          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/20 bg-[#f4f4f5] shadow-md text-zinc-950 select-none transition-transform hover:scale-105"
+          title="Edge"
+        >
+          <ShieldCheck className="w-5 h-5 text-zinc-950" />
+        </div>
+        <span className="text-[11px] font-normal text-zinc-400 select-none">Edge</span>
+      </div>
+
+      {/* 3. Compute Node */}
+      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+        <div
+          ref={computeRef}
+          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#141417] shadow-sm text-white select-none transition-transform hover:scale-105"
+          title="Compute"
+        >
+          <Server className="w-5 h-5 text-white/90" />
+        </div>
+        <span className="text-[11px] font-normal text-zinc-400 select-none">Compute</span>
+      </div>
+
+      {/* 4. Database Node */}
+      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+        <div
+          ref={dbRef}
+          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#141417] shadow-sm text-white select-none transition-transform hover:scale-105"
+          title="Database"
+        >
+          <Database className="w-5 h-5 text-white/90" />
+        </div>
+        <span className="text-[11px] font-normal text-zinc-400 select-none">Database</span>
+      </div>
+
+      {/* Animated Beams */}
+      <AnimatedBeam {...beam} fromRef={clientRef} toRef={edgeRef} delay={0} />
+      <AnimatedBeam {...beam} fromRef={edgeRef} toRef={computeRef} delay={0.6} />
+      <AnimatedBeam {...beam} fromRef={computeRef} toRef={dbRef} delay={1.2} />
+    </div>
   </div>
 
   {/* Right Search Input, Ver Tienda Button & Profile Badge (Desktop) */}
