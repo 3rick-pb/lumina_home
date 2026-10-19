@@ -24,6 +24,8 @@ import {
  Tag, 
  Check, 
  ChevronRight,
+ ChevronUp,
+ ChevronDown,
  Trash2,
  RotateCcw,
   CreditCard,
@@ -1808,7 +1810,7 @@ export function CartDrawer() {
         Método de Pago y Entrega
       </h2>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-        Configura tu dirección y autoriza tu pedido de manera segura.
+        Configura tu dirección y selecciona tu tarjeta para continuar.
       </p>
     </div>
 
@@ -2371,19 +2373,19 @@ export function CartDrawer() {
             </svg>
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <VisaLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" fill="#1A1F71" />
+            <VisaLogo className="h-4 sm:h-[18px] w-auto max-w-full object-contain" fill="#1A1F71" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <MastercardLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
+            <MastercardLogo className="h-4 sm:h-[17px] w-auto max-w-full object-contain" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <DinersClubLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
+            <DinersClubLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-0.5">
-            <DiscoverLogo className="h-4 sm:h-[18px] w-auto max-w-full object-contain scale-110" />
+            <DiscoverLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <AmexLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
+            <AmexLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
           </div>
         </button>
 
@@ -2468,14 +2470,18 @@ export function CartDrawer() {
             (() => {
               const activeCard =
                 cards.find((c) => c.id === selectedSavedCardId) || cards[0] || null;
-              const orderedCards = activeCard
-                ? [...cards.filter((c) => c.id !== activeCard.id), activeCard]
-                : cards;
+              const nonActiveCards = cards.filter((c) => c.id !== activeCard?.id);
+              // Order cards: activeCard at the end so it renders at the front of the stack (depthFromFront = 0)
+              const orderedCards = activeCard ? [...nonActiveCards, activeCard] : cards;
 
               return (
                 <>
-                  {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") - 100% CLICK-ONLY */}
-                  <div className="relative w-full max-w-[370px] mx-auto pt-16 pb-2 select-none">
+                  {/* LUXURY INTERACTIVE DIGITAL WALLET WITH "TOTAL A PAGAR" */}
+                  <div
+                    className={`relative w-full max-w-[420px] mx-auto select-none transition-all duration-300 ease-out ${
+                      isMiniWalletOpen ? "pt-36 sm:pt-40 pb-2" : "pt-8 sm:pt-10 pb-2"
+                    }`}
+                  >
                     {/* Background Base of Wallet Pocket with bottom-only rounded clipPath */}
                     <div
                       onClick={() => {
@@ -2484,76 +2490,90 @@ export function CartDrawer() {
                         setIsMiniWalletOpen(nextState);
                         setHoveredCardId(null);
                       }}
-                      className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/50 shadow-[0_12px_28px_-6px_rgba(15,23,42,0.18),0_4px_12px_-2px_rgba(15,23,42,0.08)] overflow-visible cursor-pointer"
+                      className="relative w-full h-[180px] rounded-[1.75rem] bg-gradient-to-b from-[#14151b] via-[#0f1015] to-[#08080c] border border-amber-500/20 shadow-[0_18px_40px_-6px_rgba(0,0,0,0.55),0_6px_18px_-2px_rgba(0,0,0,0.35)] overflow-visible cursor-pointer ring-1 ring-white/10"
                       style={{
-                        clipPath: "inset(-350px -12px 0px -12px round 0px 0px 1.5rem 1.5rem)",
+                        clipPath: "inset(-500px -16px 0px -16px round 0px 0px 1.75rem 1.75rem)",
                       }}
                     >
-                      {/* Inner Shadow & Leather texture depth */}
-                      <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_top,rgba(30,58,138,0.25),transparent_70%)] pointer-events-none" />
+                      {/* Inner Shadow & Bespoke Leather Texture Depth */}
+                      <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.08),transparent_70%)] pointer-events-none" />
+                      <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.03),transparent_60%)] pointer-events-none" />
 
-                      {/* The Layered Cards Rising Upwards with 1-finger separation (approx 24px) */}
+                      {/* Layered Cards Fanning Upwards Outside the Wallet */}
                       {orderedCards.map((card, idx) => {
                         let theme = {
-                          bg: "bg-gradient-to-tr from-[#0a192f] via-[#10316b] to-[#0284c7]",
+                          bg: "bg-gradient-to-tr from-[#0a0a0d] via-[#15161f] to-[#232533]",
                           text: "text-white",
-                          border: "border-blue-400/40",
-                          shadow: "shadow-[0_12px_28px_rgba(2,132,199,0.3)]",
+                          border: "border-amber-400/40 ring-1 ring-amber-400/20",
+                          shadow: "shadow-[0_14px_32px_rgba(0,0,0,0.5)]",
                           logoColor: "#FFFFFF",
-                          name: "SAPPHIRE",
+                          accentColor: "text-amber-300",
+                          name: "OBSIDIAN NOIR",
                         };
 
                         if (card.number.includes("4916")) {
                           theme = {
-                            bg: "bg-gradient-to-tr from-[#ffffff] via-[#f1f5f9] to-[#e2e8f0]",
-                            text: "text-slate-900",
-                            border: "border-slate-200/90",
-                            shadow: "shadow-[0_12px_28px_rgba(0,0,0,0.12)]",
-                            logoColor: "#0f172a",
-                            name: "PLATINUM",
+                            bg: "bg-gradient-to-tr from-[#1a202c] via-[#2d3748] to-[#4a5568]",
+                            text: "text-slate-100",
+                            border: "border-slate-300/45 ring-1 ring-white/20",
+                            shadow: "shadow-[0_14px_32px_rgba(0,0,0,0.4)]",
+                            logoColor: "#F8FAFC",
+                            accentColor: "text-slate-200",
+                            name: "TITANIUM ELITE",
                           };
-                        } else if (card.number.includes("0019")) {
+                        } else if (card.number.includes("0019") || idx % 3 === 1) {
                           theme = {
-                            bg: "bg-gradient-to-tr from-[#ea580c] via-[#f97316] to-[#ec4899]",
-                            text: "text-white",
-                            border: "border-orange-300/40",
-                            shadow: "shadow-[0_12px_28px_rgba(234,88,12,0.3)]",
+                            bg: "bg-gradient-to-tr from-[#021b14] via-[#093e2d] to-[#125e44]",
+                            text: "text-emerald-50",
+                            border: "border-emerald-400/40 ring-1 ring-emerald-400/25",
+                            shadow: "shadow-[0_14px_32px_rgba(2,27,20,0.5)]",
                             logoColor: "#FFFFFF",
-                            name: "CORAL",
+                            accentColor: "text-emerald-300",
+                            name: "EMERALD RESERVE",
                           };
-                        } else if (idx % 2 === 0) {
+                        } else if (idx % 3 === 2) {
                           theme = {
-                            bg: "bg-gradient-to-tr from-[#0f172a] via-[#1e293b] to-[#334155]",
-                            text: "text-white",
-                            border: "border-slate-600/50",
-                            shadow: "shadow-[0_12px_28px_rgba(0,0,0,0.4)]",
+                            bg: "bg-gradient-to-tr from-[#091124] via-[#102347] to-[#1c3c78]",
+                            text: "text-blue-50",
+                            border: "border-sky-400/40 ring-1 ring-sky-400/25",
+                            shadow: "shadow-[0_14px_32px_rgba(9,17,36,0.5)]",
                             logoColor: "#FFFFFF",
-                            name: "OBSIDIAN",
+                            accentColor: "text-sky-300",
+                            name: "ROYAL SAPPHIRE",
                           };
                         }
 
                         const isSelected = activeCard ? card.id === activeCard.id : false;
                         const isCardHovered = isMiniWalletOpen && hoveredCardId === card.id;
 
-                        // Calculate vertical offsets for 1-finger upward accordion stacking (24px separation)
+                        // Total cards and depth calculation:
+                        // activeCard is last in orderedCards, so depthFromFront = 0
                         const totalCards = orderedCards.length;
                         const depthFromFront = totalCards - 1 - idx;
 
-                        // When closed: nested inside pocket
-                        const closedY = 6 - depthFromFront * 5;
-                        const closedScale = 1 - depthFromFront * 0.035;
-                        const closedOpacity = 1 - depthFromFront * 0.12;
+                        // Closed state: neatly nested inside pocket
+                        const closedY = 8 - depthFromFront * 6;
+                        const closedScale = 1 - depthFromFront * 0.03;
+                        const closedOpacity = 1 - depthFromFront * 0.14;
 
-                        // When open: "un dedo de separación" (24px separation step)
-                        const openY = -depthFromFront * 24;
-                        const zIndex = 15 + idx * 5;
+                        // Open state: cards fan OUT of the wallet with generous clearance
+                        // Active card stays at y = 0, while cards behind fan upwards by 48px each
+                        const openY = -depthFromFront * 48;
+                        const openScale = 1;
+                        const openOpacity = 1;
+
+                        // Z-Index: active card has highest base z-index (25); hovered card lifts to 35
+                        const baseZ = 25 - depthFromFront * 2;
+                        const targetZ = isCardHovered ? 35 : baseZ;
+                        const targetY = isCardHovered ? openY - 12 : (isMiniWalletOpen ? openY : closedY);
+                        const targetScale = isCardHovered ? 1.02 : (isMiniWalletOpen ? openScale : closedScale);
 
                         return (
                           <motion.div
                             key={card.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              playEnvelopeSound("close");
+                              playEnvelopeSound("open");
                               handleSelectSavedCard(card.id);
                               setHoveredCardId(null);
                             }}
@@ -2565,90 +2585,92 @@ export function CartDrawer() {
                             }}
                             initial={false}
                             animate={{
-                              y: isMiniWalletOpen ? openY : closedY,
-                              scale: isMiniWalletOpen ? 1 : closedScale,
-                              opacity: isMiniWalletOpen ? 1 : closedOpacity,
-                              zIndex: zIndex,
+                              y: targetY,
+                              scale: targetScale,
+                              opacity: isMiniWalletOpen ? openOpacity : closedOpacity,
+                              zIndex: targetZ,
                             }}
                             transition={{
                               type: "spring",
-                              stiffness: 340,
+                              stiffness: 350,
                               damping: 28,
                               mass: 0.7,
                             }}
                             style={{ transformStyle: "preserve-3d" }}
-                            className={`absolute left-[6%] w-[88%] h-[116px] rounded-2xl p-3 sm:p-3.5 ${theme.bg} ${theme.text} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all duration-200 overflow-hidden ${
+                            className={`absolute left-[4%] w-[92%] h-[126px] sm:h-[132px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all duration-200 overflow-hidden ${
                               isCardHovered
-                                ? "border-sky-300 ring-2 ring-sky-400/80 shadow-[0_0_18px_rgba(56,189,248,0.5),0_8px_24px_rgba(0,0,0,0.3)] brightness-[1.05]"
-                                : `${theme.border} ${
-                                    isMiniWalletOpen
-                                      ? "hover:border-sky-300 hover:ring-2 hover:ring-sky-400/70 hover:shadow-[0_0_16px_rgba(56,189,248,0.4)] hover:brightness-[1.04]"
-                                      : ""
-                                  }`
+                                ? "border-amber-300 ring-2 ring-amber-400/80 shadow-[0_0_24px_rgba(245,158,11,0.45),0_12px_28px_rgba(0,0,0,0.5)] brightness-[1.06]"
+                                : isSelected && isMiniWalletOpen
+                                ? "border-amber-400/80 ring-1 ring-amber-400/60 shadow-[0_0_18px_rgba(245,158,11,0.25)]"
+                                : `${theme.border}`
                             }`}
                           >
-                            {/* Specular curved reflection glint */}
+                            {/* Iridescent luxury glint reflection */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                             <div
                               className={`absolute inset-[1px] rounded-[15px] border pointer-events-none transition-colors duration-200 ${
-                                isCardHovered ? "border-sky-300/50" : "border-white/20"
+                                isCardHovered ? "border-amber-300/50" : "border-white/15"
                               }`}
                             />
 
                             {/* Top rim specular highlight on hover */}
                             <div
-                              className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-sky-300 to-transparent transition-opacity duration-200 pointer-events-none ${
+                              className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300 to-transparent transition-opacity duration-200 pointer-events-none ${
                                 isCardHovered ? "opacity-100" : "opacity-0"
                               }`}
                             />
 
-                            {/* Top Row: Network & Status */}
+                            {/* Card Top Row: Network & Status */}
                             <div className="flex items-center justify-between relative z-10">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-sans text-[10px] font-bold tracking-wider uppercase opacity-90">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-mono text-[10px] font-bold tracking-[0.18em] uppercase ${theme.accentColor}`}>
                                   {theme.name}
                                 </span>
                                 {isSelected && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                  <span className="flex items-center gap-1 text-[9px] font-sans font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 shadow-xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    Activa
+                                  </span>
                                 )}
                               </div>
 
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-2">
                                 <ContactlessIcon className="w-3.5 h-3.5 opacity-70" />
                                 {card.type === "visa" ? (
-                                  <VisaLogo className="h-3.5" fill={theme.logoColor} />
+                                  <VisaLogo className="h-3.5 sm:h-4 w-auto object-contain" fill={theme.logoColor} />
                                 ) : (
-                                  <MastercardLogo className="h-4" />
+                                  <MastercardLogo className="h-4 sm:h-[18px] w-auto object-contain" />
                                 )}
                               </div>
                             </div>
 
                             {/* Card Number */}
-                            <div className="relative z-10 mt-1">
-                              <p className="font-mono font-bold text-sm sm:text-base tracking-[0.2em] drop-shadow-sm dark:shadow-none opacity-95">
+                            <div className="relative z-10 my-auto">
+                              <p className="font-mono font-bold text-sm sm:text-base tracking-[0.22em] drop-shadow-sm opacity-95">
                                 {card.number}
                               </p>
                             </div>
 
-                            {/* Bottom Row: Chip & Holder */}
-                            <div className="flex items-end justify-between relative z-10 pt-1 border-t border-white/15 text-[9px] mt-auto">
-                              <div className="flex items-center gap-2">
-                                <div className="scale-75 origin-left">
+                            {/* Card Bottom Row: Chip & Holder */}
+                            <div className="flex items-end justify-between relative z-10 pt-1.5 border-t border-white/15 text-[9.5px]">
+                              <div className="flex items-center gap-2.5">
+                                <div className="scale-80 origin-left">
                                   <EmvChip />
                                 </div>
-                                <span className="font-mono font-bold uppercase truncate max-w-[130px] opacity-90">
+                                <span className="font-mono font-bold uppercase truncate max-w-[150px] opacity-90 tracking-wider">
                                   {card.holder}
                                 </span>
                               </div>
-                              <span className="font-mono font-bold opacity-85">
-                                {card.exp}
-                              </span>
+                              <div className="flex items-center gap-1 font-mono font-bold opacity-85">
+                                <span className="text-[8px] opacity-60 uppercase font-sans">Exp</span>
+                                <span>{card.exp}</span>
+                              </div>
                             </div>
                           </motion.div>
                         );
                       })}
 
-                      {/* Front Flap Overlay of the Blue Wallet Sleeve */}
+                      {/* Front Flap Overlay of Digital Wallet with "Total a Pagar" */}
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
@@ -2657,79 +2679,81 @@ export function CartDrawer() {
                           setIsMiniWalletOpen(nextState);
                           setHoveredCardId(null);
                         }}
-                        className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800/40 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.18),0_8px_20px_-4px_rgba(15,23,42,0.22)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50 active:scale-[0.99]"
+                        className="absolute bottom-0 inset-x-0 h-[132px] rounded-b-[1.75rem] rounded-t-2xl bg-gradient-to-b from-[#15171e]/98 via-[#101116]/98 to-[#090a0d] border-t border-amber-400/35 border-x border-b border-white/10 shadow-[0_-6px_24px_-2px_rgba(0,0,0,0.4),0_12px_28px_rgba(0,0,0,0.5)] backdrop-blur-xl p-3.5 sm:p-4 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-amber-400/50 active:scale-[0.995]"
                       >
                         {/* Top Pocket Arc Lip & Specular Highlight */}
-                        <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300 to-transparent opacity-80" />
-                        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-sky-400/30" />
+                        <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-300 to-transparent opacity-80" />
+                        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-9 h-1 rounded-full bg-amber-400/25" />
 
-                        {/* Wallet Sleeve Brand Label */}
-                        <div className="flex items-center justify-between pt-1">
+                        {/* Wallet Header Bar */}
+                        <div className="flex items-center justify-between pt-0.5">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-md bg-sky-500/20 text-sky-300 flex items-center justify-center border border-sky-400/30">
-                              <Lock className="w-3 h-3" />
+                            <div className="w-5 h-5 rounded-md bg-amber-500/15 text-amber-300 flex items-center justify-center border border-amber-400/30">
+                              <CreditCard className="w-3 h-3" />
                             </div>
-                            <span className="font-mono text-[10px] font-bold text-sky-100 tracking-[0.2em] uppercase">
-                              LUMINA VAULT
+                            <span className="font-mono text-[10px] font-bold text-amber-100 tracking-[0.2em] uppercase">
+                              BILLETERA DIGITAL
                             </span>
                           </div>
-                          <span className="font-sans text-[10px] font-semibold text-sky-300/90 bg-sky-950/70 px-2.5 py-0.5 rounded-full border border-sky-800/60 shadow-2xs">
-                            {isMiniWalletOpen ? "Click para cerrar wallet" : "Click para abrir wallet"}
+                          <span className="font-sans text-[10px] font-semibold text-amber-200/95 bg-amber-950/70 hover:bg-amber-900/60 px-2.5 py-0.5 rounded-full border border-amber-500/40 shadow-xs flex items-center gap-1 transition-all">
+                            {isMiniWalletOpen ? (
+                              <>
+                                <ChevronUp className="w-3 h-3 text-amber-300" />
+                                Cerrar billetera
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-3 h-3 text-amber-300" />
+                                Ver tarjetas ({cards.length})
+                              </>
+                            )}
                           </span>
                         </div>
 
-                        {/* Active Card Indicator on Front Flap */}
-                        <div className="flex items-center justify-between text-xs text-slate-300 pt-2 border-t border-slate-800/80">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="font-mono text-[11px] font-semibold text-white tracking-wider">
-                              {activeCard?.number ? activeCard.number.slice(-9) : ""}
+                        {/* Central "Total a Pagar" Display (Replacing "Total balance") */}
+                        <div className="py-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-[9.5px] font-bold tracking-[0.24em] text-amber-300/85 uppercase">
+                              TOTAL A PAGAR
+                            </span>
+                            {isMiniWalletOpen ? (
+                              <span className="text-[10px] font-sans font-medium text-amber-200/70 animate-pulse">
+                                Toca para elegir
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className="font-sans font-black text-2xl sm:text-[28px] text-white tracking-tight drop-shadow-sm">
+                              ${finalTotal.toFixed(2)}
+                            </span>
+                            <span className="font-mono font-bold text-xs text-amber-300/75 tracking-wider">
+                              USD
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5">
+                        </div>
+
+                        {/* Active Card Indicator on Front Flap */}
+                        <div className="flex items-center justify-between text-xs text-slate-300 pt-2 border-t border-white/10">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="font-sans text-[10.5px] font-medium text-gray-300">
+                              Tarjeta activa:
+                            </span>
+                            <span className="font-mono text-[11px] font-bold text-white tracking-wider">
+                              •••• {activeCard?.number ? activeCard.number.slice(-4) : ""}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
                             {activeCard?.type === "visa" ? (
-                              <VisaLogo className="h-3" fill="#7dd3fc" />
+                              <VisaLogo className="h-3 w-auto object-contain" fill="#FFFFFF" />
                             ) : (
-                              <MastercardLogo className="h-3.5" />
+                              <MastercardLogo className="h-3.5 w-auto object-contain" />
                             )}
+                            <span className="text-[9.5px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                              Seleccionada
+                            </span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. ACTIVE CARD INFORMATION PANEL ("Y ABAJO SALDRÁ PUES LA INFORMACIÓN DE LA TARJETA") */}
-                  <div className="p-4 rounded-2xl bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10 shadow-xs space-y-3 font-sans">
-                    <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="font-sans font-bold text-xs text-gray-900 dark:text-gray-100">
-                          {activeCard?.type === "visa"
-                            ? "Tarjeta Visa Seleccionada"
-                            : "Tarjeta Mastercard Seleccionada"}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
-                        ✓ Lista para pagar
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="space-y-0.5">
-                        <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">
-                          Número
-                        </span>
-                        <p className="font-mono font-bold text-gray-900 dark:text-gray-100 tracking-wider">
-                          {activeCard?.number || ""}
-                        </p>
-                      </div>
-                      <div className="space-y-0.5 text-right">
-                        <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">
-                          Titular · Expira
-                        </span>
-                        <p className="font-mono font-bold text-gray-900 dark:text-gray-100 truncate">
-                          {activeCard?.holder || ""} · {activeCard?.exp || ""}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -3001,15 +3025,15 @@ export function CartDrawer() {
         {isProcessing ? (
           <div className="w-full flex items-center justify-center gap-3">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="tracking-wide">Procesando autorización segura...</span>
+            <span className="tracking-wide">Procesando pago...</span>
           </div>
         ) : (
           <>
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-              <Lock className="w-4 h-4 text-white" />
+              <CreditCard className="w-4 h-4 text-white" />
             </div>
             <span className="tracking-wide font-extrabold text-xs sm:text-sm">
-              Autorizar Pago Seguro · ${finalTotal.toFixed(2)} USD
+              Pagar Pedido · ${finalTotal.toFixed(2)} USD
             </span>
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:translate-x-1 group-active:scale-95 transition-all">
               <ArrowRight className="w-4 h-4 text-white stroke-[2.5]" />
@@ -3362,7 +3386,7 @@ export function CartDrawer() {
                   </span>
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                  Terminal Bancaria Segura • Autorización Criptográfica
+                  Terminal Bancaria Lumina • Autorización Directa
                 </p>
               </div>
             </div>
@@ -3430,7 +3454,7 @@ export function CartDrawer() {
                 <span className="font-semibold text-white/90 text-[11px]">09/29</span>
               </div>
               <div className="text-right">
-                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Seguridad</span>
+                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Protección</span>
                 <span className="font-semibold text-emerald-400 text-[11px]">CVV •••</span>
               </div>
             </div>
@@ -3507,7 +3531,7 @@ export function CartDrawer() {
                 <>
                   <div className="flex items-center gap-2.5">
                     <Lock className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
-                    <span className="tracking-tight">Autorizar Transacción Segura</span>
+                    <span className="tracking-tight">Confirmar y Procesar Orden</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-full bg-white/10 dark:bg-black/10">
