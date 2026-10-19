@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore, isValidEmail, sanitizeText, validateStrongPassword } from "@/lib/userStore";
@@ -28,6 +28,22 @@ import { WheelPicker, type WheelPickerOption } from "@/components/motion/wheel-p
 
 // Charset idéntico a CardFolder.tsx para el efecto de revelación progresiva
 const SCRAMBLE_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$?#%&";
+
+// Nombres completos de meses en español con mayúscula inicial
+const FULL_MONTHS_ES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
 
 // Opciones estáticas para garantizar máxima estabilidad y cero re-renderizados bruscos en el WheelPicker
 const DAY_OPTIONS: WheelPickerOption[] = Array.from({ length: 31 }, (_, i) => {
@@ -154,17 +170,28 @@ export default function RegisterPage() {
     runScrambleReveal(confirmPassword, next, setScrambledConfirm, cpwdTimerRef);
   };
 
+  const dateContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Aislamiento total del scroll para que la interacción con la fecha no haga scroll en la página
+  useEffect(() => {
+    const el = dateContainerRef.current;
+    if (!el) return;
+    const blockWheel = (e: WheelEvent) => {
+      e.stopPropagation();
+    };
+    el.addEventListener("wheel", blockWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", blockWheel);
+    };
+  }, []);
+
   const formattedDateStr = useMemo(() => {
     const d = parseInt(birthDay, 10);
     const m = parseInt(birthMonth, 10);
     const y = parseInt(birthYear, 10);
-    if (!d || !m || !y) return "";
-    const dateObj = new Date(y, m - 1, d);
-    return dateObj.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    if (!d || !m || !y || m < 1 || m > 12) return "";
+    const monthName = FULL_MONTHS_ES[m - 1];
+    return `${monthName} ${d} del ${y}`;
   }, [birthDay, birthMonth, birthYear]);
 
   const handleGoogleLogin = async () => {
@@ -357,64 +384,89 @@ export default function RegisterPage() {
                 </label>
               </div>
 
-              {/* Apple iOS Alarm 3-Column Drum Picker */}
-              <div className="relative rounded-2xl bg-white/80 dark:bg-[#18181b]/90 border border-black/[0.06] dark:border-white/10 p-2 shadow-xs overflow-hidden">
-                {/* Apple iOS unified selection lens bar */}
-                <div className="pointer-events-none absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[36px] rounded-xl bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.04] dark:border-white/10 z-0" />
+              {/* Encabezados de Columna (Día - Mes - Año) colocados arriba y fuera del tambor para centrado perfecto */}
+              <div className="grid grid-cols-3 gap-2 px-3 pb-1 text-center">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 select-none">
+                  Día
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 select-none">
+                  Mes
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 select-none">
+                  Año
+                </span>
+              </div>
 
-                <div className="grid grid-cols-3 gap-1.5 relative z-10">
+              {/* Apple iOS Alarm 3-Column Drum Picker - Mayor espacio vertical y aislamiento total de scroll */}
+              <div 
+                ref={dateContainerRef}
+                data-lenis-prevent
+                className="relative rounded-2xl bg-white/85 dark:bg-[#18181b]/95 border border-black/[0.06] dark:border-white/10 p-2 shadow-inner overflow-hidden select-none"
+                style={{ overscrollBehavior: "contain" }}
+              >
+                {/* Apple iOS unified selection lens bar - Centrado exacto con la fila activa */}
+                <div 
+                  className="pointer-events-none absolute left-2 right-2 top-1/2 -translate-y-1/2 rounded-xl bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.06] dark:border-white/10 z-10"
+                  style={{ height: 40 }}
+                />
+
+                {/* Máscaras de gradiente superior e inferior para realzar el desenfoque óptico */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/95 dark:from-[#18181b]/95 to-transparent z-20" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white/95 dark:from-[#18181b]/95 to-transparent z-20" />
+
+                <div className="grid grid-cols-3 gap-1 relative z-0">
                   {/* COLUMNA 1: DÍA */}
                   <div className="text-center">
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1 select-none">
-                      Día
-                    </span>
                     <WheelPicker
                       options={DAY_OPTIONS}
                       value={birthDay}
                       onValueChange={setBirthDay}
-                      sound={true}
-                      visibleCount={3}
-                      itemHeight={36}
-                      className="bg-transparent border-0 shadow-none"
+                      sound={false}
+                      visibleCount={5}
+                      itemHeight={40}
+                      hideLens={true}
+                      blurOuter={true}
+                      className="bg-transparent border-0 shadow-none text-center"
+                      aria-label="Seleccionar día de nacimiento"
                     />
                   </div>
 
                   {/* COLUMNA 2: MES */}
                   <div className="text-center">
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1 select-none">
-                      Mes
-                    </span>
                     <WheelPicker
                       options={MONTH_OPTIONS}
                       value={birthMonth}
                       onValueChange={setBirthMonth}
-                      sound={true}
-                      visibleCount={3}
-                      itemHeight={36}
-                      className="bg-transparent border-0 shadow-none"
+                      sound={false}
+                      visibleCount={5}
+                      itemHeight={40}
+                      hideLens={true}
+                      blurOuter={true}
+                      className="bg-transparent border-0 shadow-none text-center"
+                      aria-label="Seleccionar mes de nacimiento"
                     />
                   </div>
 
                   {/* COLUMNA 3: AÑO */}
                   <div className="text-center">
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1 select-none">
-                      Año
-                    </span>
                     <WheelPicker
                       options={YEAR_OPTIONS}
                       value={birthYear}
                       onValueChange={setBirthYear}
-                      sound={true}
-                      visibleCount={3}
-                      itemHeight={36}
-                      className="bg-transparent border-0 shadow-none"
+                      sound={false}
+                      visibleCount={5}
+                      itemHeight={40}
+                      hideLens={true}
+                      blurOuter={true}
+                      className="bg-transparent border-0 shadow-none text-center"
+                      aria-label="Seleccionar año de nacimiento"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Selected date preview helper */}
-              <div className="mt-2 text-center text-[11px] text-gray-600 dark:text-gray-400 font-medium capitalize">
+              {/* Selected date preview helper - Formato exacto: "Julio 31 del 2007" */}
+              <div className="mt-2.5 text-center text-xs text-gray-600 dark:text-gray-400 font-medium tracking-wide">
                 {formattedDateStr}
               </div>
             </div>

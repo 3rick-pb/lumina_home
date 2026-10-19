@@ -35,6 +35,10 @@ export interface WheelPickerProps {
   sound?: boolean;
   className?: string;
   "aria-label"?: string;
+  /** When true, hides the default per-column center band lens (useful when a parent renders a unified lens) */
+  hideLens?: boolean;
+  /** When true, applies progressive depth-of-field blur starting from the 2nd number away from center */
+  blurOuter?: boolean;
 }
 
 const DEG = Math.PI / 180;
@@ -74,6 +78,8 @@ export function WheelPicker({
   sound = false,
   className,
   "aria-label": ariaLabel,
+  hideLens = false,
+  blurOuter = false,
 }: WheelPickerProps) {
   const reduce = useReducedMotion() ?? false;
   const controlled = value !== undefined;
@@ -129,10 +135,28 @@ export function WheelPicker({
         for (const node of Array.from(drum.children)) {
           const li = node as HTMLLIElement;
           const i = Number(li.dataset.index);
-          const want = Math.abs(i - s) > hideBeyond ? "hidden" : "visible";
+          const diff = Math.abs(i - s);
+          const want = diff > hideBeyond ? "hidden" : "visible";
           // Write only on change — an unconditional write every frame thrashes
           // style recalc and is what made the drag feel draggy on mobile.
           if (li.style.visibility !== want) li.style.visibility = want;
+
+          if (blurOuter && want === "visible") {
+            if (diff >= 1.35) {
+              // Desenfoque óptico a partir del 2do número arriba y abajo para que el ojo enfoque el seleccionado
+              const blurPx = Math.min(2.4 + (diff - 1.35) * 2.2, 5.2).toFixed(1);
+              li.style.filter = `blur(${blurPx}px)`;
+              li.style.opacity = Math.max(0.12, 0.40 - (diff - 1.35) * 0.16).toFixed(2);
+            } else if (diff >= 0.6) {
+              // 1er número adyacente: nítido con atenuación de opacidad
+              li.style.filter = "none";
+              li.style.opacity = "0.62";
+            } else {
+              // Centro: totalmente nítido
+              li.style.filter = "none";
+              li.style.opacity = "1";
+            }
+          }
         }
       }
       // The band is the SAME drum, clipped to the centre row — driven by the
@@ -149,7 +173,7 @@ export function WheelPicker({
         }
       }
     },
-    [radius, itemAngle, hideBeyond],
+    [radius, itemAngle, hideBeyond, blurOuter],
   );
 
   const getPlayer = useCallback(() => {
@@ -381,6 +405,7 @@ export function WheelPicker({
       // passive, so a handler on the element cannot cancel the scroll.
       if (disabled || reduce) return;
       event.preventDefault();
+      event.stopPropagation();
       if (sound) getPlayer().prepare();
       stop();
       const px = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
@@ -536,6 +561,7 @@ export function WheelPicker({
   return (
     <div
       ref={container}
+      data-lenis-prevent
       role="listbox"
       aria-label={ariaLabel}
       tabIndex={disabled ? -1 : 0}
@@ -554,7 +580,7 @@ export function WheelPicker({
         maskFade,
         className,
       )}
-      style={{ height, perspective: 1000 }}
+      style={{ height, perspective: 1000, overscrollBehavior: "contain" }}
     >
       {/* Curved drum of dimmed rows. */}
       <ul
@@ -566,7 +592,7 @@ export function WheelPicker({
           <li
             key={optionValue(option)}
             data-index={i}
-            className="absolute inset-x-0 flex items-center justify-center font-medium text-muted-foreground"
+            className="absolute inset-x-0 flex items-center justify-center font-medium text-muted-foreground select-none"
             style={{
               top: -itemHeight / 2,
               height: itemHeight,
@@ -582,7 +608,10 @@ export function WheelPicker({
           Its own perspective, centred on the container middle, matches the main
           drum's projection so the two copies register exactly. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 overflow-hidden rounded-md bg-foreground/[0.04]"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 overflow-hidden",
+          hideLens ? "bg-transparent border-0" : "rounded-md bg-foreground/[0.04]"
+        )}
         style={{ height: itemHeight, perspective: 1000 }}
       >
         <ul
@@ -594,7 +623,7 @@ export function WheelPicker({
             <li
               key={optionValue(option)}
               data-index={i}
-              className="absolute inset-x-0 flex items-center justify-center font-medium text-foreground"
+              className="absolute inset-x-0 flex items-center justify-center font-bold text-foreground text-sm sm:text-base tracking-tight select-none"
               style={{
                 top: -itemHeight / 2,
                 height: itemHeight,
