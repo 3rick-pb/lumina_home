@@ -50,6 +50,13 @@ import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { MacOSScrollbar } from "./MacOSScrollbar";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { getRefinedCoordinates, type RawGpsHardwareData } from "@/lib/locationUtils";
+import {
+  Visa as VisaMono,
+  Mastercard as MastercardMono,
+  DinersClub as DinersClubMono,
+  Discover as DiscoverMono,
+  AmericanExpress as AmericanExpressMono,
+} from "@thesvg/react";
 
 // Official Card & Payment Gateway Logos (Authentic Vector Brandmarks from theSVG.org + PayPhone Official)
 function MastercardLogo({ className = "h-[17px]" }: { className?: string }) {
@@ -75,7 +82,7 @@ function VisaLogo({ className = "h-[19px]", fill = "#1A1F71" }: { className?: st
 function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <img
-      src="/images/payphone-icon.png"
+      src="/images/payphone-badge.png"
       alt="PayPhone"
       className={`shrink-0 object-contain rounded-md shadow-2xs ${className}`}
     />
@@ -2830,26 +2837,23 @@ export function CartDrawer() {
           <div className="flex items-center justify-center gap-2">
             <span>Pagar con</span>
             {selectedPayMethod === "app" ? (
-              <div className="flex items-center gap-1.5 shrink-0">
-                <PayPhoneIcon className="w-4 h-4 rounded-xs" />
-                <span className="font-extrabold text-[#ffffff] tracking-tight">PayPhone</span>
-              </div>
+              <PayPhoneIcon className="w-6 h-6 rounded-md shadow-xs shrink-0" />
             ) : (
               <div className="inline-flex items-center shrink-0">
                 {detectedCardBrand === "visa" && (
-                  <VisaLogo className="h-[18px] w-auto max-w-full drop-shadow-sm" fill="#FFFFFF" />
+                  <VisaMono variant="mono" className="h-6 w-6 text-black fill-black" />
                 )}
                 {detectedCardBrand === "mastercard" && (
-                  <MastercardLogo className="h-[18px] w-auto max-w-full drop-shadow-sm" />
+                  <MastercardMono variant="mono" className="h-6 w-6 text-black fill-black" />
                 )}
                 {detectedCardBrand === "amex" && (
-                  <AmexLogo className="h-4 w-auto max-w-full" />
+                  <AmericanExpressMono variant="mono" className="h-6 w-6 text-black fill-black" />
                 )}
                 {detectedCardBrand === "diners" && (
-                  <DinersClubLogo className="h-4 w-auto max-w-full" />
+                  <DinersClubMono variant="mono" className="h-6 w-6 text-black fill-black" />
                 )}
                 {detectedCardBrand === "discover" && (
-                  <DiscoverLogo className="h-4 w-auto max-w-full" />
+                  <DiscoverMono variant="mono" className="h-6 w-6 text-black fill-black" />
                 )}
               </div>
             )}
