@@ -2694,22 +2694,21 @@ export function CartDrawer() {
       </div>
     )}
 
-    {/* Action Button: High-Ticket "Button-in-Button" Island */}
     {/* Action Button: Sleek Luxury "Comprar" Button */}
-    <div className="pt-1.5">
+    <div className="pt-2 flex justify-center">
       <button
         type="button"
         onClick={handleTriggerPaymentWithAnimation}
         disabled={isProcessing}
-        className="relative w-full h-13 sm:h-14 rounded-2xl sm:rounded-[1.25rem] bg-gradient-to-b from-[#FF6611] to-[#EA5200] hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.985] text-white font-sans font-bold text-sm sm:text-base tracking-wide transition-all duration-200 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.4),0_8px_24px_rgba(234,82,0,0.28)] hover:shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.5),0_12px_32px_rgba(234,82,0,0.38)] flex items-center justify-center cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed select-none"
+        className="relative w-full max-w-[250px] sm:max-w-[275px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] flex items-center justify-center cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed select-none mx-auto"
       >
         {isProcessing ? (
           <div className="flex items-center justify-center gap-2.5">
-            <Loader2 className="w-4 h-4 animate-spin text-white" />
+            <Loader2 className="w-5 h-5 animate-spin text-white" />
             <span className="font-semibold text-sm">Procesando...</span>
           </div>
         ) : (
-          <span className="font-bold">Comprar</span>
+          <span className="font-bold text-base sm:text-[17px]">Comprar</span>
         )}
       </button>
     </div>
@@ -2722,9 +2721,9 @@ export function CartDrawer() {
       <PoweredByPayphoneLogo />
     </div>
 
-    {/* Footer Security Assurance: Authentic, technically precise architecture copy */}
-    <p className="text-[10.5px] sm:text-[11px] text-gray-500 dark:text-gray-400 text-center leading-relaxed pt-1.5 font-sans max-w-md mx-auto">
-      Procesamiento seguro mediante tokenización criptográfica PayPhone API v2 bajo certificación PCI-DSS Nivel 1. Los datos de pago nunca se almacenan en servidores locales; se transmiten directamente cifrados bajo túnel TLS 1.3 con AES-256 GCM y autenticación bancaria 3-D Secure 2.2 ({isPayphoneSimulated ? "Modo Pruebas / Sandbox" : "Entorno Producción"}).
+    {/* Footer Security Assurance: Concise & reassuring */}
+    <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center leading-relaxed pt-1.5 font-sans max-w-sm mx-auto">
+      Pago seguro cifrado con TLS 1.3 y certificación PCI-DSS. No almacenamos tus datos bancarios.
     </p>
 
   </div>
