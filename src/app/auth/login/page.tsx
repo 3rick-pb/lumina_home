@@ -347,60 +347,10 @@ function LoginFormContent() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
-            {/* Age Verification Block Alert: Underage (< 18) */}
-            {errorParam === "underage" && (
-              <div className="p-4 rounded-2xl bg-rose-50/95 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-950 dark:text-rose-200 shadow-sm animate-shake text-left space-y-2 mb-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0 shadow-xs">
-                    <ShieldAlert className="w-4 h-4 stroke-[2.2]" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-rose-900 dark:text-rose-200">
-                      Acceso Restringido · Mayoría de Edad (+18)
-                    </h4>
-                    <span className="text-[10px] text-rose-700 dark:text-rose-400 font-medium">
-                      Verificación automática con Google People API
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-rose-900 dark:text-rose-300 leading-relaxed font-semibold pl-1">
-                  No puedes acceder por ser menor de edad{ageParam ? ` (tienes ${ageParam} años)` : ""}. El acceso es exclusivo para mayores de 18 años.
-                </p>
-              </div>
-            )}
-
-            {/* Age Verification Block Alert: Missing birth date/year */}
-            {errorParam === "missing_birth_year" && (
-              <div className="p-4 rounded-2xl bg-amber-50/95 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-amber-950 dark:text-amber-200 shadow-sm text-left space-y-2 mb-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0 shadow-xs">
-                    <AlertTriangle className="w-4 h-4 stroke-[2.2]" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-amber-900 dark:text-amber-200">
-                      Fecha de Nacimiento Requerida (+18)
-                    </h4>
-                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
-                      Año no detectado en Google People API
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-amber-900 dark:text-amber-300 leading-relaxed font-medium pl-1">
-                  Para ingresar con Google es obligatorio que tu cuenta tenga configurada una fecha de nacimiento válida con año para verificar la mayoría de edad (+18). Por favor, actualiza tu fecha de nacimiento en tu cuenta de Google e inténtalo de nuevo.
-                </p>
-              </div>
-            )}
-
-            {/* OAuth Failure Notice */}
-            {errorParam === "google_auth_failed" && !errorMsg && (
-              <div className="p-3.5 bg-red-50/90 dark:bg-rose-950/40 text-red-600 dark:text-rose-300 text-xs rounded-2xl border border-red-100 dark:border-rose-900/50 text-center font-medium mb-2">
-                No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo.
-              </div>
-            )}
-
-            {errorMsg && (
-              <div className="p-3.5 bg-red-50/90 backdrop-blur-sm text-red-600 text-xs rounded-2xl border border-red-100 text-center font-medium">
-                {errorMsg}
+            {/* Error Display (Credentials, Google OAuth, or Age Restriction) */}
+            {(errorMsg || (errorParam === "underage" || errorParam === "missing_birth_year" ? "Edad mínima requerida +18 años." : errorParam === "google_auth_failed" ? "No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo." : null)) && (
+              <div className="p-3.5 bg-red-50/90 dark:bg-rose-950/40 backdrop-blur-sm text-red-600 dark:text-rose-300 text-xs rounded-2xl border border-red-100 dark:border-rose-900/40 text-center font-medium">
+                {errorMsg || (errorParam === "underage" || errorParam === "missing_birth_year" ? "Edad mínima requerida +18 años." : "No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo.")}
               </div>
             )}
 

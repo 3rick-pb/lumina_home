@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore, isValidEmail, sanitizeText, validateStrongPassword } from "@/lib/userStore";
@@ -25,6 +25,15 @@ import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { Google } from "@thesvg/react";
 import { WheelPicker, type WheelPickerOption } from "@/components/motion/wheel-picker";
+
+// Charset idéntico a CardFolder.tsx para el efecto de revelación progresiva
+const SCRAMBLE_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$?#%&";
+
+// Opciones estáticas para garantizar máxima estabilidad y cero re-renderizados bruscos en el WheelPicker
+const DAY_OPTIONS: WheelPickerOption[] = Array.from({ length: 31 }, (_, i) => {
+  const d = String(i + 1);
+  return { label: d.padStart(2, "0"), value: d };
+});
 
 const MONTH_OPTIONS: WheelPickerOption[] = [
   { label: "Ene", value: "1" },
@@ -69,7 +78,13 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Apple Alarm App style 3-column Date Picker states (Default: 15 / 01 / 2000 => 26 years old)
+  // Estados de animación para el efecto scramble/revelación de tarjetas en la contraseña
+  const [scrambledPassword, setScrambledPassword] = useState<string | null>(null);
+  const [scrambledConfirm, setScrambledConfirm] = useState<string | null>(null);
+  const pwdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cpwdTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Selector de fecha estilo Apple Alarm (Default: 15 / Ene / 2000 => 26 años)
   const [birthDay, setBirthDay] = useState("15");
   const [birthMonth, setBirthMonth] = useState("1");
   const [birthYear, setBirthYear] = useState("2000");
@@ -80,27 +95,64 @@ export default function RegisterPage() {
   const router = useRouter();
   const register = useUserStore((state) => state.register);
 
-  // Compute days in month dynamically according to selected month & year (leap year aware)
-  const daysInMonth = useMemo(() => {
-    const y = parseInt(birthYear, 10) || 2000;
-    const m = parseInt(birthMonth, 10) || 1;
-    return new Date(y, m, 0).getDate();
-  }, [birthMonth, birthYear]);
-
-  const dayOptions: WheelPickerOption[] = useMemo(() => {
-    return Array.from({ length: daysInMonth }, (_, i) => {
-      const d = String(i + 1);
-      return { label: d.padStart(2, "0"), value: d };
-    });
-  }, [daysInMonth]);
-
-  // Clamp selected day if month changes and current day exceeds total days in month
-  useEffect(() => {
-    const d = parseInt(birthDay, 10);
-    if (d > daysInMonth) {
-      setBirthDay(String(daysInMonth));
+  /**
+   * Efecto de revelación progresiva idéntico al de las tarjetas bancarias (CardFolder):
+   * Anima los caracteres de izquierda a derecha a través de glifos y símbolos ($ ? # % &)
+   */
+  const runScrambleReveal = (
+    realValue: string,
+    toShow: boolean,
+    setDisplay: (val: string | null) => void,
+    timerRef: React.MutableRefObject<NodeJS.Timeout | null>
+  ) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (!realValue) {
+      setDisplay(null);
+      return;
     }
-  }, [daysInMonth, birthDay]);
+
+    const length = realValue.length;
+    const targetChars = toShow ? Array.from(realValue) : Array.from({ length }, () => "•");
+    const totalSteps = 12;
+    const intervalMs = 24;
+    let step = 0;
+
+    setDisplay(
+      targetChars.map(() => SCRAMBLE_CHARSET[Math.floor(Math.random() * SCRAMBLE_CHARSET.length)]).join("")
+    );
+
+    timerRef.current = setInterval(() => {
+      step += 1;
+      if (step >= totalSteps) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = null;
+        setDisplay(null);
+      } else {
+        const progress = step / totalSteps;
+        const resolvedCount = Math.floor(progress * length);
+        const frame = targetChars
+          .map((ch, idx) => {
+            if (idx < resolvedCount) return ch;
+            const randIdx = Math.floor(Math.random() * SCRAMBLE_CHARSET.length);
+            return SCRAMBLE_CHARSET[randIdx];
+          })
+          .join("");
+        setDisplay(frame);
+      }
+    }, intervalMs);
+  };
+
+  const handleTogglePassword = () => {
+    const next = !showPassword;
+    setShowPassword(next);
+    runScrambleReveal(password, next, setScrambledPassword, pwdTimerRef);
+  };
+
+  const handleToggleConfirmPassword = () => {
+    const next = !showConfirmPassword;
+    setShowConfirmPassword(next);
+    runScrambleReveal(confirmPassword, next, setScrambledConfirm, cpwdTimerRef);
+  };
 
   const formattedDateStr = useMemo(() => {
     const d = parseInt(birthDay, 10);
@@ -113,14 +165,6 @@ export default function RegisterPage() {
       month: "long",
       year: "numeric",
     });
-  }, [birthDay, birthMonth, birthYear]);
-
-  const calculatedAge = useMemo(() => {
-    const d = parseInt(birthDay, 10);
-    const m = parseInt(birthMonth, 10);
-    const y = parseInt(birthYear, 10);
-    if (!d || !m || !y) return null;
-    return calculateAge(d, m, y);
   }, [birthDay, birthMonth, birthYear]);
 
   const handleGoogleLogin = async () => {
@@ -170,18 +214,21 @@ export default function RegisterPage() {
       return;
     }
 
-    // Verify birth date & legal age +18
-    const d = parseInt(birthDay, 10);
+    // Validación de fecha de nacimiento y edad mínima +18
+    const rawD = parseInt(birthDay, 10);
     const m = parseInt(birthMonth, 10);
     const y = parseInt(birthYear, 10);
-    if (!d || !m || !y) {
-      setErrorMsg("Por favor, selecciona una fecha de nacimiento válida.");
+    if (!rawD || !m || !y) {
+      setErrorMsg("Por favor, selecciona tu fecha de nacimiento.");
       return;
     }
 
+    const maxDays = new Date(y, m, 0).getDate();
+    const d = Math.min(rawD, maxDays);
+
     const ageVal = calculateAge(d, m, y);
     if (ageVal < 18) {
-      setErrorMsg(`El registro está reservado exclusivamente para mayores de 18 años (tienes ${ageVal} años).`);
+      setErrorMsg("Edad mínima requerida +18 años.");
       return;
     }
 
@@ -227,12 +274,12 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen pt-16 pb-20 flex flex-col items-center justify-center bg-transparent relative overflow-hidden px-4">
       
-      {/* Grand Brand Header */}
+      {/* Brand Header */}
       <div className="text-center mb-8 relative z-10 max-w-md">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] mb-4">
           <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
           <span className="text-[11px] font-bold tracking-widest uppercase text-gray-800">
-            {brand.name} • Registro Gratis
+            {brand.name} • Registro Exclusivo
           </span>
         </div>
 
@@ -247,8 +294,8 @@ export default function RegisterPage() {
       {/* Main Luxury Glass Card */}
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white/50 backdrop-blur-2xl border border-white/80 p-8 sm:p-10 rounded-[2.5rem] shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-          <div className="mb-7">
-            <h2 className="text-2xl font-display italic font-bold text-gray-900 mb-1.5">Regístrate gratis</h2>
+          <div className="mb-6">
+            <h2 className="text-2xl font-display italic font-bold text-gray-900 mb-1.5">Crear Cuenta</h2>
             <p className="text-xs text-gray-500">Completa tus datos para formar parte del universo {brand.shortName}.</p>
           </div>
 
@@ -274,7 +321,7 @@ export default function RegisterPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
-                  placeholder="Ej. Sofía Mendoza"
+                  placeholder="Sofía Mendoza"
                   required
                 />
               </div>
@@ -295,7 +342,7 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
-                  placeholder="Ej. sofia.mendoza@correo.com"
+                  placeholder="sofia.mendoza@correo.com"
                   required
                 />
               </div>
@@ -303,24 +350,11 @@ export default function RegisterPage() {
 
             {/* Fecha de Nacimiento — Apple Alarm App 3-Column Drum Slider (Día - Mes - Año) */}
             <div className="rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 p-3 sm:p-3.5">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#8c9276]" />
-                  <span>Fecha de Nacimiento</span>
+              <div className="flex items-center gap-1.5 mb-2 px-1">
+                <Calendar className="w-3.5 h-3.5 text-[#8c9276]" />
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Fecha de Nacimiento
                 </label>
-                {calculatedAge !== null && (
-                  calculatedAge >= 18 ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                      {calculatedAge} años • +18 verificado
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 text-[11px] font-semibold">
-                      <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                      {calculatedAge} años • Mínimo +18
-                    </span>
-                  )
-                )}
               </div>
 
               {/* Apple iOS Alarm 3-Column Drum Picker */}
@@ -335,7 +369,7 @@ export default function RegisterPage() {
                       Día
                     </span>
                     <WheelPicker
-                      options={dayOptions}
+                      options={DAY_OPTIONS}
                       value={birthDay}
                       onValueChange={setBirthDay}
                       sound={true}
@@ -380,13 +414,12 @@ export default function RegisterPage() {
               </div>
 
               {/* Selected date preview helper */}
-              <div className="mt-2 flex items-center justify-between px-2 text-[11px] text-gray-500 dark:text-gray-400">
-                <span className="capitalize">{formattedDateStr}</span>
-                <span className="text-[10px] text-gray-400">Desliza para cambiar</span>
+              <div className="mt-2 text-center text-[11px] text-gray-600 dark:text-gray-400 font-medium capitalize">
+                {formattedDateStr}
               </div>
             </div>
             
-            {/* Contraseña */}
+            {/* Contraseña con Scramble Reveal de Tarjetas */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5 ml-1">Contraseña</label>
               <div className="relative">
@@ -396,18 +429,25 @@ export default function RegisterPage() {
                 <input 
                   id="password"
                   name="password"
-                  type={showPassword ? "text" : "password"} 
+                  type={showPassword || scrambledPassword !== null ? "text" : "password"} 
                   autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-11 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
-                  placeholder="Ej. Lumina#2026"
+                  value={scrambledPassword !== null ? scrambledPassword : password}
+                  onChange={(e) => {
+                    if (scrambledPassword !== null) {
+                      if (pwdTimerRef.current) clearInterval(pwdTimerRef.current);
+                      setScrambledPassword(null);
+                    }
+                    setPassword(e.target.value);
+                  }}
+                  readOnly={scrambledPassword !== null}
+                  className="w-full pl-11 pr-11 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm font-mono tracking-wide"
+                  placeholder="Lumina#2026"
                   required
                   minLength={8}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
+                  onClick={handleTogglePassword}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
                   tabIndex={-1}
                   title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
@@ -418,7 +458,7 @@ export default function RegisterPage() {
               <StrongPasswordMeter password={password} />
             </div>
 
-            {/* Repetir Contraseña */}
+            {/* Repetir Contraseña con Scramble Reveal de Tarjetas */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5 ml-1">Repetir Contraseña</label>
               <div className="relative">
@@ -428,24 +468,31 @@ export default function RegisterPage() {
                 <input 
                   id="confirmPassword"
                   name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"} 
+                  type={showConfirmPassword || scrambledConfirm !== null ? "text" : "password"} 
                   autoComplete="new-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full pl-11 pr-11 py-3 bg-white/70 backdrop-blur-md border rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm ${
+                  value={scrambledConfirm !== null ? scrambledConfirm : confirmPassword}
+                  onChange={(e) => {
+                    if (scrambledConfirm !== null) {
+                      if (cpwdTimerRef.current) clearInterval(cpwdTimerRef.current);
+                      setScrambledConfirm(null);
+                    }
+                    setConfirmPassword(e.target.value);
+                  }}
+                  readOnly={scrambledConfirm !== null}
+                  className={`w-full pl-11 pr-11 py-3 bg-white/70 backdrop-blur-md border rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm font-mono tracking-wide ${
                     confirmPassword && password !== confirmPassword
                       ? "border-rose-300 focus:ring-rose-400/40 focus:border-rose-500"
                       : confirmPassword && password === confirmPassword
                       ? "border-emerald-300 focus:ring-emerald-400/40 focus:border-emerald-500"
                       : "border-white/90 focus:ring-[#8c9276]/40 focus:border-[#8c9276]"
                   }`}
-                  placeholder="Ej. Lumina#2026"
+                  placeholder="Lumina#2026"
                   required
                   minLength={8}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  onClick={handleToggleConfirmPassword}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
                   tabIndex={-1}
                   title={showConfirmPassword ? "Ocultar contraseña" : "Ver contraseña"}
@@ -468,16 +515,17 @@ export default function RegisterPage() {
               )}
             </div>
 
+            {/* Botón de Finalización con Proporciones Estudiadas */}
             <button 
               type="submit"
               disabled={isLoading}
-              className="w-full mt-3 h-13 bg-gray-900 text-white rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/15 group disabled:opacity-50 cursor-pointer"
+              className="w-full mt-2 h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-medium text-sm flex items-center justify-center gap-2.5 transition-all shadow-md hover:shadow-lg shadow-gray-900/15 active:scale-[0.99] cursor-pointer disabled:opacity-60"
             >
               {isLoading ? (
-                <span>Registrando...</span>
+                <span>Creando cuenta...</span>
               ) : (
                 <>
-                  <span>Regístrate gratis en {brand.shortName}</span>
+                  <span>Crear Cuenta en {brand.shortName}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
