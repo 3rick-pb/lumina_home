@@ -52,7 +52,7 @@ import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { getRefinedCoordinates, type RawGpsHardwareData } from "@/lib/locationUtils";
 
 // Official Card & Payment Gateway Logos (Authentic Vector Brandmarks from theSVG.org + PayPhone Official)
-function MastercardLogo({ className = "h-4" }: { className?: string }) {
+function MastercardLogo({ className = "h-[17px]" }: { className?: string }) {
   return (
     <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" role="img" xmlns="http://www.w3.org/2000/svg">
       <title>Mastercard</title>
@@ -63,7 +63,7 @@ function MastercardLogo({ className = "h-4" }: { className?: string }) {
   );
 }
 
-function VisaLogo({ className = "h-4", fill = "#1A1F71" }: { className?: string; fill?: string }) {
+function VisaLogo({ className = "h-[19px]", fill = "#1A1F71" }: { className?: string; fill?: string }) {
   return (
     <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" fill={fill} role="img" xmlns="http://www.w3.org/2000/svg">
       <title>Visa</title>
@@ -303,6 +303,46 @@ export function CartDrawer() {
     }
   };
 
+  // Detect card brand for live button display (Visa, Mastercard, Amex, Diners, Discover)
+  const detectedCardBrand = useMemo(() => {
+    if (selectedSavedCardId !== "new") {
+      const found = cards?.find((c) => c.id === selectedSavedCardId);
+      if (found?.type) {
+        const t = found.type.toLowerCase();
+        if (t.includes("master")) return "mastercard";
+        if (t.includes("visa")) return "visa";
+        if (t.includes("amex") || t.includes("american")) return "amex";
+        if (t.includes("diner")) return "diners";
+        if (t.includes("discover")) return "discover";
+      }
+    }
+    const digits = cardNumber.replace(/\D/g, "");
+    if (digits.startsWith("4")) return "visa";
+    if (
+      digits.startsWith("51") || digits.startsWith("52") || digits.startsWith("53") ||
+      digits.startsWith("54") || digits.startsWith("55") || digits.startsWith("2")
+    ) return "mastercard";
+    if (digits.startsWith("34") || digits.startsWith("37")) return "amex";
+    if (digits.startsWith("30") || digits.startsWith("36") || digits.startsWith("38")) return "diners";
+    if (digits.startsWith("6011") || digits.startsWith("65")) return "discover";
+    return "visa";
+  }, [selectedSavedCardId, cards, cardNumber]);
+
+  // Field validation to prevent proceeding without valid card / payment & address data
+  const isPaymentFieldsValid = useMemo(() => {
+    if (selectedPayMethod === "app") {
+      const rawPhone = payphoneAppPhone.replace(/\D/g, "");
+      return rawPhone.length === 10;
+    }
+    // Card payment
+    const cleanNum = cardNumber.replace(/\D/g, "");
+    const isNumValid = cleanNum.length >= 15 && cleanNum.length <= 16;
+    const isExpValid = /^\d{2}\/\d{2}$/.test(cardExpiry.trim());
+    const isCvvValid = cardCvv.trim().length >= 3 && cardCvv.trim().length <= 4;
+    const isHolderValid = cardHolder.trim().length >= 3;
+    return isNumValid && isExpValid && isCvvValid && isHolderValid;
+  }, [selectedPayMethod, payphoneAppPhone, cardNumber, cardExpiry, cardCvv, cardHolder]);
+
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [addrRecipient, setAddrRecipient] = useState("");
@@ -331,6 +371,10 @@ export function CartDrawer() {
   const [locationSuccess, setLocationSuccess] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [addressValidationError, setAddressValidationError] = useState<string | null>(null);
+
+  const hasShippingAddress = useMemo(() => {
+    return Boolean(address || (addresses && addresses.length > 0) || (addrStreet && addrCity));
+  }, [address, addresses, addrStreet, addrCity]);
 
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
@@ -846,6 +890,53 @@ export function CartDrawer() {
   const handleTriggerPaymentWithAnimation = () => {
     if (isProcessing) return;
     setPayphoneError(null);
+
+    // 1. Control de Dirección de Entrega
+    if (!hasShippingAddress) {
+      setPayphoneError("Por favor añade o selecciona una dirección de entrega válida antes de continuar.");
+      setIsEditingAddress(true);
+      const addrElem = document.getElementById("cart-address-section");
+      if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    // 2. Control de Campos del Método de Pago
+    if (selectedPayMethod === "card") {
+      const cleanNum = cardNumber.replace(/\D/g, "");
+      if (cleanNum.length < 15) {
+        setPayphoneError("Por favor ingresa los 16 dígitos de tu tarjeta de crédito o débito.");
+        const payElem = document.getElementById("cart-payment-fields");
+        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(cardExpiry.trim())) {
+        setPayphoneError("Por favor ingresa la fecha de expiración de tu tarjeta en formato MM/AA.");
+        const payElem = document.getElementById("cart-payment-fields");
+        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (cardCvv.trim().length < 3) {
+        setPayphoneError("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos).");
+        const payElem = document.getElementById("cart-payment-fields");
+        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (cardHolder.trim().length < 3) {
+        setPayphoneError("Por favor ingresa el nombre del titular como figura en tu tarjeta.");
+        const payElem = document.getElementById("cart-payment-fields");
+        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    } else if (selectedPayMethod === "app") {
+      const rawPhone = payphoneAppPhone.replace(/\D/g, "");
+      if (rawPhone.length !== 10) {
+        setPayphoneError("Por favor ingresa un número celular PayPhone válido de 10 dígitos (Ej: 099 123 4567).");
+        const payElem = document.getElementById("cart-payment-fields");
+        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    }
+
     handleConfirmOrder();
   };
 
@@ -1764,14 +1855,16 @@ export function CartDrawer() {
       <div className="w-full">
         <SlideConfirmButton
           label={hasAgotadoItems ? "Elimina piezas agotadas" : "Ir a pagar"}
-          loadingLabel="Preparando"
+          loadingLabel="Preparando..."
           confirmedLabel="Listo, continúa..."
           disabled={hasAgotadoItems}
           size="lg"
           className="w-full shadow-sm"
           onConfirm={async () => {
-            await new Promise((resolve) => setTimeout(resolve, 1200));
             await new Promise((resolve) => setTimeout(resolve, 600));
+          }}
+          confirmedDurationMs={1000}
+          onConfirmed={() => {
             handleProceedToPayment();
           }}
         />
@@ -1855,7 +1948,12 @@ export function CartDrawer() {
       </div>
       {isEditingAddress ? (
         <button 
-          onClick={() => setIsEditingAddress(false)}
+          onClick={() => {
+            setLocationError(null);
+            setLocationSuccess(false);
+            setShowMiniMap(false);
+            setIsEditingAddress(false);
+          }}
           className="px-3.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 transition-all cursor-pointer"
         >
           Cancelar
@@ -1885,22 +1983,10 @@ export function CartDrawer() {
 
     {isEditingAddress ? (
       <form onSubmit={handleSaveAddress} className="space-y-3.5 pt-1">
-        <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] dark:border-white/5">
+        <div className="pb-2 border-b border-black/[0.06] dark:border-white/5">
           <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
             Nueva Dirección de Entrega
           </span>
-          <button 
-            type="button" 
-            onClick={() => {
-              setLocationError(null);
-              setLocationSuccess(false);
-              setShowMiniMap(false);
-              setIsEditingAddress(false);
-            }}
-            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
-          >
-            Cancelar
-          </button>
         </div>
 
         {/* Geolocation Auto-fill Button */}
@@ -2345,7 +2431,7 @@ export function CartDrawer() {
           }}
           className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline underline-offset-2 transition-colors cursor-pointer font-sans"
         >
-          Editar datos
+          Editar dirección
         </button>
       </div>
     </div>
@@ -2377,10 +2463,10 @@ export function CartDrawer() {
             </svg>
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <VisaLogo className="h-4 sm:h-[18px] w-auto max-w-full object-contain" fill="#1A1F71" />
+            <VisaLogo className="h-[19px] sm:h-[21px] w-auto max-w-full object-contain" fill="#1A1F71" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <MastercardLogo className="h-4 sm:h-[17px] w-auto max-w-full object-contain" />
+            <MastercardLogo className="h-[17px] sm:h-[18px] w-auto max-w-full object-contain" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
             <DinersClubLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
@@ -2462,7 +2548,7 @@ export function CartDrawer() {
         </div>
 
         {/* High-Ticket Double-Bezel Card Console with Physical Embossed Typography */}
-        <div className="p-1.5 sm:p-2 rounded-[1.75rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.07] dark:ring-white/10 shadow-[0_6px_28px_rgba(0,0,0,0.02)]">
+        <div id="cart-payment-fields" className="p-1.5 sm:p-2 rounded-[1.75rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.07] dark:ring-white/10 shadow-[0_6px_28px_rgba(0,0,0,0.02)]">
           <div className="rounded-[calc(1.75rem-0.375rem)] border border-black/[0.06] dark:border-white/10 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-black/[0.06] dark:divide-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
             {/* Row 1: Card Number + Live Brand Badge */}
             <div className="px-4 py-3.5 flex items-center justify-between gap-3 bg-gradient-to-b from-transparent to-black/[0.01] dark:to-white/[0.01]">
@@ -2550,27 +2636,56 @@ export function CartDrawer() {
         </div>
       </div>
     ) : (
-      <div className="pt-2 space-y-2.5">
+      <div className="pt-2 space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-wider">
             Cuenta PayPhone
           </h4>
-          <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400">
-            Autorización Push Inmediata
-          </span>
+          {payphoneAppPhone.replace(/\D/g, "").length === 10 && (
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
+              <CheckCircle2 className="w-3 h-3" /> Número válido
+            </span>
+          )}
         </div>
+
+        {/* Enhanced Phone Input Console */}
         <div className="p-1.5 sm:p-2 rounded-[1.75rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.07] dark:ring-white/10 shadow-[0_6px_28px_rgba(0,0,0,0.02)]">
-          <div className="rounded-[calc(1.75rem-0.375rem)] border border-black/[0.06] dark:border-white/10 bg-white dark:bg-[#141416] flex items-center px-4 py-3.5 gap-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+          <div className="rounded-[calc(1.75rem-0.375rem)] border border-black/[0.06] dark:border-white/10 bg-white dark:bg-[#141416] flex items-center px-4 py-3.5 gap-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] focus-within:ring-2 focus-within:ring-[#FF5900]/25 focus-within:border-[#FF5900]/40 transition-all">
+            {/* Country code pill */}
+            <div className="flex items-center gap-1.5 pr-2.5 border-r border-black/[0.08] dark:border-white/10 shrink-0">
+              <span className="text-sm">🇪🇨</span>
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">+593</span>
+            </div>
+
             <Phone className="w-4 h-4 text-[#FF5900] shrink-0" />
+
             <input 
               type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
               value={payphoneAppPhone}
-              onChange={(e) => setPayphoneAppPhone(e.target.value)}
-              placeholder="Número celular registrado (Ej: 0991234567)"
-              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder-gray-400 font-sans font-medium"
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                let formatted = digits;
+                if (digits.length > 6) {
+                  formatted = `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+                } else if (digits.length > 3) {
+                  formatted = `${digits.slice(0, 3)} ${digits.slice(3)}`;
+                }
+                setPayphoneAppPhone(formatted);
+              }}
+              placeholder="099 123 4567"
+              maxLength={12}
+              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder:text-gray-400 font-mono tracking-wider font-semibold"
             />
+
+            {/* Digit counter indicator */}
+            <span className="text-[10px] font-mono font-medium text-gray-400 dark:text-gray-500 shrink-0 tabular-nums">
+              {payphoneAppPhone.replace(/\D/g, "").length}/10
+            </span>
           </div>
         </div>
+
         <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed font-sans px-1">
           Al presionar pagar, recibirás una solicitud de autorización directa en tu app PayPhone o podrás debitar de tu saldo disponible.
         </p>
@@ -2694,13 +2809,17 @@ export function CartDrawer() {
       </div>
     )}
 
-    {/* Action Button: Sleek Luxury "Comprar" Button */}
+    {/* Action Button: Dynamic "Pagar con [Brand]" Button */}
     <div className="pt-2 flex justify-center">
       <button
         type="button"
         onClick={handleTriggerPaymentWithAnimation}
-        disabled={isProcessing}
-        className="relative w-full max-w-[250px] sm:max-w-[275px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] flex items-center justify-center cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed select-none mx-auto"
+        disabled={isProcessing || !isPaymentFieldsValid || !hasShippingAddress}
+        className={`relative w-full max-w-[270px] sm:max-w-[295px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] flex items-center justify-center select-none mx-auto ${
+          !isPaymentFieldsValid || !hasShippingAddress
+            ? "opacity-55 cursor-not-allowed shadow-none"
+            : "hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] cursor-pointer"
+        }`}
       >
         {isProcessing ? (
           <div className="flex items-center justify-center gap-2.5">
@@ -2708,7 +2827,33 @@ export function CartDrawer() {
             <span className="font-semibold text-sm">Procesando...</span>
           </div>
         ) : (
-          <span className="font-bold text-base sm:text-[17px]">Comprar</span>
+          <div className="flex items-center justify-center gap-2">
+            <span>Pagar con</span>
+            {selectedPayMethod === "app" ? (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <PayPhoneIcon className="w-4 h-4 rounded-xs" />
+                <span className="font-extrabold text-[#ffffff] tracking-tight">PayPhone</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center shrink-0">
+                {detectedCardBrand === "visa" && (
+                  <VisaLogo className="h-[18px] w-auto max-w-full drop-shadow-sm" fill="#FFFFFF" />
+                )}
+                {detectedCardBrand === "mastercard" && (
+                  <MastercardLogo className="h-[18px] w-auto max-w-full drop-shadow-sm" />
+                )}
+                {detectedCardBrand === "amex" && (
+                  <AmexLogo className="h-4 w-auto max-w-full" />
+                )}
+                {detectedCardBrand === "diners" && (
+                  <DinersClubLogo className="h-4 w-auto max-w-full" />
+                )}
+                {detectedCardBrand === "discover" && (
+                  <DiscoverLogo className="h-4 w-auto max-w-full" />
+                )}
+              </div>
+            )}
+          </div>
         )}
       </button>
     </div>

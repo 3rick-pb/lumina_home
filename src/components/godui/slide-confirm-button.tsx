@@ -35,6 +35,10 @@ export type SlideConfirmButtonProps = Omit<
   loadingLabel?: React.ReactNode;
   /** Label shown after confirming. Default `"Confirmed"`. */
   confirmedLabel?: React.ReactNode;
+  /** Duration in ms to display the confirmed state before triggering onConfirmed. Default `1000`. */
+  confirmedDurationMs?: number;
+  /** Callback fired after the confirmed state has been displayed for confirmedDurationMs. */
+  onConfirmed?: () => void;
   disabled?: boolean;
 };
 
@@ -87,6 +91,8 @@ const SlideConfirmButton = React.forwardRef<
   (
     {
       onConfirm,
+      onConfirmed,
+      confirmedDurationMs = 1000,
       variant = "default",
       size = "md",
       threshold = 0.85,
@@ -169,6 +175,13 @@ const SlideConfirmButton = React.forwardRef<
         if (!mounted.current) return;
       }
       setStatus("confirmed");
+      if (onConfirmed) {
+        setTimeout(() => {
+          if (mounted.current) {
+            onConfirmed();
+          }
+        }, confirmedDurationMs);
+      }
     };
 
     const handleDragEnd = () => {
