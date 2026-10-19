@@ -1467,7 +1467,7 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 py-2.5 sm:px-5 md:px-6 py-3 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2.5 md:gap-4 lg:gap-6 min-h-[56px] w-full max-w-full">
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2.5 md:gap-4 lg:gap-6 min-h-[52px] w-full max-w-full">
   
   {/* --- 1. VISTA MÓVIL (Celulares y pantallas pequeñas): Disperso 1:1 a la captura de pantalla --- */}
   <div className="flex md:hidden items-center justify-between w-full gap-2 min-w-0">
@@ -1538,64 +1538,87 @@ const handleConfirmDeleteNiche = async () => {
   <div className="hidden md:flex flex-1 items-center justify-center min-w-0 px-2 lg:px-4">
     <div
       ref={containerRef}
-      className="relative flex items-center justify-between w-full max-w-[460px] lg:max-w-[500px] px-6 sm:px-8 py-3.5 rounded-2xl bg-[#09090b] border border-zinc-800/80 dark:border-white/10 shadow-xl select-none overflow-hidden"
-      style={{
-        backgroundImage: "radial-gradient(circle, rgba(255, 255, 255, 0.12) 1px, transparent 1px)",
-        backgroundSize: "16px 16px",
-      }}
+      className="relative flex items-center justify-between w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[350px] select-none"
     >
       {/* 1. Client Node */}
-      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+      <div className="flex flex-col items-center gap-1 z-10 shrink-0">
         <div
           ref={clientRef}
-          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#141417] shadow-sm text-white select-none transition-transform hover:scale-105"
+          className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-lg border border-stone-800/20 dark:border-white/10 bg-stone-900 dark:bg-stone-800 shadow-xs text-white select-none transition-transform hover:scale-105"
           title="Client"
         >
-          <MonitorSmartphone className="w-5 h-5 text-white/90" />
+          <MonitorSmartphone className="w-3.5 h-3.5 text-white/95" />
         </div>
-        <span className="text-[11px] font-normal text-zinc-400 select-none">Client</span>
+        <span className="text-[9.5px] font-medium text-stone-500 dark:text-stone-400 leading-none">Client</span>
       </div>
 
       {/* 2. Edge Node */}
-      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+      <div className="flex flex-col items-center gap-1 z-10 shrink-0">
         <div
           ref={edgeRef}
-          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/20 bg-[#f4f4f5] shadow-md text-zinc-950 select-none transition-transform hover:scale-105"
+          className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-lg border border-stone-300 dark:border-white/20 bg-stone-100 dark:bg-white shadow-xs text-stone-950 select-none transition-transform hover:scale-105"
           title="Edge"
         >
-          <ShieldCheck className="w-5 h-5 text-zinc-950" />
+          <ShieldCheck className="w-3.5 h-3.5 text-stone-950" />
         </div>
-        <span className="text-[11px] font-normal text-zinc-400 select-none">Edge</span>
+        <span className="text-[9.5px] font-medium text-stone-500 dark:text-stone-400 leading-none">Edge</span>
       </div>
 
       {/* 3. Compute Node */}
-      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+      <div className="flex flex-col items-center gap-1 z-10 shrink-0">
         <div
           ref={computeRef}
-          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#141417] shadow-sm text-white select-none transition-transform hover:scale-105"
+          className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-lg border border-stone-800/20 dark:border-white/10 bg-stone-900 dark:bg-stone-800 shadow-xs text-white select-none transition-transform hover:scale-105"
           title="Compute"
         >
-          <Server className="w-5 h-5 text-white/90" />
+          <Server className="w-3.5 h-3.5 text-white/95" />
         </div>
-        <span className="text-[11px] font-normal text-zinc-400 select-none">Compute</span>
+        <span className="text-[9.5px] font-medium text-stone-500 dark:text-stone-400 leading-none">Compute</span>
       </div>
 
       {/* 4. Database Node */}
-      <div className="flex flex-col items-center gap-1.5 z-10 shrink-0">
+      <div className="flex flex-col items-center gap-1 z-10 shrink-0">
         <div
           ref={dbRef}
-          className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#141417] shadow-sm text-white select-none transition-transform hover:scale-105"
+          className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-lg border border-stone-800/20 dark:border-white/10 bg-stone-900 dark:bg-stone-800 shadow-xs text-white select-none transition-transform hover:scale-105"
           title="Database"
         >
-          <Database className="w-5 h-5 text-white/90" />
+          <Database className="w-3.5 h-3.5 text-white/95" />
         </div>
-        <span className="text-[11px] font-normal text-zinc-400 select-none">Database</span>
+        <span className="text-[9.5px] font-medium text-stone-500 dark:text-stone-400 leading-none">Database</span>
       </div>
 
       {/* Animated Beams */}
-      <AnimatedBeam {...beam} fromRef={clientRef} toRef={edgeRef} delay={0} />
-      <AnimatedBeam {...beam} fromRef={edgeRef} toRef={computeRef} delay={0.6} />
-      <AnimatedBeam {...beam} fromRef={computeRef} toRef={dbRef} delay={1.2} />
+      <AnimatedBeam
+        {...beam}
+        fromRef={clientRef}
+        toRef={edgeRef}
+        delay={0}
+        pathColor={resolvedTheme === 'dark' ? '#3f3f46' : '#d4d4d8'}
+        pathOpacity={0.6}
+        gradientStartColor={resolvedTheme === 'dark' ? '#ffffff' : '#18181b'}
+        gradientStopColor={resolvedTheme === 'dark' ? '#ffffff' : '#18181b'}
+      />
+      <AnimatedBeam
+        {...beam}
+        fromRef={edgeRef}
+        toRef={computeRef}
+        delay={0.6}
+        pathColor={resolvedTheme === 'dark' ? '#3f3f46' : '#d4d4d8'}
+        pathOpacity={0.6}
+        gradientStartColor={resolvedTheme === 'dark' ? '#ffffff' : '#18181b'}
+        gradientStopColor={resolvedTheme === 'dark' ? '#ffffff' : '#18181b'}
+      />
+      <AnimatedBeam
+        {...beam}
+        fromRef={computeRef}
+        toRef={dbRef}
+        delay={1.2}
+        pathColor={resolvedTheme === 'dark' ? '#3f3f46' : '#d4d4d8'}
+        pathOpacity={0.6}
+        gradientStartColor={resolvedTheme === 'dark' ? '#ffffff' : '#18181b'}
+        gradientStopColor={resolvedTheme === 'dark' ? '#ffffff' : '#18181b'}
+      />
     </div>
   </div>
 

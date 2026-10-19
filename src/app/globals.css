@@ -96,7 +96,7 @@
   textarea,
   [contenteditable="true"],
   [contenteditable=""] {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3.5h7M8 3.5v17M4.5 20.5h7' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3Cpath d='M4.5 3.5h7M8 3.5v17M4.5 20.5h7' stroke='%23000000' stroke-width='1.8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") 8 12, text !important;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3.5 C6 3.5 7.4 4.4 8 6 V18 C7.4 19.6 6 20.5 4.5 20.5 M11.5 3.5 C10 3.5 8.6 4.4 8 6 V18 C8.6 19.6 10 20.5 11.5 20.5' fill='none' stroke='%23000000' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 8 12, text !important;
     caret-color: #000000 !important;
   }
 
@@ -111,7 +111,7 @@
   .dark textarea,
   .dark [contenteditable="true"],
   .dark [contenteditable=""] {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3.5h7M8 3.5v17M4.5 20.5h7' stroke='%23000000' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3Cpath d='M4.5 3.5h7M8 3.5v17M4.5 20.5h7' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") 8 12, text !important;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3.5 C6 3.5 7.4 4.4 8 6 V18 C7.4 19.6 6 20.5 4.5 20.5 M11.5 3.5 C10 3.5 8.6 4.4 8 6 V18 C8.6 19.6 10 20.5 11.5 20.5' fill='none' stroke='%23ffffff' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 8 12, text !important;
     caret-color: #ffffff !important;
   }
 
