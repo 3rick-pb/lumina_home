@@ -40,7 +40,8 @@ import {
   User,
   Phone,
   QrCode,
-  Lock
+  Lock,
+  FileText
 } from "lucide-react";
 import { playEnvelopeSound } from "./CardFolder";
 import { useCartStore } from "@/lib/store";
@@ -3175,206 +3176,244 @@ export function CartDrawer() {
   </motion.div>
 
   {/* ======================================================================= */}
-  {/* PAYPHONE ECUADOR PRIVATE BANKING TERMINAL & 3D SECURE MODAL */}
+  {/* RESUMEN DE FACTURA Y COMPROBANTE DE ORDEN */}
   {/* ======================================================================= */}
   {isPayPhoneSimOpen && payphoneSimData && (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-2xl animate-fade-in font-sans">
-      {/* Outer Shell: Double-Bezel Hardware Architecture */}
-      <div className="w-full max-w-[480px] p-2 sm:p-2.5 rounded-[2.5rem] bg-gradient-to-b from-black/10 via-black/5 to-black/10 dark:from-white/15 dark:via-white/5 dark:to-white/10 ring-1 ring-black/10 dark:ring-white/20 shadow-[0_32px_80px_-15px_rgba(0,0,0,0.6)] animate-scale-up">
-        {/* Inner Core */}
-        <div className="w-full rounded-[calc(2.5rem-0.5rem)] bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden border border-black/[0.04] dark:border-white/[0.06]">
-          
-          {/* Ambient Specular Light Flares */}
-          <div className="pointer-events-none absolute -top-24 -right-24 w-60 h-60 bg-gradient-to-br from-[#ff5b00]/15 via-amber-500/10 to-transparent rounded-full blur-3xl opacity-80" />
-          <div className="pointer-events-none absolute -bottom-24 -left-24 w-60 h-60 bg-gradient-to-tr from-emerald-500/15 via-teal-500/10 to-transparent rounded-full blur-3xl opacity-70" />
-
-          {/* Modal Header */}
-          <div className="flex items-center justify-between pb-3.5 border-b border-black/[0.06] dark:border-white/10 relative z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#ff5b00]/20 via-[#ff5b00]/10 to-transparent border border-[#ff5b00]/30 flex items-center justify-center shadow-xs shrink-0">
-                <PayPhoneIcon className="w-7 h-7" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-extrabold text-sm sm:text-base text-gray-950 dark:text-white tracking-tight">
-                    PayPhone® Gateway
-                  </h3>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider border border-emerald-500/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    3D Secure 2.2
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                  Terminal Bancaria Lumina • Autorización Directa
-                </p>
-              </div>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-md animate-fade-in font-sans">
+      <div className="w-full max-w-[500px] max-h-[92vh] flex flex-col rounded-[2rem] bg-white dark:bg-[#121215] text-gray-900 dark:text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.5)] border border-gray-200/90 dark:border-white/10 overflow-hidden animate-scale-up">
+        
+        {/* Encabezado Principal de Factura */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.02] shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#FF5900] flex items-center justify-center shrink-0 border border-[#FF5900]/20">
+              <FileText className="w-5 h-5" />
             </div>
-
-            <button
-              type="button"
-              onClick={() => setIsPayPhoneSimOpen(false)}
-              disabled={isSimulatingApproval}
-              className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-gray-400 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center justify-center transition-colors cursor-pointer"
-              aria-label="Cerrar modal"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Luxury Obsidian Credit Card Preview */}
-          <div className="relative z-10 w-full rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-[#1a1a1d] via-[#111113] to-[#08080a] text-white border border-white/15 shadow-[0_16px_36px_rgba(0,0,0,0.45)] overflow-hidden space-y-3.5 group">
-            {/* Iridescent diagonal reflection */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-            {/* Card Top: EMV Chip + Contactless + Network */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                {/* Metallic Brass EMV Chip */}
-                <div className="w-8 h-6 rounded-md bg-gradient-to-br from-[#f6d365] via-[#fda085] to-[#d4af37] border border-amber-200/50 p-0.5 shadow-inner flex flex-col justify-between">
-                  <div className="h-0.5 w-full bg-amber-950/25" />
-                  <div className="h-0.5 w-full bg-amber-950/25" />
-                  <div className="h-0.5 w-full bg-amber-950/25" />
-                </div>
-                {/* Contactless waves SVG */}
-                <svg className="w-4 h-4 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M8.5 16.5a5 5 0 0 1 0-9" />
-                  <path d="M12 19a8.5 8.5 0 0 0 0-14" />
-                </svg>
-              </div>
-
+            <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                  Fondos Verificados
-                </span>
-                <VisaLogo className="h-3" fill="#FFFFFF" />
-              </div>
-            </div>
-
-            {/* Masked Card Number */}
-            <div className="pt-1">
-              <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/40 block mb-0.5">
-                Tarjeta Cuentahabiente
-              </span>
-              <p className="font-mono text-base sm:text-lg font-bold tracking-[0.25em] text-white/95">
-                •••• &nbsp;•••• &nbsp;•••• &nbsp;<span className="text-emerald-400 font-extrabold">4242</span>
-              </p>
-            </div>
-
-            {/* Card Details Footer */}
-            <div className="flex items-end justify-between pt-2 border-t border-white/10 text-xs font-mono">
-              <div>
-                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Titular Autorizado</span>
-                <span className="font-semibold text-white uppercase tracking-wide truncate max-w-[170px] block text-[11px]">
-                  {payphoneSimData.customerName || (user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA")}
-                </span>
-              </div>
-              <div className="text-center">
-                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Vence</span>
-                <span className="font-semibold text-white/90 text-[11px]">09/29</span>
-              </div>
-              <div className="text-right">
-                <span className="text-white/40 uppercase tracking-widest block text-[8.5px]">Protección</span>
-                <span className="font-semibold text-emerald-400 text-[11px]">CVV •••</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Symmetrical Financial Ledger */}
-          <div className="relative z-10 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2.5 text-xs">
-            <div className="flex items-baseline justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Monto a Liquidar
-              </span>
-              <div className="text-right">
-                <span className="text-2xl font-black text-gray-950 dark:text-white font-sans tracking-tight">
-                  ${Number(payphoneSimData.total).toFixed(2)}
-                </span>
-                <span className="text-xs font-bold text-gray-400 font-mono ml-1.5">USD</span>
-              </div>
-            </div>
-
-            <div className="h-px w-full bg-black/[0.05] dark:bg-white/[0.05]" />
-
-            <div className="grid grid-cols-2 gap-2.5 text-[11px]">
-              <div>
-                <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Pedido Lumina</span>
-                <span className="font-mono font-bold text-gray-900 dark:text-gray-100 truncate block">
+                <h3 className="font-extrabold text-base text-gray-950 dark:text-white tracking-tight">
+                  Resumen de Factura
+                </h3>
+                <span className="font-mono text-[10.5px] font-bold text-gray-600 dark:text-gray-300 bg-gray-200/70 dark:bg-white/10 px-2 py-0.5 rounded-md">
                   {payphoneSimData.orderId}
                 </span>
               </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Lumina Home • Factura Oficial Consumidor
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsPayPhoneSimOpen(false)}
+            disabled={isSimulatingApproval}
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            aria-label="Cerrar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Cuerpo Scrolleable con Toda la Información Principal */}
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-3.5 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
+          
+          {/* Banner de Estado */}
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/80 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="font-semibold text-[11.5px] truncate">Datos verificados · Listo para emitir</span>
+            </div>
+            <span className="font-mono text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/90 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded-full shrink-0">
+              Liquidación Activa
+            </span>
+          </div>
+
+          {/* 1. Datos del Cliente / Facturación SRI */}
+          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-gray-500 dark:text-gray-400">
+                <User className="w-3.5 h-3.5 text-[#FF5900]" /> Datos de Facturación
+              </span>
+              <span className="font-mono text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                RUC/C.I: {payphoneSimData.shippingAddr?.idNumber || addrIdNumber || "9999999999999"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs pt-1.5 border-t border-gray-200/60 dark:border-white/5">
               <div>
-                <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Protocolo Criptográfico</span>
-                <span className="font-mono text-gray-600 dark:text-gray-300 text-[10px] truncate block" title={payphoneSimData.clientTransactionId}>
-                  {payphoneSimData.clientTransactionId?.slice(0, 16)}...
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Cuentahabiente / Titular</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate block text-[11.5px]">
+                  {payphoneSimData.customerName || (user?.name ? formatCleanName(user.name) : "Cliente Lumina")}
                 </span>
               </div>
               <div>
-                <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Cuentahabiente</span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium truncate block">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Correo Electrónico</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 truncate block text-[11.5px]" title={payphoneSimData.customerEmail}>
                   {payphoneSimData.customerEmail}
                 </span>
               </div>
-              {payphoneSimData.shippingAddr?.idNumber && (
-                <div>
-                  <span className="text-gray-400 font-mono text-[9.5px] uppercase tracking-wider block">Cédula / RUC SRI</span>
-                  <span className="font-mono font-bold text-gray-800 dark:text-gray-200 truncate block">
-                    {payphoneSimData.shippingAddr.idNumber}
-                  </span>
-                </div>
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Teléfono de Contacto</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 text-[11.5px]">
+                  {payphoneSimData.shippingAddr?.phone || addrPhone || "No especificado"}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Forma de Pago</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 text-[11.5px] flex items-center gap-1.5 truncate">
+                  {selectedPayMethod === "card" ? (
+                    <>
+                      <CreditCard className="w-3.5 h-3.5 text-[#FF5900] shrink-0" />
+                      <span className="capitalize">{detectedCardBrand}</span> •••• {cardNumber.replace(/\D/g, "").slice(-4) || "4242"}
+                    </>
+                  ) : (
+                    <>
+                      <PayPhoneIcon className="w-3.5 h-3.5 rounded-xs shrink-0" />
+                      <span>PayPhone</span> {payphoneAppPhone ? `0${payphoneAppPhone.replace(/\D/g, "").slice(-9)}` : ""}
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Destino de Entrega */}
+          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-gray-500 dark:text-gray-400">
+                <Truck className="w-3.5 h-3.5 text-[#FF5900]" /> Destino de Entrega
+              </span>
+              <span className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                Despacho Asegurado
+              </span>
+            </div>
+
+            <div className="text-xs pt-1 border-t border-gray-200/60 dark:border-white/5 space-y-0.5">
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-[12px]">
+                {payphoneSimData.recipientName || payphoneSimData.customerName || "Cliente"}
+              </p>
+              <p className="text-gray-600 dark:text-gray-300 text-[11.5px] leading-relaxed">
+                {payphoneSimData.shippingAddr?.street || addrStreet || "Dirección Principal"}
+                {payphoneSimData.shippingAddr?.exteriorNumber ? ` #${payphoneSimData.shippingAddr.exteriorNumber}` : (addrExteriorNumber ? ` #${addrExteriorNumber}` : "")}
+                {(payphoneSimData.shippingAddr?.neighborhood || addrNeighborhood) ? `, Sector ${payphoneSimData.shippingAddr?.neighborhood || addrNeighborhood}` : ""}
+              </p>
+              <p className="text-gray-500 dark:text-gray-400 text-[11px]">
+                {payphoneSimData.shippingAddr?.city || addrCity || "Quito"}, {payphoneSimData.shippingAddr?.state || addrState || "Pichincha"} • Ecuador
+              </p>
+              {(payphoneSimData.shippingAddr?.crossStreets || addrCrossStreets || payphoneSimData.shippingAddr?.deliveryInstructions || addrDeliveryInstructions) && (
+                <p className="text-[10.5px] text-gray-500 dark:text-gray-400 italic pt-1">
+                  Indicaciones: {payphoneSimData.shippingAddr?.crossStreets || addrCrossStreets || payphoneSimData.shippingAddr?.deliveryInstructions || addrDeliveryInstructions}
+                </p>
               )}
             </div>
           </div>
 
-          {/* High-End Trust Pill */}
-          <div className="relative z-10 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 text-[11px]">
+          {/* 3. Productos en Factura */}
+          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-gray-500 dark:text-gray-400">
+                <Package className="w-3.5 h-3.5 text-[#FF5900]" /> Detalle de Artículos ({payphoneSimData.items?.length || items.length})
+              </span>
+            </div>
+
+            <div className="max-h-36 overflow-y-auto space-y-2 pr-1 divide-y divide-gray-200/60 dark:divide-white/5 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
+              {(payphoneSimData.items || items).map((item: any, idx: number) => {
+                const unitPrice = item.bundleCustomPrice ?? item.product?.price ?? item.price ?? 0;
+                const lineTotal = unitPrice * (item.quantity || 1);
+                const title = item.isBundle ? (item.bundleName || "Pack Promocional") : (item.product?.title || item.title || "Producto");
+                const imgUrl = item.product?.imageUrl || (item.product?.images && item.product.images[0]) || item.imageUrl || "/placeholder.jpg";
+                return (
+                  <div key={item.id || idx} className="pt-2 first:pt-0 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
+                        <Image src={imgUrl} alt={title} fill className="object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-gray-100 truncate text-[11.5px]">
+                          {title}
+                        </p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                          Cantidad: {item.quantity || 1} {item.color ? `· ${item.color}` : ""} {item.size ? `· ${item.size}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-gray-900 dark:text-white shrink-0 text-xs">
+                      ${lineTotal.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Desglose Financiero de Factura */}
+          <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.08] space-y-2 text-xs">
+            <div className="flex justify-between text-gray-500 dark:text-gray-400">
+              <span>Subtotal neto</span>
+              <span className="font-mono font-semibold text-gray-800 dark:text-gray-200">
+                ${getSubtotal().toFixed(2)} USD
+              </span>
+            </div>
+            {getDiscountAmount() > 0 && (
+              <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                <span>Descuento promocional</span>
+                <span className="font-mono font-semibold">
+                  -${getDiscountAmount().toFixed(2)} USD
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-gray-500 dark:text-gray-400">
+              <span>Costo de envío a domicilio</span>
+              <span className="font-mono font-semibold text-gray-800 dark:text-gray-200">
+                {getShipping() === 0 ? "Gratis" : `$${getShipping().toFixed(2)} USD`}
+              </span>
+            </div>
+            <div className="h-px bg-gray-200/70 dark:bg-white/10 my-1" />
+            <div className="flex items-baseline justify-between pt-0.5">
+              <div>
+                <span className="font-bold text-sm text-gray-900 dark:text-white block">
+                  Total a Pagar
+                </span>
+                <span className="text-[10px] text-gray-400">Factura final con impuestos de ley</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl sm:text-2xl font-black text-gray-950 dark:text-white font-sans tracking-tight">
+                  ${Number(payphoneSimData.total).toFixed(2)}
+                </span>
+                <span className="text-xs font-bold text-[#FF5900] font-mono ml-1.5">USD</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Garantía y Seguridad */}
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-emerald-900 dark:text-emerald-300 text-[11px] leading-relaxed">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="leading-snug">
-              Operación autorizada bajo protocolo bancario <strong>PCI-DSS Nivel 1</strong> y tokenización cifrada.
+            <span>
+              Tu compra cuenta con <strong>garantía de satisfacción Lumina</strong> y envío asegurado con número de rastreo directo.
             </span>
           </div>
 
-          {/* Interactive Magnetic CTA Button */}
-          <div className="relative z-10 space-y-2.5 pt-1">
-            <button
-              type="button"
-              onClick={handleApprovePayPhoneSimulation}
-              disabled={isSimulatingApproval}
-              className="group relative w-full h-14 rounded-full bg-gray-950 dark:bg-white text-white dark:text-gray-950 font-bold text-sm shadow-[0_12px_28px_rgba(0,0,0,0.2)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.3)] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer flex items-center justify-between pl-6 pr-2 border border-white/20 dark:border-black/10 overflow-hidden"
-            >
-              {isSimulatingApproval ? (
-                <div className="w-full flex items-center justify-center gap-2.5 py-1">
-                  <Loader2 className="w-4 h-4 animate-spin text-white dark:text-gray-950" />
-                  <span className="font-semibold tracking-wide">Liquidando con la red bancaria...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2.5">
-                    <Lock className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
-                    <span className="tracking-tight">Confirmar y Procesar Orden</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-full bg-white/10 dark:bg-black/10">
-                      ${Number(payphoneSimData.total).toFixed(2)} USD
-                    </span>
-                    <div className="w-10 h-10 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform group-hover:scale-105 group-hover:translate-x-0.5">
-                      <ArrowRight className="w-4 h-4 text-white dark:text-gray-950" />
-                    </div>
-                  </div>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsPayPhoneSimOpen(false)}
-              disabled={isSimulatingApproval}
-              className="w-full py-2 rounded-full text-xs font-semibold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer text-center"
-            >
-              Cancelar y volver a la bolsa
-            </button>
-          </div>
-
         </div>
+
+        {/* Barra Inferior: Únicamente el Botón "Finalizar" */}
+        <div className="p-4 sm:p-5 border-t border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.02] shrink-0">
+          <button
+            type="button"
+            onClick={handleApprovePayPhoneSimulation}
+            disabled={isSimulatingApproval}
+            className="w-full h-13 sm:h-14 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] hover:from-[#FF7322] hover:to-[#DD4800] text-white font-sans font-bold text-base tracking-wide shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_8px_24px_rgba(234,82,0,0.32)] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2 select-none"
+          >
+            {isSimulatingApproval ? (
+              <div className="flex items-center justify-center gap-2.5">
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
+                <span>Procesando orden...</span>
+              </div>
+            ) : (
+              <span>Finalizar</span>
+            )}
+          </button>
+        </div>
+
       </div>
     </div>
   )}
