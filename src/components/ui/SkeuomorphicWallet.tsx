@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from "react";
 
 export interface WalletCardItem {
   id: string;
@@ -10,6 +9,8 @@ export interface WalletCardItem {
   exp: string;
   type?: "visa" | "mastercard" | "amex" | "diners" | "discover" | string;
   design?: "obsidian" | "holographic" | "navy" | string;
+  balance?: number;
+  tier?: string;
 }
 
 export interface SkeuomorphicWalletProps {
@@ -17,7 +18,7 @@ export interface SkeuomorphicWalletProps {
   amount?: number;
   /** Currency symbol, default "$" */
   currencySymbol?: string;
-  /** Label displayed above the amount, default "Total a Pagar" */
+  /** Label displayed above the amount, default "Total balance" */
   label?: string;
   /** Active selected card ID */
   activeCardId?: string;
@@ -33,495 +34,364 @@ export interface SkeuomorphicWalletProps {
   className?: string;
 }
 
-const DEFAULT_CARDS: WalletCardItem[] = [
-  {
-    id: "card-obsidian",
-    number: "•••• •••• •••• 4242",
-    holder: "CLIENTE LUMINA",
-    exp: "12/28",
-    type: "visa",
-    design: "obsidian",
+const WALLET_CSS = "\n@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,700;0,800;1,800&family=JetBrains+Mono:wght@500;600&display=swap');\n\n:root {\n  --wallet-glow-1: rgba(166, 29, 24, 0.90);\n  --wallet-glow-2: rgba(108, 17, 15, 0.56);\n  --wallet-accent-dot: #a88d8c;\n}\n\n.wallet-outer-bezel {\n  --wallet-glow-1: rgba(166, 29, 24, 0.90);\n  --wallet-glow-2: rgba(108, 17, 15, 0.56);\n  --wallet-accent-dot: #a88d8c;\n  box-sizing: border-box;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n.wallet-outer-bezel * {\n  box-sizing: border-box;\n}\n\n@media (max-width: 400px) {\n  .wallet-outer-bezel {\n    max-width: 100% !important;\n  }\n}\n@media (max-width: 375px) {\n  .wallet-outer-bezel {\n    transform: scale(0.92);\n    transform-origin: center top;\n  }\n}\n@media (max-width: 340px) {\n  .wallet-outer-bezel {\n    transform: scale(0.85);\n    transform-origin: center top;\n  }\n}\n\n:root {\n\n      --wallet-glow-1: rgba(166, 29, 24, 0.90);\n\n      --wallet-glow-2: rgba(108, 17, 15, 0.56);\n\n      --wallet-accent-dot: #a88d8c;\n\n    }\n\n\n\n    \n\n\n\n    \n\n\n\n    /* ==========================================================================\n\n       1. CLON EXACTO 1:1 DE LA BILLETERA (PINTEREST REFERENCE)\n\n       ========================================================================== */\n\n\n\n    /* Marco exterior met\u00e1lico gris claro (Squircle) */\n\n    .wallet-outer-bezel {\n\n      position: relative;\n\n      width: 368px;\n\n      height: 364px;\n\n      border-radius: 52px;\n\n      padding: 13px;\n\n      background: linear-gradient(180deg, #c2c2c2 0%, #b5b5b5 100%);\n\n      box-shadow:\n\n        0 26px 52px -12px rgba(0, 0, 0, 0.22),\n\n        0 8px 20px -4px rgba(0, 0, 0, 0.12),\n\n        inset 0 1.5px 1px rgba(255, 255, 255, 0.65),\n\n        inset 0 -1.5px 2px rgba(0, 0, 0, 0.18);\n\n      transition:\n\n        height 0.6s cubic-bezier(0.22, 1, 0.36, 1),\n\n        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),\n\n        box-shadow 0.4s ease;\n\n      user-select: none;\n\n      margin: 0 auto;\n\n      perspective: 1200px;\n\n    }\n\n\n\n    /* Estado Abierto de la Billetera */\n\n    .wallet-outer-bezel.is-open {\n\n      height: 558px;\n\n      box-shadow:\n\n        0 34px 68px -12px rgba(0, 0, 0, 0.32),\n\n        0 12px 28px -6px rgba(0, 0, 0, 0.16),\n\n        inset 0 1.5px 1px rgba(255, 255, 255, 0.75);\n\n    }\n\n\n\n    /* Cavidad interna carb\u00f3n mate */\n\n    .wallet-inner-cavity {\n\n      position: relative;\n\n      width: 100%;\n\n      height: 100%;\n\n      background: #2b2b2b;\n\n      border-radius: 40px;\n\n      overflow: hidden;\n\n      box-shadow:\n\n        inset 0 6px 16px rgba(0, 0, 0, 0.65),\n\n        inset 0 0 0 1px rgba(0, 0, 0, 0.4);\n\n      display: flex;\n\n      flex-direction: column;\n\n      justify-content: space-between;\n\n    }\n\n\n\n    /* T\u00edtulo superior \"Wallet\" */\n\n    .wallet-header-bar {\n\n      position: relative;\n\n      z-index: 5;\n\n      padding-top: 19px;\n\n      text-align: center;\n\n      display: flex;\n\n      align-items: center;\n\n      justify-content: center;\n\n      transition: all 0.4s ease;\n\n    }\n\n\n\n    .wallet-title-text {\n\n      color: #7c7c7c;\n\n      font-size: 17px;\n\n      font-weight: 600;\n\n      letter-spacing: -0.02em;\n\n      line-height: 1;\n\n      transition: color 0.3s ease;\n\n    }\n\n\n\n    .wallet-outer-bezel.is-open .wallet-title-text {\n\n      color: #a3a3a3;\n\n    }\n\n\n\n    /* Contenedor de las tarjetas */\n\n    .wallet-cards-stage {\n\n      position: absolute;\n\n      top: 0;\n\n      left: 0;\n\n      right: 0;\n\n      bottom: 0;\n\n      z-index: 10;\n\n      pointer-events: auto;\n\n    }\n\n\n\n    /* La 4ta tarjeta gris/blanca que asoma en la esquina derecha en la imagen original */\n\n    .wallet-ghost-card-right {\n\n      position: absolute;\n\n      width: 260px;\n\n      height: 165px;\n\n      right: 11px;\n\n      top: 78px;\n\n      border-radius: 23px;\n\n      background: linear-gradient(135deg, #e5e5e5 0%, #d4d4d4 100%);\n\n      border: 1.8px solid rgba(255, 255, 255, 0.92);\n\n      transform: rotate(15deg);\n\n      transform-origin: bottom right;\n\n      z-index: 6;\n\n      box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.35);\n\n      transition: all 0.55s cubic-bezier(0.22, 1, 0.36, 1);\n\n      pointer-events: none;\n\n    }\n\n\n\n    .wallet-outer-bezel.is-open .wallet-ghost-card-right {\n\n      opacity: 0;\n\n      transform: translateY(40px) rotate(6deg) scale(0.9);\n\n    }\n\n\n\n    /* Estilo base de cada tarjeta VISA */\n\n    .visa-card {\n\n      position: absolute;\n\n      left: 19px;\n\n      width: 304px;\n\n      height: 186px;\n\n      border-radius: 23px;\n\n      border: 1.8px solid rgba(255, 255, 255, 0.92);\n\n      padding: 16px 20px;\n\n      cursor: pointer;\n\n      transform-origin: 28% 85%;\n\n      transition:\n\n        transform 0.58s cubic-bezier(0.22, 1, 0.36, 1),\n\n        top 0.58s cubic-bezier(0.22, 1, 0.36, 1),\n\n        box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),\n\n        filter 0.35s ease;\n\n      overflow: hidden;\n\n      will-change: transform, top;\n\n    }\n\n\n\n    /* Textura de ruido sutil realista sobre las tarjetas */\n\n    .visa-card::before {\n\n      content: \"\";\n\n      position: absolute;\n\n      inset: 0;\n\n      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 0);\n\n      background-size: 3px 3px;\n\n      pointer-events: none;\n\n      z-index: 1;\n\n    }\n\n\n\n    /* ==========================================================================\n\n       TEMAS VISUALES DE LAS 3 TARJETAS (FIELES A LA IMAGEN)\n\n       ========================================================================== */\n\n\n\n    /* TARJETA A: Navy Blue -> Burnt Amber Gold (La de atr\u00e1s en la foto) */\n\n    .visa-card.theme-navy-gold {\n\n      background:\n\n        radial-gradient(circle at 68% 35%, rgba(214, 142, 68, 0.95) 0%, rgba(163, 92, 45, 0.85) 32%, transparent 68%),\n\n        linear-gradient(108deg, #1b2848 0%, #243558 34%, #6e4838 64%, #b87b42 100%);\n\n      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.45);\n\n      color: #ffffff;\n\n    }\n\n\n\n    /* TARJETA B: Brushed Silver + Holographic Rainbow Prism (La del medio en la foto) */\n\n    .visa-card.theme-holo-silver {\n\n      background:\n\n        linear-gradient(100deg,\n\n          #e3e3e3 0%,\n\n          #e6e6e6 46%,\n\n          #ebb665 54%,\n\n          #c96f49 58%,\n\n          #3b5998 63%,\n\n          #4ea8de 69%,\n\n          #66b2a0 73%,\n\n          #e29568 79%,\n\n          #8b9bb1 87%,\n\n          #cfd6df 95%,\n\n          #dfdfdf 100%\n\n        );\n\n      border-color: #ffffff;\n\n      box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.38);\n\n      color: #1d1d1f;\n\n    }\n\n\n\n    /* Efecto de brillo iridiscente adicional para la tarjeta Holo */\n\n    .visa-card.theme-holo-silver::after {\n\n      content: \"\";\n\n      position: absolute;\n\n      inset: 0;\n\n      background: linear-gradient(125deg, rgba(255,255,255,0.45) 0%, transparent 40%, rgba(255,255,255,0.2) 70%, transparent 100%);\n\n      pointer-events: none;\n\n    }\n\n\n\n    /* TARJETA C: Matte Carbon Black con sutil matiz c\u00e1lido (La del frente en la foto) */\n\n    .visa-card.theme-carbon-black {\n\n      background:\n\n        radial-gradient(circle at 92% 35%, rgba(96, 58, 62, 0.7) 0%, transparent 55%),\n\n        linear-gradient(105deg, #323438 0%, #2b2d31 58%, #3d2d31 100%);\n\n      border-color: rgba(255, 255, 255, 0.92);\n\n      box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.48);\n\n      color: #ffffff;\n\n    }\n\n\n\n    /* Tipograf\u00eda geom\u00e9trica exacta del logo VISA */\n\n    .visa-wordmark {\n\n      position: relative;\n\n      z-index: 2;\n\n      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;\n\n      font-weight: 800;\n\n      font-size: 29px;\n\n      letter-spacing: -0.03em;\n\n      line-height: 1;\n\n      display: inline-block;\n\n      transform: skewX(-11deg);\n\n    }\n\n\n\n    /* En la tarjeta plateada de la imagen, el logo VISA es negro carb\u00f3n con un borde prism\u00e1tico en la V/I */\n\n    .theme-holo-silver .visa-wordmark {\n\n      color: #1c1c1e;\n\n      text-shadow:\n\n        -1.5px -0.5px 0px rgba(217, 130, 54, 0.85),\n\n        1.5px 0.5px 0px rgba(59, 130, 246, 0.5);\n\n    }\n\n\n\n    .theme-navy-gold .visa-wordmark,\n\n    .theme-carbon-black .visa-wordmark {\n\n      color: #ffffff;\n\n      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);\n\n    }\n\n\n\n    /* ==========================================================================\n\n       POSICIONES DE LAS TARJETAS EN ESTADO CERRADO vs ESTADO ABIERTO\n\n       ========================================================================== */\n\n\n\n    /* Posici\u00f3n Slot 0 (Atr\u00e1s del todo - inclinada -9.5 deg como en la imagen) */\n\n    .wallet-outer-bezel:not(.is-open) .visa-card[data-slot=\"0\"] {\n\n      top: 48px;\n\n      left: 24px;\n\n      transform: rotate(-9.5deg);\n\n      z-index: 11;\n\n    }\n\n\n\n    /* Posici\u00f3n Slot 1 (Medio - inclinada -3.2 deg como en la imagen) */\n\n    .wallet-outer-bezel:not(.is-open) .visa-card[data-slot=\"1\"] {\n\n      top: 72px;\n\n      left: 16px;\n\n      transform: rotate(-3.2deg);\n\n      z-index: 12;\n\n    }\n\n\n\n    /* Posici\u00f3n Slot 2 (Frente / Activa - horizontal 0 deg justo detr\u00e1s del bolsillo) */\n\n    .wallet-outer-bezel:not(.is-open) .visa-card[data-slot=\"2\"] {\n\n      top: 102px;\n\n      left: 19px;\n\n      transform: rotate(0deg);\n\n      z-index: 13;\n\n    }\n\n\n\n    /* Micro-interacci\u00f3n Hover cuando la billetera est\u00e1 cerrada (se asoman con f\u00edsica suave) */\n\n    .wallet-outer-bezel:not(.is-open):hover .visa-card[data-slot=\"0\"] {\n\n      transform: translateY(-7px) rotate(-10.8deg);\n\n    }\n\n    .wallet-outer-bezel:not(.is-open):hover .visa-card[data-slot=\"1\"] {\n\n      transform: translateY(-4px) rotate(-3.8deg);\n\n    }\n\n    .wallet-outer-bezel:not(.is-open):hover .visa-card[data-slot=\"2\"] {\n\n      transform: translateY(-2px) rotate(0deg);\n\n    }\n\n\n\n    /* ESTADO ABIERTO: Despliegue en Abanico Vertical Interactivo */\n\n    .wallet-outer-bezel.is-open .visa-card[data-slot=\"0\"] {\n\n      top: 48px;\n\n      left: 19px;\n\n      transform: rotate(0deg) scale(0.95);\n\n      z-index: 11;\n\n    }\n\n\n\n    .wallet-outer-bezel.is-open .visa-card[data-slot=\"1\"] {\n\n      top: 136px;\n\n      left: 19px;\n\n      transform: rotate(0deg) scale(0.975);\n\n      z-index: 12;\n\n    }\n\n\n\n    .wallet-outer-bezel.is-open .visa-card[data-slot=\"2\"] {\n\n      top: 226px;\n\n      left: 19px;\n\n      transform: rotate(0deg) scale(1);\n\n      z-index: 13;\n\n      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(255, 255, 255, 0.95);\n\n    }\n\n\n\n    /* Hover individual sobre cada tarjeta cuando est\u00e1 abierta */\n\n    .wallet-outer-bezel.is-open .visa-card:hover {\n\n      transform: translateY(-8px) scale(1.015) !important;\n\n      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.65), 0 0 0 2.5px #ffffff !important;\n\n    }\n\n\n\n    /* Detalles internos de la tarjeta (visibles cuando la billetera se abre) */\n\n    .card-expanded-details {\n\n      position: relative;\n\n      z-index: 2;\n\n      margin-top: 14px;\n\n      opacity: 0;\n\n      transform: translateY(6px);\n\n      transition: opacity 0.35s ease, transform 0.35s ease;\n\n      pointer-events: none;\n\n    }\n\n\n\n    .wallet-outer-bezel.is-open .card-expanded-details {\n\n      opacity: 1;\n\n      transform: translateY(0);\n\n    }\n\n\n\n    /* ==========================================================================\n\n       EL BOLSILLO FRONTAL 3D CON BORDE COSIDO, BLUR Y BRILLO ESPECULAR\n\n       ========================================================================== */\n\n\n\n    .wallet-front-pocket {\n\n      position: absolute;\n\n      left: 3px;\n\n      right: 3px;\n\n      bottom: 3px;\n\n      height: 204px;\n\n      border-radius: 36px;\n\n      z-index: 25;\n\n      overflow: hidden;\n\n      cursor: pointer;\n\n      /* Fondo cuero/acr\u00edlico oscuro con el resplandor carmes\u00ed difuminado en la esquina inferior derecha */\n\n      background:\n\n        radial-gradient(125% 110% at 78% 84%,\n\n          var(--wallet-glow-1) 0%,\n\n          var(--wallet-glow-2) 38%,\n\n          rgba(30, 22, 23, 0.95) 68%,\n\n          rgba(23, 23, 25, 0.98) 100%\n\n        );\n\n      backdrop-filter: blur(18px);\n\n      -webkit-backdrop-filter: blur(18px);\n\n      /* Sombras multicapa que crean el volumen acolchado 3D (pillow bevel) */\n\n      box-shadow:\n\n        /* Sombra proyectada hacia arriba sobre las tarjetas */\n\n        0 -8px 22px rgba(0, 0, 0, 0.62),\n\n        /* Borde exterior oscuro del bolsillo */\n\n        inset 0 0 0 1.5px rgba(255, 255, 255, 0.08),\n\n        /* Labio superior iluminado */\n\n        inset 0 3px 5px rgba(255, 255, 255, 0.22),\n\n        /* Brillo especular blanco vertical izquierdo (id\u00e9ntico a la imagen) */\n\n        inset 6px 0 10px -2px rgba(255, 255, 255, 0.36),\n\n        inset 16px 0 22px -6px rgba(255, 255, 255, 0.12),\n\n        /* Surco oscuro inferior y derecho para dar curvatura 3D */\n\n        inset -5px -10px 18px rgba(0, 0, 0, 0.85),\n\n        inset 0 -14px 20px rgba(0, 0, 0, 0.72);\n\n      transition:\n\n        height 0.58s cubic-bezier(0.22, 1, 0.36, 1),\n\n        background 0.5s ease,\n\n        box-shadow 0.4s ease;\n\n      display: flex;\n\n      flex-direction: column;\n\n      align-items: center;\n\n      justify-content: center;\n\n    }\n\n\n\n    /* En estado abierto el bolsillo sigue abajo pero ligeramente m\u00e1s compacto para dejar ver las 3 tarjetas */\n\n    .wallet-outer-bezel.is-open .wallet-front-pocket {\n\n      height: 196px;\n\n    }\n\n\n\n    /* Reflejo especular curvo en el borde izquierdo (el tubo brillante de luz de la foto) */\n\n    .pocket-left-specular {\n\n      position: absolute;\n\n      top: 14px;\n\n      bottom: 16px;\n\n      left: 5px;\n\n      width: 14px;\n\n      border-radius: 999px;\n\n      background: linear-gradient(\n\n        180deg,\n\n        rgba(255, 255, 255, 0.15) 0%,\n\n        rgba(255, 255, 255, 0.55) 25%,\n\n        rgba(255, 255, 255, 0.65) 55%,\n\n        rgba(255, 255, 255, 0.2) 85%,\n\n        rgba(255, 255, 255, 0.05) 100%\n\n      );\n\n      filter: blur(3.5px);\n\n      pointer-events: none;\n\n      z-index: 2;\n\n    }\n\n\n\n    /* Reflejo suave en la curva inferior derecha */\n\n    .pocket-right-glow-highlight {\n\n      position: absolute;\n\n      bottom: 14px;\n\n      right: 16px;\n\n      width: 185px;\n\n      height: 95px;\n\n      border-radius: 50%;\n\n      background: radial-gradient(circle, rgba(220, 48, 38, 0.42) 0%, transparent 72%);\n\n      filter: blur(12px);\n\n      pointer-events: none;\n\n      z-index: 1;\n\n      transition: opacity 0.4s ease;\n\n    }\n\n\n\n    /* Contenedor SVG del Borde Cosido (\"Stitched Leather Border\") */\n\n    .pocket-stitching-svg {\n\n      position: absolute;\n\n      inset: 0;\n\n      width: 100%;\n\n      height: 100%;\n\n      pointer-events: none;\n\n      z-index: 4;\n\n    }\n\n\n\n    /* Tipograf\u00eda central del bolsillo (\"Total balance $ 4,018.00\") */\n\n    .pocket-content-center {\n\n      position: relative;\n\n      z-index: 10;\n\n      text-align: center;\n\n      padding: 0 20px;\n\n      width: 100%;\n\n    }\n\n\n\n    .pocket-balance-label {\n\n      color: #9e9e9e;\n\n      font-size: 16px;\n\n      font-weight: 500;\n\n      letter-spacing: -0.015em;\n\n      margin-bottom: 5px;\n\n      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\n\n    }\n\n\n\n    .pocket-balance-amount {\n\n      font-family: 'Inter', sans-serif;\n\n      color: #ffffff;\n\n      font-size: 36px;\n\n      font-weight: 700;\n\n      letter-spacing: -0.025em;\n\n      line-height: 1.05;\n\n      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);\n\n    }\n\n\n\n    .pocket-balance-decimals {\n\n      color: rgba(255, 255, 255, 0.48);\n\n      font-size: 25px;\n\n      font-weight: 600;\n\n      letter-spacing: -0.01em;\n\n    }";
+
+const DEFAULT_CARDS_DATA = {
+  carbon: {
+    id: "carbon",
+    tier: "Signature Black",
+    digits: "•••• •••• •••• 4829",
+    balance: 4018.00,
   },
-  {
-    id: "card-holo",
-    number: "•••• •••• •••• 4916",
-    holder: "CLIENTE LUMINA",
-    exp: "08/29",
-    type: "visa",
-    design: "holographic",
+  holo: {
+    id: "holo",
+    tier: "Holo Prism",
+    digits: "•••• •••• •••• 3109",
+    balance: 2640.50,
   },
-  {
-    id: "card-navy",
-    number: "•••• •••• •••• 8821",
-    holder: "CLIENTE LUMINA",
-    exp: "04/30",
-    type: "visa",
-    design: "navy",
+  navy: {
+    id: "navy",
+    tier: "Horizon Gold",
+    digits: "•••• •••• •••• 5514",
+    balance: 8920.00,
   },
-];
+};
+
+function formatSplitCurrency(val: number, symbol = "$") {
+  const fixed = Math.max(0, val).toFixed(2);
+  const [intPart, decPart] = fixed.split(".");
+  const formattedInt = Number(intPart).toLocaleString("en-US");
+  return {
+    main: `${symbol} ${formattedInt}`,
+    decimals: `.${decPart}`,
+  };
+}
 
 export const SkeuomorphicWallet: React.FC<SkeuomorphicWalletProps> = ({
-  amount = 4018.00,
+  amount,
   currencySymbol = "$",
-  label = "Total a Pagar",
+  label = "Total balance",
   activeCardId,
   onSelectCard,
   isOpen: controlledIsOpen,
   onToggleOpen,
-  cards = DEFAULT_CARDS,
+  cards,
   className = "",
 }) => {
-  // Internal open state with optional controlled override
+  // Orden de las tarjetas en los slots: [Slot 0 (Atrás), Slot 1 (Medio), Slot 2 (Frente/Activa)]
+  const [cardOrder, setCardOrder] = useState<string[]>(["navy", "holo", "carbon"]);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
+
   const isWalletOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
-  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  // Sincronizar activeCardId externo si se provee
+  useEffect(() => {
+    if (activeCardId) {
+      const match = activeCardId.toLowerCase();
+      let targetKey = "carbon";
+      if (match.includes("navy")) targetKey = "navy";
+      else if (match.includes("holo")) targetKey = "holo";
+      else if (match.includes("carbon") || match.includes("obsidian")) targetKey = "carbon";
 
-  // Active card management
-  const [selectedId, setSelectedId] = useState<string>(activeCardId || cards[0]?.id || "card-obsidian");
-  const effectiveActiveId = activeCardId || selectedId;
-
-  // Guarantee 3 cards for the 3 visual slots
-  const effectiveCards = cards.length >= 3 ? cards : [...cards, ...DEFAULT_CARDS.slice(cards.length)];
-
-  // Active card is positioned at Slot 2 (the front card)
-  const activeCard = effectiveCards.find((c) => c.id === effectiveActiveId) || effectiveCards[0];
-  const otherCards = effectiveCards.filter((c) => c.id !== activeCard.id);
-
-  // Slot 0 (Back, Navy), Slot 1 (Middle, Holo), Slot 2 (Front, Obsidian)
-  const slotCards = [
-    otherCards[0] || effectiveCards[2],
-    otherCards[1] || effectiveCards[1],
-    activeCard,
-  ];
-
-  const handleToggle = () => {
-    const nextState = !isWalletOpen;
-    if (controlledIsOpen === undefined) {
-      setInternalIsOpen(nextState);
+      setCardOrder((prev) => {
+        if (prev[2] === targetKey) return prev;
+        const remaining = prev.filter((id) => id !== targetKey);
+        return [remaining[0] || "navy", remaining[1] || "holo", targetKey];
+      });
     }
-    onToggleOpen?.(nextState);
+  }, [activeCardId]);
+
+  // Merge custom cards if provided
+  const cardsInfo = {
+    navy: {
+      ...DEFAULT_CARDS_DATA.navy,
+      ...(cards && cards[2]
+        ? {
+            id: cards[2].id || "navy",
+            digits: cards[2].number || DEFAULT_CARDS_DATA.navy.digits,
+            tier: cards[2].tier || DEFAULT_CARDS_DATA.navy.tier,
+            balance: cards[2].balance ?? DEFAULT_CARDS_DATA.navy.balance,
+          }
+        : {}),
+    },
+    holo: {
+      ...DEFAULT_CARDS_DATA.holo,
+      ...(cards && cards[1]
+        ? {
+            id: cards[1].id || "holo",
+            digits: cards[1].number || DEFAULT_CARDS_DATA.holo.digits,
+            tier: cards[1].tier || DEFAULT_CARDS_DATA.holo.tier,
+            balance: cards[1].balance ?? DEFAULT_CARDS_DATA.holo.balance,
+          }
+        : {}),
+    },
+    carbon: {
+      ...DEFAULT_CARDS_DATA.carbon,
+      ...(cards && cards[0]
+        ? {
+            id: cards[0].id || "carbon",
+            digits: cards[0].number || DEFAULT_CARDS_DATA.carbon.digits,
+            tier: cards[0].tier || DEFAULT_CARDS_DATA.carbon.tier,
+            balance: cards[0].balance ?? DEFAULT_CARDS_DATA.carbon.balance,
+          }
+        : {}),
+    },
   };
 
-  const handleCardClick = (cardId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedId(cardId);
-    onSelectCard?.(cardId);
+  const activeSlot2Key = cardOrder[2] as "navy" | "holo" | "carbon";
+  const activeCard = cardsInfo[activeSlot2Key] || cardsInfo.carbon;
+
+  // Si se provee amount explícito Y label no es el default "Total balance", se respeta amount.
+  // De lo contrario, muestra el balance de la tarjeta activa según el prototipo 1:1.
+  const numericAmount = amount !== undefined && label !== "Total balance" ? amount : activeCard.balance;
+  const formatted = formatSplitCurrency(numericAmount, currencySymbol);
+
+  const toggleWalletOpen = () => {
+    const next = !isWalletOpen;
+    if (controlledIsOpen === undefined) {
+      setInternalIsOpen(next);
+    }
+    onToggleOpen?.(next);
   };
 
-  // Price formatting: Split into integer and decimals for exact typography
-  const [intPart, decPart] = Number(amount || 0).toFixed(2).split(".");
-  const formattedInt = Number(intPart).toLocaleString("en-US");
+  const handleCardClick = (clickedCardId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    // Si está cerrada, al tocar cualquier tarjeta se abre el abanico
+    if (!isWalletOpen) {
+      if (controlledIsOpen === undefined) {
+        setInternalIsOpen(true);
+      }
+      onToggleOpen?.(true);
+      return;
+    }
+
+    // Si ya está abierta, la tarjeta tocada pasa al frente (Slot 2) y la billetera se cierra suavemente tras 300ms
+    const remaining = cardOrder.filter((id) => id !== clickedCardId);
+    const newOrder = [remaining[0], remaining[1], clickedCardId];
+    setCardOrder(newOrder);
+
+    const chosenData = cardsInfo[clickedCardId as "navy" | "holo" | "carbon"];
+    onSelectCard?.(chosenData?.id || clickedCardId);
+
+    setTimeout(() => {
+      if (controlledIsOpen === undefined) {
+        setInternalIsOpen(false);
+      }
+      onToggleOpen?.(false);
+    }, 300);
+  };
+
+  const getSlot = (cardId: string): string => {
+    const idx = cardOrder.indexOf(cardId);
+    return idx !== -1 ? String(idx) : "0";
+  };
 
   return (
-    <div className={`relative flex justify-center items-center select-none ${className}`}>
-      {/* ======================================================================= */}
-      {/* 1. MARCO EXTERIOR METÁLICO (BEZEL)                                      */}
-      {/* ======================================================================= */}
+    <>
+      <style dangerouslySetInnerHTML={{ __html: WALLET_CSS }} />
+
       <div
-        onClick={handleToggle}
-        className={`wallet-outer-bezel relative w-[368px] max-w-full rounded-[52px] p-[13px] transition-all cursor-pointer ${
-          isWalletOpen ? "is-open h-[558px]" : "h-[364px]"
-        }`}
-        style={{
-          background: "linear-gradient(180deg, #c2c2c2 0%, #b5b5b5 100%)",
-          boxShadow:
-            "inset 0 1.5px 1px rgba(255, 255, 255, 0.65), 0 24px 48px -12px rgba(0, 0, 0, 0.45), 0 12px 24px -6px rgba(0, 0, 0, 0.3)",
-          transitionProperty: "height, box-shadow",
-          transitionDuration: "560ms",
-          transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
+        id="interactiveWalletWidget"
+        className={`wallet-outer-bezel ${isWalletOpen ? "is-open" : ""} ${className}`}
       >
-        {/* ===================================================================== */}
-        {/* CAVIDAD INTERNA                                                       */}
-        {/* ===================================================================== */}
-        <div
-          className="wallet-inner-cavity relative w-full h-full rounded-[40px] overflow-hidden bg-[#2b2b2b]"
-          style={{
-            boxShadow: "inset 0 6px 16px rgba(0, 0, 0, 0.65)",
-          }}
-        >
-          {/* TÍTULO SUPERIOR CENTRADO "Wallet" */}
-          <div className="w-full text-center pt-[19px] pb-1 relative z-10 pointer-events-none select-none">
-            <span
-              style={{
-                color: "#7c7c7c",
-                fontSize: "17px",
-                fontWeight: 600,
-                letterSpacing: "-0.2px",
-              }}
-            >
-              Wallet
-            </span>
+        <div className="wallet-inner-cavity">
+          {/* Barra superior "Wallet" */}
+          <div className="wallet-header-bar">
+            <span className="wallet-title-text">Wallet</span>
           </div>
 
-          {/* =================================================================== */}
-          {/* 2. ESQUINA DE 4TA TARJETA ESCONDIDA A LA DERECHA                    */}
-          {/* =================================================================== */}
-          <div
-            className="wallet-ghost-card-right absolute pointer-events-none transition-all"
-            style={{
-              width: "260px",
-              height: "165px",
-              right: "11px",
-              top: "78px",
-              borderRadius: "23px",
-              background: "linear-gradient(135deg, #e5e5e5 0%, #d4d4d4 100%)",
-              border: "1.8px solid #ffffff",
-              transform: isWalletOpen ? "rotate(24deg) scale(0.92)" : "rotate(15deg)",
-              transformOrigin: "bottom right",
-              opacity: isWalletOpen ? 0 : 1,
-              zIndex: 11,
-              transitionDuration: "480ms",
-              transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-            }}
-          />
+          {/* Esquina de la 4ta tarjeta blanca/gris que asoma a la derecha en la referencia de Pinterest */}
+          <div className="wallet-ghost-card-right" aria-hidden="true" />
 
-          {/* =================================================================== */}
-          {/* 3 TARJETAS PRINCIPALES (SLOT 0: ATRÁS, SLOT 1: MEDIO, SLOT 2: FRENTE) */}
-          {/* =================================================================== */}
-          {slotCards.map((card, slotIndex) => {
-            const isFront = slotIndex === 2;
-            const isMiddle = slotIndex === 1;
-            const isBack = slotIndex === 0;
-
-            const isCardHovered = isWalletOpen && hoveredCardId === card.id;
-
-            // Geometry & Transforms
-            // CLOSED POSITIONS:
-            // Slot 0 (Atrás): top: 48px, left: 24px, rotate: -9.5deg
-            // Slot 1 (Medio): top: 72px, left: 16px, rotate: -3.2deg
-            // Slot 2 (Frente): top: 102px, left: 19px, rotate: 0deg
-            const closedTop = isBack ? 48 : isMiddle ? 72 : 102;
-            const closedLeft = isBack ? 24 : isMiddle ? 16 : 19;
-            const closedRotate = isBack ? -9.5 : isMiddle ? -3.2 : 0;
-
-            // OPEN POSITIONS (Fanned Out upwards in an abanico):
-            // Slot 0 (Atrás / Top): top: 54px, left: 13px, rotate: -7.5deg
-            // Slot 1 (Medio / Mid): top: 144px, left: 19px, rotate: -1.5deg
-            // Slot 2 (Frente / Low): top: 236px, left: 24px, rotate: 4.5deg
-            const openTop = isBack ? 54 : isMiddle ? 144 : 236;
-            const openLeft = isBack ? 13 : isMiddle ? 19 : 24;
-            const openRotate = isBack ? -7.5 : isMiddle ? -1.5 : 4.5;
-
-            const currentTop = isWalletOpen ? openTop : closedTop;
-            const currentLeft = isWalletOpen ? openLeft : closedLeft;
-            const currentRotate = isWalletOpen ? openRotate : closedRotate;
-
-            const zIndex = isCardHovered ? 28 : 12 + slotIndex * 2;
-
-            return (
-              <motion.div
-                key={card.id}
-                onClick={(e) => handleCardClick(card.id, e)}
-                onMouseEnter={() => {
-                  if (isWalletOpen) setHoveredCardId(card.id);
-                }}
-                onMouseLeave={() => {
-                  if (hoveredCardId === card.id) setHoveredCardId(null);
-                }}
-                initial={false}
-                animate={{
-                  top: isCardHovered ? currentTop - 8 : currentTop,
-                  left: currentLeft,
-                  rotate: currentRotate,
-                  scale: isCardHovered ? 1.025 : 1,
-                  zIndex: zIndex,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 320,
-                  damping: 28,
-                  mass: 0.75,
-                }}
-                className="visa-card absolute cursor-pointer select-none overflow-hidden"
-                style={{
-                  width: "304px",
-                  height: "186px",
-                  borderRadius: "23px",
-                  border: "1.8px solid rgba(255, 255, 255, 0.92)",
-                  transformOrigin: "28% 85%",
-                  boxShadow: isCardHovered
-                    ? "0 18px 36px rgba(0,0,0,0.65), 0 0 20px rgba(255,255,255,0.2)"
-                    : "0 10px 24px rgba(0,0,0,0.45)",
-                }}
-              >
-                {/* ------------------------------------------------------------- */}
-                {/* CARD BACKGROUND MATERIALS                                     */}
-                {/* ------------------------------------------------------------- */}
-                {isBack && (
-                  /* SLOT 0: Gradiente Azul Marino (#1b2848) a Dorado Ámbar (#b87b42) */
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #1b2848 0%, #22345d 38%, #785231 72%, #b87b42 100%)",
-                    }}
-                  >
-                    {/* Subtle micro noise & golden sheen */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-amber-200/10 to-transparent pointer-events-none" />
+          {/* Escenario de las 3 Tarjetas VISA */}
+          <div className="wallet-cards-stage" id="walletCardsStage">
+            {/* TARJETA 1: Navy Blue & Burnt Gold (Slot 0 por defecto) */}
+            <div
+              className="visa-card theme-navy-gold"
+              data-card-id="navy"
+              data-slot={getSlot("navy")}
+              onClick={(e) => handleCardClick("navy", e)}
+            >
+              <div className="flex items-start justify-between relative z-10">
+                <span className="visa-wordmark">VISA</span>
+                <span className="card-expanded-details text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black/25 text-amber-200 border border-amber-200/30">
+                  {cardsInfo.navy.tier}
+                </span>
+              </div>
+              <div className="card-expanded-details flex items-center justify-between text-white/95 pt-1">
+                <div>
+                  <div className="font-mono text-sm tracking-widest font-semibold">
+                    {cardsInfo.navy.digits}
                   </div>
-                )}
-
-                {isMiddle && (
-                  /* SLOT 1: Plateado Mate con Franja Vertical Holográfica Arcoíris */
-                  <div className="absolute inset-0 bg-[#e3e3e3]">
-                    {/* Franja vertical holográfica arcoíris a la derecha */}
-                    <div
-                      className="absolute top-0 bottom-0 right-[28px] w-[58px] pointer-events-none"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #ebb665 0%, #c96f49 22%, #3b5998 44%, #4ea8de 66%, #66b2a0 85%, #e29568 100%)",
-                        opacity: 0.88,
-                        filter: "blur(7px)",
-                      }}
-                    />
-                    <div
-                      className="absolute top-0 bottom-0 right-[38px] w-[34px] pointer-events-none"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #ffd166 0%, #ef476f 25%, #118ab2 55%, #06d6a0 85%, #f77f00 100%)",
-                        opacity: 0.65,
-                        filter: "blur(2px)",
-                      }}
-                    />
+                  <div className="text-[11px] text-white/75 mt-0.5">
+                    BALANCE: <strong className="text-white">$ {cardsInfo.navy.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                   </div>
-                )}
-
-                {isFront && (
-                  /* SLOT 2: Negro Carbón Mate (#323438 a #2b2d31) */
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: "linear-gradient(145deg, #323438 0%, #2b2d31 100%)",
-                    }}
-                  >
-                    {/* Subtle carbon velvet sheen */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/30 pointer-events-none" />
-                  </div>
-                )}
-
-                {/* ------------------------------------------------------------- */}
-                {/* LOGO "VISA" ARRIBA A LA IZQUIERDA                             */}
-                {/* ------------------------------------------------------------- */}
-                <div
-                  className="absolute"
-                  style={{
-                    top: "14px",
-                    left: "16px",
-                    zIndex: 2,
-                  }}
-                >
+                </div>
+                <div className="text-right">
                   <span
-                    style={{
-                      fontFamily: "Arial, Helvetica, sans-serif",
-                      fontSize: "29px",
-                      fontWeight: 800,
-                      fontStyle: "italic",
-                      transform: "skewX(-11deg)",
-                      display: "inline-block",
-                      letterSpacing: "0.5px",
-                      lineHeight: 1,
-                      color: isMiddle ? "#1c1c1e" : "#ffffff",
-                      textShadow: isMiddle
-                        ? "1px 1px 2px rgba(235, 182, 101, 0.6), -1px -1px 2px rgba(78, 168, 222, 0.6)"
-                        : "0 1px 3px rgba(0, 0, 0, 0.4)",
-                    }}
+                    className={
+                      getSlot("navy") === "2"
+                        ? "card-status-pill inline-block text-[10px] px-2.5 py-0.5 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-semibold"
+                        : "card-status-pill inline-block text-[10px] px-2.5 py-0.5 rounded-md bg-white/20 text-white font-semibold"
+                    }
                   >
-                    VISA
+                    {getSlot("navy") === "2" ? "Activa" : "Elegir"}
                   </span>
                 </div>
+              </div>
+            </div>
 
-                {/* Contactless Waves Icon */}
-                <div
-                  className="absolute"
-                  style={{
-                    top: "17px",
-                    right: "18px",
-                    zIndex: 2,
-                    opacity: isMiddle ? 0.45 : 0.65,
-                    color: isMiddle ? "#1c1c1e" : "#ffffff",
-                  }}
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M8.5 16.5a5 5 0 0 1 0-9" strokeLinecap="round" />
-                    <path d="M12 19a8.5 8.5 0 0 0 0-14" strokeLinecap="round" />
-                    <path d="M15.5 21.5a12 12 0 0 0 0-19" strokeLinecap="round" />
-                  </svg>
-                </div>
-
-                {/* ------------------------------------------------------------- */}
-                {/* CARD DETAILS (Revealed when Wallet is Open)                   */}
-                {/* ------------------------------------------------------------- */}
-                <div
-                  className={`absolute inset-x-4 bottom-3 transition-opacity duration-300 ${
-                    isWalletOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-                  }`}
-                  style={{
-                    color: isMiddle ? "#1c1c1e" : "#ffffff",
-                  }}
-                >
-                  {/* EMV Chip & Number */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="w-8 h-6 rounded-md bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 border border-amber-300/80 shadow-xs relative overflow-hidden">
-                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-black/30" />
-                      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-black/30" />
-                    </div>
-                    <span className="font-mono text-xs font-bold tracking-[0.24em] drop-shadow-sm">
-                      {card.number}
-                    </span>
-                  </div>
-
-                  {/* Holder & Expiration */}
-                  <div className="flex items-center justify-between text-[9px] font-mono font-bold tracking-wider uppercase opacity-85 pt-1 border-t border-current/15">
-                    <span className="truncate max-w-[170px]">{card.holder}</span>
-                    <span>{card.exp}</span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {/* =================================================================== */}
-          {/* 3. BOLSILLO FRONTAL 3D CON BORDE COSIDO, BLUR Y BRILLO ESPECULAR   */}
-          {/* =================================================================== */}
-          <div
-            onClick={handleToggle}
-            className="wallet-front-pocket absolute flex flex-col justify-center items-center cursor-pointer select-none"
-            style={{
-              left: "3px",
-              right: "3px",
-              bottom: "3px",
-              height: "204px",
-              borderRadius: "36px",
-              backdropFilter: "blur(18px)",
-              WebkitBackdropFilter: "blur(18px)",
-              overflow: "hidden",
-              zIndex: 30,
-              /* Gradiente con resplandor carmesí en la esquina inferior derecha */
-              background:
-                "radial-gradient(125% 110% at 78% 84%, rgba(166,29,24,0.90) 0%, rgba(108,17,15,0.56) 38%, rgba(30,22,23,0.95) 68%, rgba(23,23,25,0.98) 100%)",
-              /* Sombras inset multicapa para volumen acolchado 3D */
-              boxShadow:
-                "inset 0 2px 3px rgba(255, 255, 255, 0.4), inset 2.5px 0 3px rgba(255, 255, 255, 0.25), inset 0 -6px 12px rgba(0, 0, 0, 0.8), inset -2.5px 0 4px rgba(0, 0, 0, 0.6), 0 -8px 24px rgba(0, 0, 0, 0.45)",
-            }}
-          >
-            {/* REFLEJO ESPECULAR BLANCO VERTICAL DIFUMINADO EN EL BORDE IZQUIERDO */}
+            {/* TARJETA 2: Silver Matte & Holographic Rainbow Prism (Slot 1 por defecto) */}
             <div
-              className="absolute pointer-events-none"
-              style={{
-                top: "12px",
-                bottom: "12px",
-                left: "5px",
-                width: "14px",
-                filter: "blur(3.5px)",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0.05) 100%)",
-              }}
-            />
-
-            {/* Specular curved sheen on top rim */}
-            <div
-              className="absolute inset-x-8 top-0 h-[2px] pointer-events-none"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.55) 50%, transparent 100%)",
-              }}
-            />
-
-            {/* BORDE COSIDO REALISTA EN SVG */}
-            <svg
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg"
+              className="visa-card theme-holo-silver"
+              data-card-id="holo"
+              data-slot={getSlot("holo")}
+              onClick={(e) => handleCardClick("holo", e)}
             >
+              <div className="flex items-start justify-between relative z-10">
+                <span className="visa-wordmark">VISA</span>
+                <span className="card-expanded-details text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-neutral-900/15 text-neutral-900 border border-neutral-900/20">
+                  {cardsInfo.holo.tier}
+                </span>
+              </div>
+              <div className="card-expanded-details flex items-center justify-between text-neutral-900 pt-1">
+                <div>
+                  <div className="font-mono text-sm tracking-widest font-bold">
+                    {cardsInfo.holo.digits}
+                  </div>
+                  <div className="text-[11px] text-neutral-700 mt-0.5">
+                    BALANCE: <strong className="text-neutral-950">$ {cardsInfo.holo.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span
+                    className={
+                      getSlot("holo") === "2"
+                        ? "card-status-pill inline-block text-[10px] px-2.5 py-0.5 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-semibold"
+                        : "card-status-pill inline-block text-[10px] px-2.5 py-0.5 rounded-md bg-neutral-900 text-white font-semibold"
+                    }
+                  >
+                    {getSlot("holo") === "2" ? "Activa" : "Elegir"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* TARJETA 3: Matte Carbon Black (Slot 2 por defecto: Frente / Activa) */}
+            <div
+              className="visa-card theme-carbon-black"
+              data-card-id="carbon"
+              data-slot={getSlot("carbon")}
+              onClick={(e) => handleCardClick("carbon", e)}
+            >
+              <div className="flex items-start justify-between relative z-10">
+                <span className="visa-wordmark">VISA</span>
+                <span className="card-expanded-details text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-500/25 text-red-200 border border-red-400/30">
+                  {cardsInfo.carbon.tier}
+                </span>
+              </div>
+              <div className="card-expanded-details flex items-center justify-between text-white/95 pt-1">
+                <div>
+                  <div className="font-mono text-sm tracking-widest font-semibold">
+                    {cardsInfo.carbon.digits}
+                  </div>
+                  <div className="text-[11px] text-white/75 mt-0.5">
+                    BALANCE: <strong className="text-white">$ {cardsInfo.carbon.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span
+                    className={
+                      getSlot("carbon") === "2"
+                        ? "card-status-pill inline-block text-[10px] px-2.5 py-0.5 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-semibold"
+                        : "card-status-pill inline-block text-[10px] px-2.5 py-0.5 rounded-md bg-white/20 text-white font-semibold"
+                    }
+                  >
+                    {getSlot("carbon") === "2" ? "Activa" : "Elegir"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* EL BOLSILLO FRONTAL 3D CON BORDE COSIDO, BLUR Y BRILLO ESPECULAR */}
+          <div
+            className="wallet-front-pocket"
+            id="walletFrontPocket"
+            onClick={toggleWalletOpen}
+          >
+            {/* Reflejo especular 3D vertical en el borde izquierdo (idéntico al Pinterest) */}
+            <div className="pocket-left-specular" />
+
+            {/* Resplandor difuminado carmesí en la esquina inferior derecha */}
+            <div className="pocket-right-glow-highlight" />
+
+            {/* Costura perimetral realista en SVG con sombra interna de puntada */}
+            <svg className="pocket-stitching-svg" viewBox="0 0 336 204" preserveAspectRatio="none">
               <defs>
-                <filter id="stitch-thread-shadow" x="-10%" y="-10%" width="120%" height="120%">
-                  <feDropShadow dx="0" dy="1" stdDeviation="0.6" floodColor="rgba(0,0,0,0.75)" />
+                <filter id="walletStitchShadow" x="-10%" y="-10%" width="120%" height="120%">
+                  <feDropShadow dx="0" dy="1.2" stdDeviation="0.6" floodColor="#000000" floodOpacity="0.95" />
                 </filter>
               </defs>
+              {/* Surco oscuro debajo del hilo */}
               <rect
-                x="8"
-                y="8"
-                width="calc(100% - 16px)"
-                height="calc(100% - 16px)"
-                rx="28"
+                x="10"
+                y="10"
+                width="316"
+                height="184"
+                rx="26"
+                ry="26"
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.38)"
-                strokeWidth="1.3"
-                strokeDasharray="5 5"
+                stroke="rgba(0,0,0,0.55)"
+                strokeWidth="2.6"
+              />
+              {/* Puntadas de hilo blanco/gris translúcido */}
+              <rect
+                x="10"
+                y="10"
+                width="316"
+                height="184"
+                rx="26"
+                ry="26"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.24)"
+                strokeWidth="1.65"
+                strokeDasharray="6.5 5.5"
                 strokeLinecap="round"
-                filter="url(#stitch-thread-shadow)"
+                filter="url(#walletStitchShadow)"
               />
             </svg>
 
-            {/* LABEL: "Total a Pagar" */}
-            <p
-              className="text-center font-sans relative z-10 select-none"
-              style={{
-                color: "rgba(255, 255, 255, 0.55)",
-                fontSize: "13.5px",
-                fontWeight: 500,
-                letterSpacing: "0.2px",
-                marginBottom: "3px",
-              }}
-            >
-              {label}
-            </p>
+            {/* Contenido tipográfico central del bolsillo */}
+            <div className="pocket-content-center">
+              <div id="pocketLabel" className="pocket-balance-label">
+                {label}
+              </div>
+              <div className="pocket-balance-amount">
+                <span id="pocketMainNumber">{formatted.main}</span>
+                <span id="pocketDecimals" className="pocket-balance-decimals">
+                  {formatted.decimals}
+                </span>
+              </div>
 
-            {/* MONTO PRINCIPAL: "$ 4,018.00" */}
-            <div className="flex items-baseline justify-center relative z-10 select-none">
-              <span
-                style={{
-                  fontSize: "34px",
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  letterSpacing: "-0.5px",
-                  marginRight: "4px",
-                  fontFamily: "system-ui, -apple-system, sans-serif",
-                }}
+              {/* Píldora discreta que aparece solo cuando la billetera está abierta */}
+              <div
+                id="pocketInteractiveHint"
+                className={`mt-3 ${isWalletOpen ? "flex" : "hidden"} items-center justify-center`}
               >
-                {currencySymbol}
-              </span>
-              <span
-                style={{
-                  fontSize: "38px",
-                  fontWeight: 800,
-                  color: "#ffffff",
-                  letterSpacing: "-0.5px",
-                  fontFamily: "system-ui, -apple-system, sans-serif",
-                }}
-              >
-                {formattedInt}
-              </span>
-              <span
-                style={{
-                  fontSize: "26px",
-                  fontWeight: 600,
-                  color: "rgba(255, 255, 255, 0.6)",
-                  fontFamily: "system-ui, -apple-system, sans-serif",
-                }}
-              >
-                .{decPart}
-              </span>
-            </div>
-
-            {/* Micro Helper Cue when Open */}
-            <AnimatePresence>
-              {isWalletOpen && (
-                <motion.p
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  className="text-[10px] text-white/50 tracking-wide mt-2 text-center relative z-10 select-none"
+                <span
+                  id="activeCardBadgeText"
+                  className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-medium text-white/90 backdrop-blur-md"
                 >
-                  Toca una tarjeta para elegir · Clic para cerrar
-                </motion.p>
-              )}
-            </AnimatePresence>
+                  Toca una tarjeta para seleccionarla
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
