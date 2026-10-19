@@ -516,16 +516,69 @@ export interface LuminaCardFolderItemProps {
   holder: string;
   number: string;
   exp: string;
-  type: "visa" | "mastercard";
+  type: "visa" | "mastercard" | string;
   isDefault?: boolean;
   index?: number;
   compact?: boolean;
+  design?: "carbon" | "holo" | "navy" | string;
   onSetDefault?: (id: string) => void;
   onRemove?: (id: string) => void;
 }
 
+export type SkeuomorphicCardTheme = "carbon" | "holo" | "navy";
+
+export interface SkeuomorphicThemeConfig {
+  id: SkeuomorphicCardTheme;
+  name: string;
+  tierLabel: string;
+  background: string;
+  border: string;
+  textColor: string;
+  subtextColor: string;
+  pillClass: string;
+  isHolo?: boolean;
+}
+
+export const SKEUOMORPHIC_THEMES: Record<SkeuomorphicCardTheme, SkeuomorphicThemeConfig> = {
+  carbon: {
+    id: "carbon",
+    name: "Signature Black",
+    tierLabel: "Signature Black",
+    background:
+      "radial-gradient(circle at 92% 35%, rgba(96, 58, 62, 0.7) 0%, transparent 55%), linear-gradient(105deg, #323438 0%, #2b2d31 58%, #3d2d31 100%)",
+    border: "1.8px solid rgba(255, 255, 255, 0.92)",
+    textColor: "#ffffff",
+    subtextColor: "rgba(255, 255, 255, 0.75)",
+    pillClass: "bg-red-500/25 text-red-200 border-red-400/30",
+  },
+  holo: {
+    id: "holo",
+    name: "Holo Prism",
+    tierLabel: "Holo Prism",
+    background:
+      "linear-gradient(100deg, #e3e3e3 0%, #e6e6e6 46%, #ebb665 54%, #c96f49 58%, #3b5998 63%, #4ea8de 69%, #66b2a0 73%, #e29568 79%, #8b9bb1 87%, #cfd6df 95%, #dfdfdf 100%)",
+    border: "1.8px solid #ffffff",
+    textColor: "#1d1d1f",
+    subtextColor: "#52525b",
+    pillClass: "bg-neutral-900/15 text-neutral-900 border-neutral-900/20",
+    isHolo: true,
+  },
+  navy: {
+    id: "navy",
+    name: "Horizon Gold",
+    tierLabel: "Horizon Gold",
+    background:
+      "radial-gradient(circle at 68% 35%, rgba(214, 142, 68, 0.95) 0%, rgba(163, 92, 45, 0.85) 32%, transparent 68%), linear-gradient(108deg, #1b2848 0%, #243558 34%, #6e4838 64%, #b87b42 100%)",
+    border: "1.8px solid rgba(255, 255, 255, 0.92)",
+    textColor: "#ffffff",
+    subtextColor: "rgba(255, 255, 255, 0.75)",
+    pillClass: "bg-black/25 text-amber-200 border border-amber-200/30",
+  },
+};
+
 /**
- * Envuelve una tarjeta guardada (Admin o Cliente) dentro del sobre/billetera interactiva CardFolder de beUI.
+ * Envuelve una tarjeta guardada (Admin o Cliente) dentro del sobre/billetera interactiva CardFolder de beUI
+ * adaptando 1:1 el estilo skeuomórfico de la nueva billetera 3D (Signature Black, Holo Prism, Horizon Gold).
  */
 export function LuminaCardFolderItem({
   id,
@@ -536,63 +589,116 @@ export function LuminaCardFolderItem({
   isDefault = false,
   index = 0,
   compact = false,
+  design,
   onSetDefault,
   onRemove,
 }: LuminaCardFolderItemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(false);
 
-  const isObsidian = index % 2 === 0;
+  // Mapear el diseño skeuomórfico exacto de la billetera
+  let effectiveTheme: SkeuomorphicCardTheme = "carbon";
+  if (design === "holo" || design === "holographic") {
+    effectiveTheme = "holo";
+  } else if (design === "navy") {
+    effectiveTheme = "navy";
+  } else if (design === "carbon" || design === "obsidian") {
+    effectiveTheme = "carbon";
+  } else {
+    // Si no se especifica, ciclar para que coincidan con la billetera (0: Carbon, 1: Holo, 2: Navy)
+    const cycle: SkeuomorphicCardTheme[] = ["carbon", "holo", "navy"];
+    effectiveTheme = cycle[index % 3];
+  }
+
+  const themeConfig = SKEUOMORPHIC_THEMES[effectiveTheme];
+  const isHolo = effectiveTheme === "holo";
+  const textColor = themeConfig.textColor;
+  const subtextColor = themeConfig.subtextColor;
+
   const safeNumber = String(number || "4532889120414444");
   const digitsOnly = safeNumber.replace(/\D/g, "");
   const lastFour = (digitsOnly.slice(-4) || "4444").padStart(4, "4");
 
   const cardSurface = (
     <div
-      className={cn(
-        "relative w-full h-full p-4 sm:p-5 flex flex-col justify-between text-white select-none overflow-hidden",
-        isObsidian
-          ? "bg-gradient-to-br from-[#161618] via-[#1f2023] to-[#0c0c0e]"
-          : "bg-gradient-to-br from-[#4d533e] via-[#686e54] to-[#2e3224]"
-      )}
+      className="relative w-full h-full p-4 sm:p-5 flex flex-col justify-between select-none overflow-hidden rounded-[22px]"
+      style={{
+        background: themeConfig.background,
+        border: themeConfig.border,
+        color: textColor,
+        boxShadow: "0 -4px 18px rgba(0, 0, 0, 0.45)",
+      }}
     >
-      {/* Brillo radial sutil en la tarjeta */}
+      {/* Textura de ruido sutil realista sobre las tarjetas */}
       <div
-        className="pointer-events-none absolute -top-16 -right-16 w-44 h-44 rounded-full opacity-25 blur-2xl"
+        className="pointer-events-none absolute inset-0 z-[1]"
         style={{
-          background: isObsidian
-            ? "radial-gradient(circle, #c49a3f 0%, transparent 70%)"
-            : "radial-gradient(circle, #e2e8ce 0%, transparent 70%)",
+          backgroundImage: "radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 0)",
+          backgroundSize: "3px 3px",
         }}
       />
+
+      {/* Brillo iridiscente adicional para Holo Prism */}
+      {isHolo && (
+        <div
+          className="pointer-events-none absolute inset-0 z-[2]"
+          style={{
+            background:
+              "linear-gradient(125deg, rgba(255,255,255,0.45) 0%, transparent 40%, rgba(255,255,255,0.2) 70%, transparent 100%)",
+          }}
+        />
+      )}
 
       {/* Cabecera de la tarjeta física (visible asomándose del sobre) */}
       <div className="relative z-10 flex items-center justify-between pr-7">
         <div className="flex items-center gap-2.5">
           {/* Chip EMV metálico */}
-          <div className="w-8 h-6 rounded-md bg-gradient-to-tr from-[#c59b27] via-[#f3d778] to-[#b38728] border border-yellow-200/60 shadow-inner flex items-center justify-center relative overflow-hidden">
-            <div className="w-full h-[1px] bg-black/20 absolute top-1/2 -translate-y-1/2" />
-            <div className="h-full w-[1px] bg-black/20 absolute left-1/3" />
-            <div className="h-full w-[1px] bg-black/20 absolute right-1/3" />
+          <div className="w-8 h-6 rounded-md bg-gradient-to-tr from-[#c59b27] via-[#f3d778] to-[#b38728] border border-yellow-200/80 shadow-inner flex items-center justify-center relative overflow-hidden shrink-0">
+            <div className="w-full h-[1px] bg-black/25 absolute top-1/2 -translate-y-1/2" />
+            <div className="h-full w-[1px] bg-black/25 absolute left-1/3" />
+            <div className="h-full w-[1px] bg-black/25 absolute right-1/3" />
           </div>
-          <Wifi className="w-3.5 h-3.5 text-white/60 rotate-90" />
+          <Wifi className={cn("w-3.5 h-3.5 rotate-90", isHolo ? "text-neutral-700" : "text-white/70")} />
           {isDefault && (
-            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/20">
-              <CheckCircle2 className="w-2.5 h-2.5 text-[#d4e19c]" />
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 backdrop-blur-md border border-emerald-400/30">
+              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-300" />
               Principal
             </span>
           )}
         </div>
 
-        {/* Emblema de Red Bancaria */}
-        <div className="flex items-center">
+        {/* Emblema de Red Bancaria y Tier Pill */}
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full backdrop-blur-md border",
+              themeConfig.pillClass
+            )}
+          >
+            {themeConfig.tierLabel}
+          </span>
+
           {type === "mastercard" ? (
-            <div className="flex items-center -space-x-2">
-              <span className="w-5 h-5 rounded-full bg-[#EB001B]/90 inline-block" />
-              <span className="w-5 h-5 rounded-full bg-[#F79E1B]/90 inline-block" />
+            <div className="flex items-center -space-x-2 select-none">
+              <span className="w-5 h-5 rounded-full bg-[#EB001B] shadow-sm inline-block" />
+              <span className="w-5 h-5 rounded-full bg-[#F79E1B] shadow-sm inline-block opacity-95" />
             </div>
           ) : (
-            <span className="font-serif italic font-black text-sm tracking-wider text-white/95">
+            <span
+              className="font-['Plus_Jakarta_Sans','Inter',sans-serif] font-[800] text-lg tracking-tight -skew-x-[11deg] select-none leading-none inline-block"
+              style={
+                isHolo
+                  ? {
+                      color: "#1c1c1e",
+                      textShadow:
+                        "-1.5px -0.5px 0px rgba(217, 130, 54, 0.85), 1.5px 0.5px 0px rgba(59, 130, 246, 0.5)",
+                    }
+                  : {
+                      color: "#ffffff",
+                      textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)",
+                    }
+              }
+            >
               VISA
             </span>
           )}
@@ -601,21 +707,35 @@ export function LuminaCardFolderItem({
 
       {/* Cuerpo central de la tarjeta (se descubre al abrir el sobre CardFolder) */}
       <div className="relative z-10 my-auto pt-2">
-        <p className="font-mono text-xs sm:text-sm tracking-[0.22em] text-white/95 font-semibold drop-shadow-sm">
+        <p
+          className="font-mono text-xs sm:text-sm tracking-[0.22em] font-semibold drop-shadow-sm"
+          style={{ color: textColor }}
+        >
           <DigitSwap
-            value={detailsVisible ? `4532 8891 2041 ${lastFour}` : `•••• •••• •••• ${lastFour}`}
+            value={detailsVisible ? `•••• •••• •••• ${lastFour}` : `•••• •••• •••• ${lastFour}`}
             animationKey={detailsVisible ? "revealed" : "masked"}
           />
         </p>
       </div>
 
       {/* Pie de la tarjeta con acciones rápidas al estar abierta */}
-      <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/15 text-[10px]">
+      <div
+        className={cn(
+          "relative z-10 flex items-center justify-between pt-2 border-t text-[10px]",
+          isHolo ? "border-neutral-300/80" : "border-white/15"
+        )}
+      >
         <div className="truncate pr-2">
-          <span className="text-white/55 uppercase tracking-wider text-[8px] block">
+          <span
+            className="uppercase tracking-wider text-[8px] block font-medium"
+            style={{ color: subtextColor }}
+          >
             Titular Verificado
           </span>
-          <span className="font-semibold text-white/95 truncate block">
+          <span
+            className="font-bold truncate block"
+            style={{ color: textColor }}
+          >
             {holder}
           </span>
         </div>
@@ -628,7 +748,12 @@ export function LuminaCardFolderItem({
                 e.stopPropagation();
                 onSetDefault(id);
               }}
-              className="px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white font-semibold transition-colors cursor-pointer"
+              className={cn(
+                "px-2 py-1 rounded-lg font-semibold transition-all cursor-pointer",
+                isHolo
+                  ? "bg-neutral-900/10 hover:bg-neutral-900/20 text-neutral-900"
+                  : "bg-white/15 hover:bg-white/25 text-white"
+              )}
             >
               Hacer principal
             </button>

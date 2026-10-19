@@ -826,6 +826,7 @@ export function OverviewTab({
                   number={primaryCard.number || ""}
                   exp={primaryCard.exp || "12/28"}
                   type={primaryCard.type === "mastercard" ? "mastercard" : "visa"}
+                  design={primaryCard.design}
                   isDefault={true}
                   index={primaryIndex}
                   compact

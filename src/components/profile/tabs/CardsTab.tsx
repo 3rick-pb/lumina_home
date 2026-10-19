@@ -92,6 +92,7 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
                     number={c?.number || ""}
                     exp={c?.exp || "12/28"}
                     type={c?.type === "mastercard" ? "mastercard" : "visa"}
+                    design={c?.design}
                     isDefault={Boolean(c?.isDefault)}
                     index={index}
                     onSetDefault={setDefaultCard}

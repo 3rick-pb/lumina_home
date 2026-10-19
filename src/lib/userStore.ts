@@ -98,6 +98,7 @@ export interface PaymentCard {
   exp: string;
   type: 'mastercard' | 'visa';
   isDefault?: boolean;
+  design?: 'carbon' | 'holo' | 'navy' | string;
 }
 
 export interface ShippingAddress {

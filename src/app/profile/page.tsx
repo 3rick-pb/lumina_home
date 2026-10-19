@@ -1967,6 +1967,7 @@ const handleConfirmDeleteNiche = async () => {
         holder: cardData?.holder || user?.name || "Titular Lumina",
         exp: cardData?.exp || "12/28",
         type: cardData?.type || "visa",
+        design: (cardData as any)?.design || "carbon",
         isDefault: (Array.isArray(cards) ? cards : []).length === 0,
       });
     }}

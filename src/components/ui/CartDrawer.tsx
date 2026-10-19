@@ -2437,7 +2437,7 @@ export function CartDrawer() {
                       holder: c.holder,
                       exp: c.exp,
                       type: c.type || "visa",
-                      design: i === 0 ? "obsidian" : i === 1 ? "holographic" : "navy",
+                      design: c.design || (i === 0 ? "carbon" : i === 1 ? "holo" : "navy"),
                     }))
                   : undefined
               }
