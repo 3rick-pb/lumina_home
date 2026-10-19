@@ -34,6 +34,7 @@ import { supabase } from "@/lib/supabase";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
+import { MaskButton } from "@/components/godui/mask-button";
 import {
   getRefinedCoordinates,
   getImmediateRawGpsPosition,
@@ -85,6 +86,7 @@ export function SettingsTab({
   // Settings State
   const [editName, setEditName] = useState("");
   const [newPass, setNewPass] = useState("");
+  const [isCreatureCooling, setIsCreatureCooling] = useState(false);
   const [invitedAdmins, setInvitedAdmins] = useState<string[]>([]);
   const [subAdminProfiles, setSubAdminProfiles] = useState<Record<string, { displayName?: string; email: string }>>({});
   const [primaryAdminEmail, setPrimaryAdminEmail] = useState<string>("admin@lumina.com");
@@ -1031,18 +1033,24 @@ export function SettingsTab({
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
+              <MaskButton
+                mask="nature"
+                size="sm"
+                isCooling={isCreatureCooling}
+                cooldownDuration={3000}
+                onCooldownEnd={() => setIsCreatureCooling(false)}
                 onClick={() => {
+                  if (isCreatureCooling) return;
+                  setIsCreatureCooling(true);
                   const rand = `${user?.id || 'lumina'}-${Math.random().toString(36).substring(2, 7)}`;
                   setCustomSeed(rand, user?.id, user?.email);
                 }}
-                className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-[#2c2c2e] hover:bg-gray-200 dark:hover:bg-[#3a3a3c] text-gray-700 dark:text-gray-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="h-8 px-3 rounded-xl transition-all cursor-pointer font-bold text-xs"
                 title="Generar nueva variación de criatura"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span>Nueva Criatura</span>
-              </button>
+              </MaskButton>
               {customSeed && (
                 <button
                   type="button"

@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserStore, isValidEmail, validateStrongPassword } from "@/lib/userStore";
 import { useCartStore } from "@/lib/store";
-import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { 
   ArrowRight, 
   Mail, 
@@ -15,7 +14,6 @@ import {
   ShieldCheck, 
   ShieldAlert, 
   AlertTriangle, 
-  Search, 
   X, 
   Eye, 
   EyeOff, 
@@ -23,7 +21,6 @@ import {
   CheckCircle2, 
   Loader2 
 } from "lucide-react";
-import { normalizeSearchText } from "@/lib/utils";
 import { useBrand } from "@/core";
 import { BeUILoaderMetaballs, BeUICenterMorphModal } from "@/components/ui/BeUIControls";
 import { LuminaLoginWordmark } from "@/components/ui/LuminaLoginWordmark";
@@ -158,39 +155,7 @@ function LoginFormContent() {
   };
 
 
-  // Search Bar State
-  const { products, categories } = useCatalogStore();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [previewProduct, setPreviewProduct] = useState<CatalogProduct | null>(null);
 
-  // Dynamic suggestions: active categories with existing products in store
-  const dynamicSuggestions = useMemo(() => {
-    const productCategories = Array.from(
-      new Set(
-        products
-          .map((p) => p.category?.trim())
-          .filter((cat): cat is string => Boolean(cat && cat.length > 0))
-      )
-    );
-
-    const activeList = categories.length > 0
-      ? categories.filter((c) => productCategories.some(pc => pc.toLowerCase() === c.toLowerCase()))
-      : productCategories;
-
-    const list = activeList.length > 0 ? activeList : productCategories;
-    return list.slice(0, 6);
-  }, [products, categories]);
-
-  // Filtered live search results (accent/diacritic insensitive)
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = normalizeSearchText(searchQuery);
-    return products.filter(p => 
-      normalizeSearchText(p.title).includes(q) || 
-      normalizeSearchText(p.category).includes(q) ||
-      (p.description && normalizeSearchText(p.description).includes(q))
-    ).slice(0, 5);
-  }, [products, searchQuery]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,90 +218,7 @@ function LoginFormContent() {
         </p>
       </div>
 
-      {/* Interactive Catalog Explorer Search Bar */}
-      <div className="w-full max-w-md mb-6 relative z-30">
-        <div className="relative flex items-center bg-white/70 backdrop-blur-2xl border border-white/90 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-4 py-3 focus-within:ring-2 focus-within:ring-[#8c9276]/40 focus-within:bg-white transition-all">
-          <Search className="w-4 h-4 text-gray-400 mr-2.5 shrink-0" />
-          <input 
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder={`Explorar piezas y colecciones ${brand.shortName}...`}
-            className="w-full bg-transparent border-none outline-none text-xs text-gray-800 placeholder:text-gray-400 font-medium"
-          />
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery("")} 
-              className="text-gray-400 hover:text-gray-600 ml-2 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
 
-        {/* Quick Suggestion Pills */}
-        {!searchQuery && dynamicSuggestions.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2.5 px-1 overflow-x-auto hide-scrollbar text-[10px]">
-            <span className="text-gray-400 font-medium shrink-0">Sugerencias:</span>
-            {dynamicSuggestions.map((chip) => (
-              <button
-                key={chip}
-                onClick={() => setSearchQuery(chip)}
-                className="px-2.5 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/70 text-gray-600 hover:text-gray-900 hover:bg-white/80 transition-all shrink-0 font-medium"
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Live Search Results Dropdown */}
-        {searchQuery.trim().length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_16px_48px_rgba(0,0,0,0.12)] p-3 space-y-2 z-40 max-h-80 overflow-y-auto animate-fade-in">
-            <div className="flex items-center justify-between px-2 pt-1 pb-1 border-b border-gray-100">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                {searchResults.length} piezas encontradas
-              </span>
-              <button 
-                onClick={() => setSearchQuery("")} 
-                className="text-[11px] text-gray-400 hover:text-gray-600"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            {searchResults.length === 0 ? (
-              <div className="py-6 text-center text-xs text-gray-500">
-                No encontramos piezas para <span className="font-semibold text-gray-800">&quot;{searchQuery}&quot;</span>.
-              </div>
-            ) : (
-              searchResults.map((prod) => (
-                <div 
-                  key={prod.id}
-                  onClick={() => setPreviewProduct(prod)}
-                  className="flex items-center justify-between p-2 rounded-2xl hover:bg-gray-50/80 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                      <Image src={prod.imageUrl} alt={prod.title} fill sizes="44px" className="object-cover group-hover:scale-105 transition-transform" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold text-[#8c9276] uppercase tracking-wider block">
-                        {prod.category}
-                      </span>
-                      <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{prod.title}</h4>
-                      <p className="text-xs font-extrabold text-gray-900 mt-0.5">${prod.price.toFixed(2)}</p>
-                    </div>
-                  </div>
-                  <div className="p-2 text-gray-400 group-hover:text-gray-900 group-hover:bg-white rounded-xl transition-all">
-                    <Eye className="w-4 h-4" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
 
       {/* Main Luxury Glass Card */}
       <div className="w-full max-w-md relative z-10">
@@ -482,61 +364,7 @@ function LoginFormContent() {
         </div>
       </div>
 
-      {/* Product Quick Preview Modal */}
-      {previewProduct && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in"
-          onClick={() => setPreviewProduct(null)}
-        >
-          <div 
-            className="bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-gray-100 rounded-3xl w-full max-w-sm shadow-[0_25px_70px_rgba(0,0,0,0.25)] border border-white/80 dark:border-white/10 p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button: Exact Luxury Circular Glass Design Matching Cart */}
-            <button 
-              type="button"
-              onClick={() => setPreviewProduct(null)} 
-              className="absolute top-3.5 right-3.5 z-30 w-10 h-10 rounded-full bg-white/95 dark:bg-[#2a2a2d]/95 backdrop-blur-xl border border-black/[0.08] dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
-              title="Cerrar vista rápida"
-            >
-              <X className="w-4 h-4 stroke-[2.5]" />
-            </button>
 
-            <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
-              <Image src={previewProduct.imageUrl} alt={previewProduct.title} fill sizes="(max-width: 640px) 100vw, 384px" className="object-cover" />
-            </div>
-
-            <span className="text-[10px] font-bold text-[#8c9276] uppercase tracking-wider">
-              {previewProduct.category}
-            </span>
-            <h3 className="text-base font-bold text-gray-900 mt-0.5">{previewProduct.title}</h3>
-            <p className="text-sm font-extrabold text-gray-900 mt-1">${previewProduct.price.toFixed(2)}</p>
-
-            <p className="text-xs text-gray-500 mt-2 line-clamp-3 leading-relaxed">
-              {previewProduct.description || "Diseño minimalista fabricado con materiales nobles para elevar cualquier rincón de tu hogar."}
-            </p>
-
-            <div className="mt-5 pt-4 border-t border-gray-100 flex gap-2">
-              <button 
-                type="button"
-                onClick={() => {
-                  router.push(`/product/${previewProduct.id}`);
-                }}
-                className="flex-1 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm text-center flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Ver pieza completa</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={() => setPreviewProduct(null)}
-                className="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-medium hover:bg-gray-200 transition-colors cursor-pointer"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Interactive Password Change Modal (BeUICenterMorphModal) */}
       <BeUICenterMorphModal
