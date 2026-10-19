@@ -10,6 +10,7 @@ import { LiquidGlass, LiquidGlassButton } from "./LiquidGlass";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
+import { SkeuomorphicWallet } from "./SkeuomorphicWallet";
 import { 
  X, 
  Plus, 
@@ -2414,336 +2415,33 @@ export function CartDrawer() {
         {/* Method 1: Card Checkout (Default) */}
         {selectedPayMethod === "card" ? (
           <div className="pt-2 space-y-4 font-sans">
-            {(() => {
-          const activeCard =
-            cards.find((c) => c.id === selectedSavedCardId) || cards[0] || null;
-
-          // Format price parts for exact typography: "$ 4,018.00"
-          const [intPart, decPart] = finalTotal.toFixed(2).split(".");
-          const formattedInt = Number(intPart).toLocaleString("en-US");
-
-          // Base cards matching the 3 cards from the reference image
-          const baseSpecimens = [
-            {
-              id: "specimen-obsidian",
-              number: activeCard?.number || (cardNumber ? cardNumber : "•••• •••• •••• 4242"),
-              holder: activeCard?.holder || (cardHolder ? cardHolder : user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA"),
-              exp: activeCard?.exp || (cardExpiry ? cardExpiry : "12/28"),
-              type: activeCard?.type || (cardNumber.replace(/\s/g, "").startsWith("5") ? ("mastercard" as const) : ("visa" as const)),
-              design: "obsidian" as const,
-            },
-            {
-              id: "specimen-holo",
-              number: "•••• •••• •••• 4916",
-              holder: user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA",
-              exp: "08/29",
-              type: "visa" as const,
-              design: "holographic" as const,
-            },
-            {
-              id: "specimen-navy",
-              number: "•••• •••• •••• 8821",
-              holder: user?.name ? formatCleanName(user.name) : "CLIENTE LUMINA",
-              exp: "04/30",
-              type: "mastercard" as const,
-              design: "navy" as const,
-            },
-          ];
-
-          // Always guarantee the exact 3-card deck from the reference image
-          const effectiveCards = cards && cards.length >= 3
-            ? cards.map((c, i) => ({
-                ...c,
-                design: i === 0 ? ("obsidian" as const) : i === 1 ? ("holographic" as const) : ("navy" as const),
-              }))
-            : cards && cards.length > 0
-            ? [
-                ...cards.map((c, i) => ({
-                  ...c,
-                  design: i === 0 ? ("obsidian" as const) : ("holographic" as const),
-                })),
-                ...baseSpecimens.slice(cards.length),
-              ]
-            : baseSpecimens;
-
-          const activeEffective = effectiveCards.find((c) => c.id === activeCard?.id) || effectiveCards[0];
-          const nonActiveCards = effectiveCards.filter((c) => c.id !== activeEffective.id);
-          // Active card at the end of orderedCards -> depthFromFront = 0 (renders at front)
-          const orderedCards = [...nonActiveCards, activeEffective];
-
-          return (
-            /* WALLET FRAME MATCHING 1:1 REFERENCE IMAGE */
-            <div
-              className={`relative w-full max-w-[390px] mx-auto select-none rounded-[2.75rem] bg-[#232325] border-[1.5px] border-[#3f3f46]/50 shadow-[0_24px_50px_rgba(0,0,0,0.5)] p-4 sm:p-5 pt-3.5 overflow-hidden transition-all duration-500 ease-out`}
-            >
-              {/* Top Header: "Wallet" (centered as in reference image) */}
-              <div className="w-full text-center relative z-20 select-none pb-1 pt-1">
-                <span className="font-sans font-medium text-[13px] text-[#71717a] tracking-normal inline-block">
-                  Wallet
-                </span>
-              </div>
-
-              {/* Cards Deck Stage */}
-              <div
-                className={`relative w-full transition-all duration-500 ease-out ${
-                  isMiniWalletOpen ? "pt-44 sm:pt-48" : "pt-20 sm:pt-22"
-                }`}
-              >
-                {/* Subtle White Card Peek on Far Right (1:1 from reference image) */}
-                {!isMiniWalletOpen && (
-                  <div
-                    className="absolute right-[3%] -top-3 w-[80%] h-[140px] rounded-2xl bg-gradient-to-tr from-[#e4e4e7] to-[#ffffff] border border-white/80 shadow-md rotate-[5.8deg] pointer-events-none opacity-85 transition-opacity duration-300"
-                    style={{ zIndex: 12 }}
-                  />
-                )}
-
-                {/* Stacked Cards */}
-                {orderedCards.map((card, idx) => {
-                  const totalCards = orderedCards.length;
-                  const depthFromFront = totalCards - 1 - idx;
-                  const isSelected = activeEffective ? card.id === activeEffective.id : false;
-                  const isCardHovered = isMiniWalletOpen && hoveredCardId === card.id;
-
-                  // CLOSED POSITIONS: Exact tilts and generous peek offsets from reference image
-                  // depth 2 (Back card, navy): tilted right 3.8deg, peeking 66px
-                  // depth 1 (Middle card, holo silver): tilted left -2.5deg, peeking 50px
-                  // depth 0 (Front card, obsidian): straight 0deg, peeking 34px
-                  const closedY = depthFromFront === 0 ? -34 : depthFromFront === 1 ? -50 : -66;
-                  const closedRotate = depthFromFront === 0 ? 0 : depthFromFront === 1 ? -2.5 : 3.8;
-                  const closedX = depthFromFront === 0 ? 0 : depthFromFront === 1 ? -5 : 6;
-                  const closedScale = 1 - depthFromFront * 0.015;
-
-                  // OPEN POSITIONS: Fanning UPWARDS OUT OF THE POCKET
-                  const openY = -depthFromFront * 62;
-                  const openRotate = 0;
-                  const openX = 0;
-                  const openScale = 1;
-
-                  const baseZ = 20 - depthFromFront * 2;
-                  const targetZ = isCardHovered ? 35 : baseZ;
-                  const targetY = isCardHovered ? openY - 12 : (isMiniWalletOpen ? openY : closedY);
-                  const targetRotate = isMiniWalletOpen ? openRotate : closedRotate;
-                  const targetX = isMiniWalletOpen ? openX : closedX;
-                  const targetScale = isCardHovered ? 1.025 : (isMiniWalletOpen ? openScale : closedScale);
-
-                  // Visual Card Styles
-                  const isHolo = card.design === "holographic" || card.number.includes("4916");
-                  const isNavy = card.design === "navy" || idx === 0;
-
-                  // Card Brand Association
-                  const rawNum = (card.number || "").replace(/\s/g, "");
-                  const cardBrand = card.type
-                    ? card.type.toLowerCase()
-                    : rawNum.startsWith("5")
-                    ? "mastercard"
-                    : rawNum.startsWith("36") || rawNum.startsWith("38")
-                    ? "diners"
-                    : rawNum.startsWith("6011")
-                    ? "discover"
-                    : rawNum.startsWith("34") || rawNum.startsWith("37")
-                    ? "amex"
-                    : "visa";
-
-                  return (
-                    <motion.div
-                      key={card.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        playEnvelopeSound("open");
-                        handleSelectSavedCard(card.id);
-                        setHoveredCardId(null);
-                      }}
-                      onMouseEnter={() => {
-                        if (isMiniWalletOpen) setHoveredCardId(card.id);
-                      }}
-                      onMouseLeave={() => {
-                        if (hoveredCardId === card.id) setHoveredCardId(null);
-                      }}
-                      initial={false}
-                      animate={{
-                        y: targetY,
-                        x: targetX,
-                        rotate: targetRotate,
-                        scale: targetScale,
-                        zIndex: targetZ,
-                      }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 340,
-                        damping: 26,
-                        mass: 0.7,
-                      }}
-                      style={{ transformStyle: "preserve-3d" }}
-                      className={`absolute inset-x-1.5 h-[164px] sm:h-[174px] rounded-2xl p-4 flex flex-col justify-between cursor-pointer select-none transition-all duration-200 overflow-hidden ${
-                        isHolo
-                          ? "border border-slate-300/70 shadow-[0_12px_28px_rgba(0,0,0,0.35)] text-slate-900"
-                          : isNavy
-                          ? "bg-gradient-to-tr from-[#0a0f1d] via-[#121c33] to-[#1c2e56] border-t-2 border-t-amber-300/90 border-x border-b border-sky-400/30 shadow-[0_14px_32px_rgba(0,0,0,0.5)] text-white"
-                          : "bg-gradient-to-tr from-[#141416] via-[#1c1c1f] to-[#242429] border border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.55)] text-white"
-                      } ${
-                        isCardHovered
-                          ? "ring-2 ring-amber-400/80 brightness-[1.06] shadow-[0_0_24px_rgba(245,158,11,0.4)]"
-                          : ""
-                      }`}
-                    >
-                      {/* Holographic Prismatic Rainbow Gradient Layer (Card 2) */}
-                      {isHolo && (
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{
-                            background:
-                              "linear-gradient(110deg, #cfd3dc 15%, #fde047 38%, #38bdf8 52%, #c084fc 68%, #e2e8f0 85%)",
-                          }}
-                        />
-                      )}
-
-                      {/* Specular gloss glint */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-
-                      {/* Card Top Row: Brand association logo (Visa, Mastercard, etc.) proudly visible above pocket */}
-                      <div className="flex items-center justify-between relative z-10 pt-0.5">
-                        <div className="flex items-center">
-                          {cardBrand === "mastercard" ? (
-                            <MastercardLogo className="h-5 sm:h-6 w-auto object-contain" />
-                          ) : cardBrand === "amex" ? (
-                            <AmexLogo className="h-4 sm:h-5 w-auto object-contain" />
-                          ) : cardBrand === "diners" ? (
-                            <DinersClubLogo className="h-4 sm:h-5 w-auto object-contain" />
-                          ) : cardBrand === "discover" ? (
-                            <DiscoverLogo className="h-4 sm:h-5 w-auto object-contain" />
-                          ) : (
-                            <span
-                              className={`font-['Arial',sans-serif] font-black italic text-xl sm:text-[24px] tracking-wider select-none leading-none ${
-                                isHolo ? "text-[#18181b]" : "text-white"
-                              }`}
-                            >
-                              VISA
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {isSelected && isMiniWalletOpen && (
-                            <span className="flex items-center gap-1 text-[9px] font-sans font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/40">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              Activa
-                            </span>
-                          )}
-                          <ContactlessIcon
-                            className={`w-3.5 h-3.5 ${isHolo ? "opacity-60 text-slate-800" : "opacity-70 text-white"}`}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Card Number (revealed when open) */}
-                      <div className="relative z-10 my-auto">
-                        <p
-                          className={`font-mono font-bold text-sm sm:text-base tracking-[0.22em] drop-shadow-sm transition-opacity duration-200 ${
-                            isHolo ? "text-slate-900" : "text-white/95"
-                          } ${isMiniWalletOpen ? "opacity-100" : "opacity-0"}`}
-                        >
-                          {card.number}
-                        </p>
-                      </div>
-
-                      {/* Card Bottom Row: Chip & Holder (revealed when open) */}
-                      <div
-                        className={`flex items-end justify-between relative z-10 pt-1.5 border-t text-[9.5px] transition-opacity duration-200 ${
-                          isHolo ? "border-slate-800/15" : "border-white/15"
-                        } ${isMiniWalletOpen ? "opacity-100" : "opacity-0"}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="scale-75 origin-left">
-                            <EmvChip />
-                          </div>
-                          <span className="font-mono font-bold uppercase truncate max-w-[150px] tracking-wider">
-                            {card.holder}
-                          </span>
-                        </div>
-                        <span className="font-mono font-bold opacity-85">
-                          {card.exp}
-                        </span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-
-                {/* 3D PROTRUDING FROSTED LEATHER POCKET WITH STITCHED BORDER & "TOTAL A PAGAR" */}
-                <div
-                  onClick={() => {
-                    const nextState = !isMiniWalletOpen;
-                    playEnvelopeSound(nextState ? "open" : "close");
-                    setIsMiniWalletOpen(nextState);
-                    setHoveredCardId(null);
-                  }}
-                  className="relative w-full h-[168px] sm:h-[178px] rounded-[2rem] sm:rounded-[2.2rem] p-4 flex flex-col justify-center items-center overflow-hidden cursor-pointer z-30 transition-all duration-300 backdrop-blur-2xl bg-gradient-to-b from-[#18181b]/92 via-[#201416]/95 to-[#381316]/96 border border-white/20 ring-1 ring-black/80 hover:brightness-[1.04] active:scale-[0.99] select-none"
-                  style={{
-                    boxShadow:
-                      "inset 0 2px 3px 0 rgba(255, 255, 255, 0.45), inset 2.5px 0 3px 0 rgba(255, 255, 255, 0.25), inset 0 -4px 8px 0 rgba(0, 0, 0, 0.75), inset -2.5px 0 4px 0 rgba(0, 0, 0, 0.55), 0 24px 50px -8px rgba(0, 0, 0, 0.85), 0 12px 24px -4px rgba(0, 0, 0, 0.65)",
-                  }}
-                >
-                  {/* Specular Curved 3D Glint on Top and Left Rim */}
-                  <div className="absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/55 to-transparent pointer-events-none" />
-                  <div className="absolute inset-y-6 left-0 w-[2px] bg-gradient-to-b from-white/45 via-white/15 to-transparent pointer-events-none" />
-                  <div className="absolute top-0 left-0 w-24 h-24 rounded-tl-[2rem] bg-gradient-to-br from-white/25 via-white/5 to-transparent pointer-events-none opacity-80" />
-
-                  {/* Radiant Crimson / Cherry Ambient Light Glow at Bottom-Right */}
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background:
-                        "radial-gradient(ellipse 95% 75% at 75% 100%, rgba(225, 29, 72, 0.65), rgba(185, 28, 28, 0.5) 45%, rgba(127, 29, 29, 0.22) 70%, transparent 90%)",
-                    }}
-                  />
-
-                  {/* Authentic Leather Stitched Perimeter Border */}
-                  <svg
-                    className="absolute inset-0 w-full h-full pointer-events-none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <rect
-                      x="8"
-                      y="8"
-                      width="calc(100% - 16px)"
-                      height="calc(100% - 16px)"
-                      rx="26"
-                      fill="none"
-                      stroke="rgba(255, 255, 255, 0.32)"
-                      strokeWidth="1.2"
-                      strokeDasharray="5 5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-
-                  {/* Top Label: "Total a Pagar" */}
-                  <p className="text-center font-sans text-xs sm:text-[13px] font-medium text-white/50 tracking-wide mb-1.5 relative z-10 select-none">
-                    Total a Pagar
-                  </p>
-
-                  {/* Large Formatted Amount: "$ 4,018.00" */}
-                  <div className="flex items-baseline justify-center relative z-10 select-none">
-                    <span className="font-sans font-bold text-3xl sm:text-[38px] text-white tracking-tight mr-1.5">
-                      $
-                    </span>
-                    <span className="font-sans font-bold text-3xl sm:text-[38px] text-white tracking-tight">
-                      {formattedInt}
-                    </span>
-                    <span className="font-sans font-semibold text-2xl sm:text-[28px] text-white/60">
-                      .{decPart}
-                    </span>
-                  </div>
-
-                  {/* Open State Helper Prompt */}
-                  {isMiniWalletOpen && (
-                    <p className="text-[10px] text-white/50 tracking-wide mt-2 text-center relative z-10 select-none animate-pulse">
-                      Toca una tarjeta para elegirla · Clic para cerrar
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+            <SkeuomorphicWallet
+              amount={finalTotal}
+              currencySymbol="$"
+              label="Total a Pagar"
+              activeCardId={selectedSavedCardId}
+              onSelectCard={(cardId) => {
+                handleSelectSavedCard(cardId);
+                playEnvelopeSound("open");
+              }}
+              isOpen={isMiniWalletOpen}
+              onToggleOpen={(nextState) => {
+                playEnvelopeSound(nextState ? "open" : "close");
+                setIsMiniWalletOpen(nextState);
+              }}
+              cards={
+                cards && cards.length > 0
+                  ? cards.map((c, i) => ({
+                      id: c.id,
+                      number: c.number,
+                      holder: c.holder,
+                      exp: c.exp,
+                      type: c.type || "visa",
+                      design: i === 0 ? "obsidian" : i === 1 ? "holographic" : "navy",
+                    }))
+                  : undefined
+              }
+            />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
           <div className="flex items-center gap-2">
