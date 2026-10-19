@@ -32,11 +32,15 @@ import {
   CornerDownLeft,
   ArrowRight,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Database,
+  Cpu,
+  User as UserIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Tag } from "lucide-react";
+import { AnimatedBeam } from "@/components/godui/animated-beam";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo, EmbeddedCarouselConfig } from "@/lib/catalogStore";
@@ -169,6 +173,14 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+
+  // GodUI AnimatedBeam Architecture Pipeline Refs (Client -> Edge -> Compute -> DB)
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const clientRef = useRef<HTMLDivElement | null>(null);
+  const edgeRef = useRef<HTMLDivElement | null>(null);
+  const computeRef = useRef<HTMLDivElement | null>(null);
+  const dbRef = useRef<HTMLDivElement | null>(null);
+  const beam = { containerRef, pathDashArray: "0.1 8", duration: 4 };
 
   const { mode } = useThemeStore();
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -590,111 +602,6 @@ export default function ProfilePage() {
       document.documentElement.removeAttribute("data-modal-open");
     };
   }, [isAnyModalOpen]);
-
-  // --- Top bar 3-by-3 paginated tabs state & navigation ---
-  interface TopNavTabItem {
-    id: ProfileTab;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    iconColor: string;
-    badge?: number;
-  }
-
-  const isEffectiveAdmin = Boolean(
-    user?.isRootAdmin || 
-    (user?.email || '').toLowerCase().trim() === 'admin@lumina.com' || 
-    user?.role === "ADMIN" || 
-    user?.role === "SUBADMIN"
-  );
-
-  const topNavTabs = useMemo<TopNavTabItem[]>(() => {
-    const list: TopNavTabItem[] = [
-      { id: "overview", label: "Vista General", icon: LayoutDashboard, iconColor: "text-amber-500/90" },
-      { id: "orders", label: "Pedidos", icon: ShoppingBag, iconColor: "text-blue-500/90", badge: (Array.isArray(scopedOrders) ? scopedOrders : []).length },
-      { id: "cards", label: "Billetera", icon: CreditCard, iconColor: "text-emerald-500/90", badge: (Array.isArray(cards) ? cards : []).length },
-      { id: "favorites", label: "Favoritos", icon: Heart, iconColor: "text-rose-500/90", badge: (Array.isArray(favorites) ? favorites : []).length },
-    ];
-    if (isEffectiveAdmin) {
-      list.push(
-        { id: "catalog", label: "Inventario", icon: Package, iconColor: "text-amber-500/90", badge: (Array.isArray(products) ? products : []).length },
-        { id: "niches", label: "Nichos", icon: Layers, iconColor: "text-purple-500/90", badge: (Array.isArray(categories) ? categories : []).length },
-        { id: "analytics", label: "Radar en Vivo", icon: Globe, iconColor: "text-cyan-500/90" },
-        { id: "cart_alerts", label: "Alertas Bolsa", icon: BellRing, iconColor: "text-yellow-500/90" },
-        { id: "integrations", label: "SMTP & Servidor", icon: Server, iconColor: "text-indigo-500/90" }
-      );
-    }
-    list.push(
-      { id: "loyalty", label: "Cupones", icon: Tag, iconColor: "text-orange-500/90" },
-      { id: "settings", label: "Ajustes", icon: Settings, iconColor: "text-stone-500/90" }
-    );
-    return list;
-  }, [isEffectiveAdmin, scopedOrders, cards, favorites, products, categories]);
-
-  const TABS_PER_PAGE = 2;
-  const tabPages = useMemo(() => {
-    const pages: TopNavTabItem[][] = [];
-    for (let i = 0; i < topNavTabs.length; i += TABS_PER_PAGE) {
-      pages.push(topNavTabs.slice(i, i + TABS_PER_PAGE));
-    }
-    return pages;
-  }, [topNavTabs]);
-
-  const [topNavPage, setTopNavPage] = useState(0);
-  const [navDirection, setNavDirection] = useState<number>(0);
-  const prevActiveTabRef = useRef(activeTab);
-
-  // Auto-sync page ONLY when activeTab actually changes (e.g. search bar, drawer, clicks)
-  useEffect(() => {
-    if (prevActiveTabRef.current !== activeTab) {
-      prevActiveTabRef.current = activeTab;
-      const activeIdx = topNavTabs.findIndex((t) => t.id === activeTab);
-      if (activeIdx !== -1) {
-        const targetPage = Math.floor(activeIdx / TABS_PER_PAGE);
-        setNavDirection(targetPage >= topNavPage ? 1 : -1);
-        setTopNavPage(targetPage);
-      }
-    }
-  }, [activeTab, topNavTabs, topNavPage]);
-
-  // Keep page index within bounds if tab count changes
-  useEffect(() => {
-    if (tabPages.length > 0 && topNavPage >= tabPages.length) {
-      setTopNavPage(Math.max(0, tabPages.length - 1));
-    }
-  }, [tabPages.length, topNavPage]);
-
-  const goToPreviousPage = useCallback(() => {
-    if (topNavPage > 0) {
-      setNavDirection(-1);
-      setTopNavPage((prev) => Math.max(0, prev - 1));
-    }
-  }, [topNavPage]);
-
-  const goToNextPage = useCallback(() => {
-    if (topNavPage < tabPages.length - 1) {
-      setNavDirection(1);
-      setTopNavPage((prev) => Math.min(tabPages.length - 1, prev + 1));
-    }
-  }, [topNavPage, tabPages.length]);
-
-  const goToPage = useCallback((targetPage: number) => {
-    if (targetPage !== topNavPage && targetPage >= 0 && targetPage < tabPages.length) {
-      setNavDirection(targetPage > topNavPage ? 1 : -1);
-      setTopNavPage(targetPage);
-    }
-  }, [topNavPage, tabPages.length]);
-
-  const handleTabsWheel = useCallback((e: React.WheelEvent) => {
-    if (Math.abs(e.deltaY) > 15 || Math.abs(e.deltaX) > 15) {
-      e.preventDefault();
-      const dir = (e.deltaY > 0 || e.deltaX > 0) ? 1 : -1;
-      if (dir > 0) {
-        goToNextPage();
-      } else {
-        goToPreviousPage();
-      }
-    }
-  }, [goToNextPage, goToPreviousPage]);
 
   // Category & Badge manager state
 
@@ -1618,95 +1525,51 @@ const handleConfirmDeleteNiche = async () => {
     />
   </Link>
 
-  {/* Top Bar Paginated Tabs (2 por página, tamaño compacto, botones en píldora individuales) */}
+  {/* GodUI AnimatedBeam Architecture Pipeline (Client -> Edge -> Compute -> DB) */}
   <div
-    onWheel={handleTabsWheel}
-    className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-stone-100/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-xs transition-all select-none shrink-0"
+    ref={containerRef}
+    className="relative flex items-center justify-between gap-5 sm:gap-7 px-3.5 py-1.5 h-10 rounded-2xl bg-stone-100/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-xs select-none shrink-0 overflow-hidden"
   >
-    {/* Flecha izquierda: se muestra SOLO si no estamos en la primera página */}
-    {topNavPage > 0 && (
-      <button
-        type="button"
-        onClick={goToPreviousPage}
-        title="Pestañas anteriores"
-        className="p-1 rounded-xl text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-white/10 transition-all flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
-      >
-        <ChevronLeft className="w-3.5 h-3.5" />
-      </button>
-    )}
-
-    {/* Contenedor animado de las 2 pestañas */}
-    <div className="overflow-hidden w-[200px] sm:w-[210px] lg:w-[220px]">
-      <AnimatePresence mode="wait" custom={navDirection}>
-        <motion.div
-          key={topNavPage}
-          custom={navDirection}
-          variants={{
-            enter: (direction: number) => ({
-              x: direction > 0 ? 12 : -12,
-              opacity: 0,
-            }),
-            center: {
-              x: 0,
-              opacity: 1,
-            },
-            exit: (direction: number) => ({
-              x: direction > 0 ? -12 : 12,
-              opacity: 0,
-            }),
-          }}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-2 gap-1 w-full"
-        >
-          {tabPages[topNavPage]?.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setActiveTab(tab.id);
-                }}
-                title={tab.label}
-                className={`group relative flex items-center justify-center gap-1 px-2 py-1 rounded-xl text-[11px] whitespace-nowrap transition-all duration-150 cursor-pointer select-none truncate ${
-                  isActive
-                    ? "bg-white dark:bg-[#28282e] text-stone-950 dark:text-white font-semibold border border-stone-200/90 dark:border-white/20 shadow-xs ring-1 ring-black/5 dark:ring-white/10"
-                    : "bg-stone-200/60 dark:bg-white/5 border border-stone-200/80 dark:border-white/5 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-white/80 dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/15 font-medium"
-                }`}
-              >
-                <Icon className={`w-3 h-3 shrink-0 transition-transform duration-150 group-hover:scale-110 ${tab.iconColor}`} />
-                <span className="truncate">{tab.label}</span>
-                {typeof tab.badge === "number" && tab.badge > 0 && (
-                  <span className={`text-[9px] font-mono px-1 py-0.2 rounded-full shrink-0 leading-none ${
-                    isActive
-                      ? "bg-[#e07a3f]/15 text-[#e07a3f] dark:text-[#ff9d66] font-semibold"
-                      : "bg-stone-300/60 dark:bg-white/10 text-stone-600 dark:text-stone-400"
-                  }`}>
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </motion.div>
-      </AnimatePresence>
+    {/* 1. Client Node */}
+    <div
+      ref={clientRef}
+      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-amber-500/35 bg-white dark:bg-[#202024] shadow-xs text-amber-600 dark:text-amber-400"
+      title="Cliente Lumina"
+    >
+      <UserIcon className="w-3.5 h-3.5" />
     </div>
 
-    {/* Flecha derecha: se muestra SOLO si no estamos en la última página */}
-    {topNavPage < tabPages.length - 1 && (
-      <button
-        type="button"
-        onClick={goToNextPage}
-        title="Pestañas siguientes"
-        className="p-1 rounded-xl text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-white/10 transition-all flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
-      >
-        <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    )}
+    {/* 2. Edge Node */}
+    <div
+      ref={edgeRef}
+      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-blue-500/35 bg-white dark:bg-[#202024] shadow-xs text-blue-600 dark:text-blue-400"
+      title="Red Edge Global (CDN & DNS)"
+    >
+      <Globe className="w-3.5 h-3.5" />
+    </div>
+
+    {/* 3. Compute Node */}
+    <div
+      ref={computeRef}
+      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-emerald-500/35 bg-white dark:bg-[#202024] shadow-xs text-emerald-600 dark:text-emerald-400"
+      title="Motor de Cómputo (Next.js Serverless)"
+    >
+      <Cpu className="w-3.5 h-3.5" />
+    </div>
+
+    {/* 4. Database Node */}
+    <div
+      ref={dbRef}
+      className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-purple-500/35 bg-white dark:bg-[#202024] shadow-xs text-purple-600 dark:text-purple-400"
+      title="Base de Datos Blindada (Supabase PostgreSQL)"
+    >
+      <Database className="w-3.5 h-3.5" />
+    </div>
+
+    {/* Animated Beams */}
+    <AnimatedBeam {...beam} fromRef={clientRef} toRef={edgeRef} delay={0} />
+    <AnimatedBeam {...beam} fromRef={edgeRef} toRef={computeRef} delay={0.6} />
+    <AnimatedBeam {...beam} fromRef={computeRef} toRef={dbRef} delay={1.2} />
   </div>
   </div>
 

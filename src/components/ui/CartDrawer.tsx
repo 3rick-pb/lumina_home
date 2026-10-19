@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton, BeUITiltCard } from "./BeUIControls";
+import { SlideConfirmButton } from "@/components/godui/slide-confirm-button";
 import { LiquidGlass, LiquidGlassButton } from "./LiquidGlass";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
@@ -1754,31 +1755,21 @@ export function CartDrawer() {
       </div>
     </div>
 
-    {/* @beui/animated-cta-button Full-Width Price -> "Proceder al pago" on Hover */}
+    {/* GodUI Slide Confirm Button: "Ir a pagar" -> "Preparando" -> "Listo, continúa..." */}
     <div className="pt-2 space-y-2">
       <div className="w-full">
-        <BeUIAnimatedCtaButton
-          onClick={handleProceedToPayment}
+        <SlideConfirmButton
+          label={hasAgotadoItems ? "Elimina piezas agotadas" : "Ir a pagar"}
+          loadingLabel="Preparando"
+          confirmedLabel="Listo, continúa..."
           disabled={hasAgotadoItems}
-          subLabel={
-            hasAgotadoItems
-              ? "Acción Requerida"
-              : !isAuthenticated
-                ? "Total a Pagar"
-                : "Total a Pagar"
-          }
-          label={
-            hasAgotadoItems
-              ? "Elimina piezas agotadas"
-              : `$${finalTotal.toFixed(2)} USD`
-          }
-          hoverLabel={
-            hasAgotadoItems
-              ? "Revisa tu bolsa"
-              : !isAuthenticated
-                ? "Iniciar Sesión para Pagar"
-                : "Proceder al pago"
-          }
+          size="lg"
+          className="w-full shadow-sm"
+          onConfirm={async () => {
+            await new Promise((resolve) => setTimeout(resolve, 1200));
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            handleProceedToPayment();
+          }}
         />
       </div>
 

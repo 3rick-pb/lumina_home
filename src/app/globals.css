@@ -81,27 +81,27 @@
   }
 
   /* ========================================================================= */
-  /* Input Caret & Cursor Visibility Guarantee (PC / Desktop & Mobile)        */
+  /* Input Caret & Cursor Stability (Prevents OS cursor color inversion)       */
   /* ========================================================================= */
   input,
   textarea,
   select,
   [contenteditable="true"],
   [contenteditable=""] {
-    caret-color: #18181b;
+    cursor: default;
+    caret-color: currentColor;
   }
 
-  html.dark input,
-  html.dark textarea,
-  html.dark select,
-  html.dark [contenteditable="true"],
-  html.dark [contenteditable=""],
-  .dark input,
-  .dark textarea,
-  .dark select,
-  .dark [contenteditable="true"],
-  .dark [contenteditable=""] {
-    caret-color: #f4f4f5;
+  /* Search bars and email inputs inherit unified non-inverting cursor */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"] {
+    cursor: default;
+    caret-color: currentColor;
   }
 }
 
