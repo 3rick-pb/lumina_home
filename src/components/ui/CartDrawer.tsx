@@ -285,7 +285,7 @@ export function CartDrawer() {
         setCardNumber(`${prefix} ${last4}`);
         setCardExpiry(defCard.exp || "12/29");
         setCardHolder(defCard.holder || user?.name || "CLIENTE LUMINA");
-        setCardCvv("888");
+        setCardCvv("");
       }
     }
   }, [cards, selectedSavedCardId, cardNumber, user?.name]);
@@ -321,7 +321,7 @@ export function CartDrawer() {
     const savedCard = cards?.find((c) => c.id === card.id);
     setCardExpiry(savedCard?.exp || card.expiry || "12/28");
     setCardHolder(savedCard?.holder || card.holderName || user?.name || "CLIENTE LUMINA");
-    setCardCvv("888");
+    setCardCvv("");
     playEnvelopeSound("open");
   };
 
@@ -342,7 +342,7 @@ export function CartDrawer() {
       setCardNumber(`${prefix} ${last4}`);
       setCardExpiry(found.exp || "12/29");
       setCardHolder(found.holder || user?.name || "CLIENTE LUMINA");
-      setCardCvv("888");
+      setCardCvv("");
     }
   };
 
@@ -383,25 +383,31 @@ export function CartDrawer() {
   // Field validation to prevent proceeding without valid card / payment & address data
   const isPaymentFieldsValid = useMemo(() => {
     if (selectedPayMethod === "app") {
-      const rawPhone = payphoneAppPhone.replace(/\D/g, "");
-      return rawPhone.length >= 9 && rawPhone.length <= 12;
+      const cleanPhone = payphoneAppPhone.replace(/\D/g, "");
+      return cleanPhone.length === 10 && cleanPhone.startsWith("09");
     }
 
-    // Saved card from 3D wallet or stored cards is pre-authorized
+    // Card payment:
+    // 1. CVV is strictly required (3 or 4 digits)
+    const cleanCvv = cardCvv.replace(/\D/g, "");
+    const isCvvValid = cleanCvv.length >= 3 && cleanCvv.length <= 4;
+    if (!isCvvValid) return false;
+
+    // 2. If using a saved card from 3D wallet or stored cards
     if (selectedSavedCardId && selectedSavedCardId !== "new") {
-      return true;
+      const cardExists = (cards && cards.some(c => c.id === selectedSavedCardId)) ||
+                         (userWallet3DCards && userWallet3DCards.some(c => c.id === selectedSavedCardId));
+      return Boolean(cardExists && isCvvValid);
     }
 
-    // Card payment
+    // 3. Manual card entry
     const cleanNum = cardNumber.replace(/\D/g, "");
-    // Support Diners Club (14), Amex (15), Visa/Mastercard/Discover (16), and up to 19 digits
-    const isNumValid = cleanNum.length >= 14 && cleanNum.length <= 19;
-    const cleanExp = cardExpiry.trim();
-    const isExpValid = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
-    const isCvvValid = cardCvv.trim().length >= 3 && cardCvv.trim().length <= 4;
-    const isHolderValid = cardHolder.trim().length >= 2 || Boolean(user?.name);
+    const isNumValid = cleanNum.length >= 14 && cleanNum.length <= 16;
+    const isExpValid = /^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim());
+    const isHolderValid = cardHolder.trim().length >= 3;
+
     return isNumValid && isExpValid && isCvvValid && isHolderValid;
-  }, [selectedPayMethod, payphoneAppPhone, selectedSavedCardId, cardNumber, cardExpiry, cardCvv, cardHolder, user?.name]);
+  }, [selectedPayMethod, payphoneAppPhone, cardCvv, selectedSavedCardId, cards, userWallet3DCards, cardNumber, cardExpiry, cardHolder]);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -433,14 +439,50 @@ export function CartDrawer() {
   const [addressValidationError, setAddressValidationError] = useState<string | null>(null);
 
   const hasShippingAddress = useMemo(() => {
-    if (address) return true;
-    if (addresses && addresses.length > 0) return true;
-    if (addrStreet.trim().length > 0) return true;
-    return false;
-  }, [address, addresses, addrStreet]);
+    if (address && address.street?.trim() && address.city?.trim()) return true;
+    if (addresses && addresses.length > 0 && addresses.some(a => Boolean(a.street?.trim() && a.city?.trim()))) {
+      return true;
+    }
+    const hasStreet = addrStreet.trim().length >= 3;
+    const hasCity = addrCity.trim().length >= 2;
+    return hasStreet && hasCity;
+  }, [address, addresses, addrStreet, addrCity]);
+
+  // Specific user feedback for why the checkout button is pending
+  const checkoutPendingReason = useMemo(() => {
+    if (!hasShippingAddress) {
+      return "Falta seleccionar o ingresar la dirección de entrega";
+    }
+    if (selectedPayMethod === "app") {
+      const cleanPhone = payphoneAppPhone.replace(/\D/g, "");
+      if (cleanPhone.length !== 10 || !cleanPhone.startsWith("09")) {
+        return "Ingresa un número celular PayPhone de 10 dígitos (Ej: 099 123 4567)";
+      }
+    }
+    if (selectedPayMethod === "card") {
+      const cleanCvv = cardCvv.replace(/\D/g, "");
+      if (cleanCvv.length < 3) {
+        return "Ingresa el código CVV (3 dígitos) de tu tarjeta para autorizar el cobro";
+      }
+      if (selectedSavedCardId === "new") {
+        const cleanNum = cardNumber.replace(/\D/g, "");
+        if (cleanNum.length < 14) {
+          return "Ingresa los 16 dígitos de tu tarjeta de crédito o débito";
+        }
+        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim())) {
+          return "Ingresa la fecha de expiración en formato MM/AA (Ej: 12/28)";
+        }
+        if (cardHolder.trim().length < 3) {
+          return "Ingresa el nombre del titular como figura en tu tarjeta";
+        }
+      }
+    }
+    return null;
+  }, [hasShippingAddress, selectedPayMethod, payphoneAppPhone, cardCvv, selectedSavedCardId, cardNumber, cardExpiry, cardHolder]);
 
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
+  const isCheckoutReady = !checkoutPendingReason && !isProcessing;
 
  const { mode } = useThemeStore();
  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -452,6 +494,8 @@ export function CartDrawer() {
  return () => clearInterval(interval);
  }, [mode]);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
+  const [lastPlacedPaymentType, setLastPlacedPaymentType] = useState<"card" | "app">("card");
+  const [lastPlacedCardLast4, setLastPlacedCardLast4] = useState<string>("5555");
 
   const cardNetworkForReceipt = useMemo((): ReceiptCardNetwork => {
     if (detectedCardBrand === "amex") return "american-express";
@@ -992,6 +1036,8 @@ export function CartDrawer() {
           if (confirmRes.ok && confirmData.success && confirmData.order) {
             addOrder(confirmData.order);
             setLastPlacedOrder(confirmData.order);
+            setLastPlacedPaymentType(selectedPayMethod);
+            setLastPlacedCardLast4(receiptLast4);
             clearCart();
             setStep("success");
           } else {
@@ -1054,33 +1100,28 @@ export function CartDrawer() {
 
     // 2. Control de Campos del Método de Pago
     if (selectedPayMethod === "card") {
-      if (selectedSavedCardId && selectedSavedCardId !== "new") {
-        if (!cardCvv.trim()) {
-          setCardCvv("888");
-        }
-      } else {
+      const cleanCvv = cardCvv.replace(/\D/g, "");
+      if (cleanCvv.length < 3) {
+        setPayphoneError("Por favor ingresa el código de seguridad CVV (3 dígitos) de tu tarjeta para autorizar el cobro.");
+        const payElem = document.getElementById("cart-payment-fields");
+        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (selectedSavedCardId === "new") {
         const cleanNum = cardNumber.replace(/\D/g, "");
         if (cleanNum.length < 14) {
-          setPayphoneError("Por favor ingresa los números completos de tu tarjeta de crédito o débito.");
+          setPayphoneError("Por favor ingresa los 16 dígitos de tu tarjeta de crédito o débito.");
           const payElem = document.getElementById("cart-payment-fields");
           if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
           return;
         }
-        const cleanExp = cardExpiry.trim();
-        const isExpOk = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
-        if (!isExpOk) {
-          setPayphoneError("Por favor ingresa la fecha de expiración de tu tarjeta en formato MM/AA.");
+        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim())) {
+          setPayphoneError("Por favor ingresa la fecha de expiración en formato MM/AA (Ej: 12/28).");
           const payElem = document.getElementById("cart-payment-fields");
           if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
           return;
         }
-        if (cardCvv.trim().length < 3) {
-          setPayphoneError("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos).");
-          const payElem = document.getElementById("cart-payment-fields");
-          if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
-          return;
-        }
-        if (cardHolder.trim().length < 2 && !user?.name) {
+        if (cardHolder.trim().length < 3) {
           setPayphoneError("Por favor ingresa el nombre del titular como figura en tu tarjeta.");
           const payElem = document.getElementById("cart-payment-fields");
           if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
@@ -1088,9 +1129,9 @@ export function CartDrawer() {
         }
       }
     } else if (selectedPayMethod === "app") {
-      const rawPhone = payphoneAppPhone.replace(/\D/g, "");
-      if (rawPhone.length < 9 || rawPhone.length > 12) {
-        setPayphoneError("Por favor ingresa un número celular PayPhone válido (Ej: 099 123 4567).");
+      const cleanPhone = payphoneAppPhone.replace(/\D/g, "");
+      if (cleanPhone.length !== 10 || !cleanPhone.startsWith("09")) {
+        setPayphoneError("Por favor ingresa un número celular PayPhone válido de 10 dígitos (Ej: 099 123 4567).");
         const payElem = document.getElementById("cart-payment-fields");
         if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
         return;
@@ -2869,15 +2910,15 @@ export function CartDrawer() {
     )}
 
     {/* Action Button: Dynamic "Pagar con [Brand]" Button */}
-    <div className="pt-2 flex justify-center">
+    <div className="pt-2 flex flex-col items-center justify-center gap-2">
       <button
         type="button"
         onClick={handleTriggerPaymentWithAnimation}
-        disabled={isProcessing}
-        className={`relative w-full max-w-[270px] sm:max-w-[295px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] flex items-center justify-center select-none mx-auto ${
-          isProcessing
-            ? "opacity-60 cursor-wait"
-            : "hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] cursor-pointer"
+        disabled={!isCheckoutReady}
+        className={`relative w-full max-w-[270px] sm:max-w-[295px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 flex items-center justify-center select-none mx-auto ${
+          !isCheckoutReady
+            ? "bg-stone-300 dark:bg-stone-800 text-stone-500 dark:text-stone-400 opacity-60 cursor-not-allowed shadow-none"
+            : "bg-gradient-to-b from-[#FF6611] to-[#EA5200] hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] cursor-pointer"
         }`}
       >
         {isProcessing ? (
@@ -2912,6 +2953,14 @@ export function CartDrawer() {
           </div>
         )}
       </button>
+
+      {/* Helper text explaining what field is pending */}
+      {checkoutPendingReason && !isProcessing && (
+        <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400 text-center flex items-center justify-center gap-1.5 pt-0.5 px-3 max-w-xs mx-auto animate-fade-in">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>{checkoutPendingReason}</span>
+        </p>
+      )}
     </div>
 
     {/* Trust & Security Badges Row (100% Vectorized & Standardized) */}
@@ -2986,7 +3035,9 @@ export function CartDrawer() {
             : "Colección Lumina"
         }
         cardNetwork={cardNetworkForReceipt}
-        cardLast4={receiptLast4}
+        cardLast4={lastPlacedCardLast4 || receiptLast4}
+        paymentMethodType={lastPlacedPaymentType}
+        payphonePhone={payphoneAppPhone}
         googleWalletPassUrl={`${
           typeof window !== "undefined"
             ? window.location.origin
@@ -3000,7 +3051,6 @@ export function CartDrawer() {
         )}&customer=${encodeURIComponent(
           lastPlacedOrder.customerName || user?.name || "Cliente Lumina"
         )}&date=${encodeURIComponent(lastPlacedOrder.date || "Reciente")}`}
-        printerFinish="gold"
         onAddToGoogleWallet={() => setWalletPopupPlatform("google")}
         onViewOrderInProfile={() => {
           setIsOpen(false);
