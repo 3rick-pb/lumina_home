@@ -284,9 +284,9 @@ export function CartDrawer() {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [walletPopupPlatform, setWalletPopupPlatform] = useState<"apple" | "google" | null>(null);
 
-  const userWallet3DCards = useMemo<WalletCardItem[] | undefined>(() => {
+  const userWallet3DCards = useMemo<WalletCardItem[]>(() => {
     if (!cards || cards.length === 0) {
-      return undefined;
+      return [];
     }
 
     const GRADIENT_PALETTES = [

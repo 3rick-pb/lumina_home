@@ -75,30 +75,34 @@ interface Wallet3DProps {
 }
 
 export default function Wallet3D({
-  cards = DEFAULT_CARDS,
+  cards,
   selectedCardId,
   onSelectCard,
 }: Wallet3DProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const actualCards = cards !== undefined ? cards : DEFAULT_CARDS;
   const [activeId, setActiveId] = useState<string>(
-    selectedCardId || cards[0]?.id || "signature-black"
+    selectedCardId || actualCards[0]?.id || ""
   );
 
   useEffect(() => {
-    if (selectedCardId) setActiveId(selectedCardId);
-  }, [selectedCardId]);
+    if (selectedCardId) {
+      setActiveId(selectedCardId);
+    } else if (actualCards.length > 0 && !actualCards.some((c) => c.id === activeId)) {
+      setActiveId(actualCards[0].id);
+    }
+  }, [selectedCardId, actualCards, activeId]);
 
   const activeCard =
-    cards.find((c) => c.id === activeId) || cards[0] || DEFAULT_CARDS[0];
+    actualCards.find((c) => c.id === activeId) || actualCards[0] || null;
 
   // Ordena para que la tarjeta seleccionada siempre quede en slot-front (justo detrás del bolsillo)
-  const orderedCards = [
-    activeCard,
-    ...cards.filter((c) => c.id !== activeCard.id),
-  ];
+  const orderedCards = activeCard
+    ? [activeCard, ...actualCards.filter((c) => c.id !== activeCard.id)]
+    : [];
 
-  // Calcula dinámicamente la altura al abrirse según la cantidad de tarjetas (2, 3 o más)
-  const openHeight = Math.max(450, 276 + orderedCards.length * 80);
+  // Calcula dinámicamente la altura al abrirse según la cantidad de tarjetas (1, 2, 3 o más)
+  const openHeight = Math.max(380, 260 + orderedCards.length * 80);
 
   const handleCardClick = (e: React.MouseEvent, card: WalletCardItem) => {
     e.stopPropagation();
@@ -116,9 +120,13 @@ export default function Wallet3D({
   return (
     <div className="w1-root">
       <div
-        className={`w1-shell ${isOpen ? "is-open" : ""}`}
-        style={{ height: isOpen ? `${openHeight}px` : "364px" }}
-        onClick={() => setIsOpen((prev) => !prev)}
+        className={`w1-shell ${isOpen && orderedCards.length > 0 ? "is-open" : ""}`}
+        style={{ height: isOpen && orderedCards.length > 0 ? `${openHeight}px` : "364px" }}
+        onClick={() => {
+          if (orderedCards.length > 0) {
+            setIsOpen((prev) => !prev);
+          }
+        }}
       >
         <div className="w1-cavity">
           {/* Título superior */}
@@ -126,11 +134,20 @@ export default function Wallet3D({
             <span className="w1-title">Wallet</span>
           </div>
 
-          {/* 4ta tarjeta blanca que asoma a la derecha cuando está cerrada */}
-          <div className="w1-peek-card" />
+          {/* 4ta tarjeta blanca decorativa sólo en modo demo cuando no se pasan tarjetas personalizadas */}
+          {cards === undefined && <div className="w1-peek-card" />}
 
           {/* Lista de Tarjetas */}
-          <div className="w1-cards-stage">
+          {orderedCards.length === 0 ? (
+            <div className="w1-empty-deck">
+              <div className="w1-empty-icon">💳</div>
+              <span className="w1-empty-title">Sin tarjetas guardadas</span>
+              <span className="w1-empty-desc">
+                Agrega una tarjeta a tu cuenta o ingresa los datos abajo para pagar.
+              </span>
+            </div>
+          ) : (
+            <div className="w1-cards-stage">
             {orderedCards.map((card, idx) => {
               const isSelected = card.id === activeCard.id;
 
@@ -213,7 +230,8 @@ export default function Wallet3D({
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
 
           {/* Bolsillo delantero de cuero cosido */}
           <div className="w1-leather-pocket">
@@ -221,7 +239,9 @@ export default function Wallet3D({
             <div
               className="w1-pocket-color-engine"
               style={{
-                background: activeCard.pocketGlow || activeCard.background,
+                background: activeCard
+                  ? (activeCard.pocketGlow || activeCard.background)
+                  : "rgba(35, 35, 40, 0.9)",
               }}
             />
 
@@ -268,21 +288,25 @@ export default function Wallet3D({
               <span className="w1-balance-title">Total balance</span>
               <div className="w1-balance-value">
                 <span className="w1-sym">$</span>
-                <span className="w1-int">{activeCard.balanceInt}</span>
-                <span className="w1-dec">{activeCard.balanceDec}</span>
+                <span className="w1-int">{activeCard ? activeCard.balanceInt : "0"}</span>
+                <span className="w1-dec">{activeCard ? activeCard.balanceDec : ".00"}</span>
               </div>
 
-              {/* Píldora inferior idéntica al primer prototipo */}
+              {/* Píldora inferior */}
               <div className="w1-active-card-pill">
                 <span
                   className="w1-pill-dot"
                   style={{
-                    background: activeCard.dotColor || "#ef4444",
-                    boxShadow: `0 0 8px ${activeCard.dotColor || "#ef4444"}`,
+                    background: activeCard ? (activeCard.dotColor || "#ef4444") : "#9ca3af",
+                    boxShadow: activeCard
+                      ? `0 0 8px ${activeCard.dotColor || "#ef4444"}`
+                      : "none",
                   }}
                 />
                 <span className="w1-pill-text">
-                  {activeCard.name} •••• {activeCard.last4}
+                  {activeCard
+                    ? `${activeCard.name} •••• ${activeCard.last4}`
+                    : "Sin tarjetas guardadas • Llena los datos abajo"}
                 </span>
               </div>
             </div>
@@ -372,6 +396,49 @@ export default function Wallet3D({
           inset: 0;
           z-index: 3;
           pointer-events: none;
+        }
+
+        /* Estado vacío cuando no hay tarjetas */
+        .w1-empty-deck {
+          position: absolute;
+          top: 52px;
+          left: 20px;
+          right: 20px;
+          height: 136px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 14px 20px;
+          border-radius: 22px;
+          background: rgba(255, 255, 255, 0.035);
+          border: 1.2px dashed rgba(255, 255, 255, 0.16);
+          box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
+          z-index: 4;
+          box-sizing: border-box;
+        }
+
+        .w1-empty-icon {
+          font-size: 24px;
+          margin-bottom: 6px;
+          opacity: 0.8;
+          filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+        }
+
+        .w1-empty-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.9);
+          letter-spacing: -0.01em;
+          margin-bottom: 4px;
+        }
+
+        .w1-empty-desc {
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.5);
+          line-height: 1.35;
+          max-width: 250px;
         }
 
         /* Tarjeta individual */
