@@ -16,258 +16,49 @@ import {
   Wifi,
 } from "lucide-react";
 import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
+import {
+  SilverEmvChip,
+  NetworkBrandLogo,
+  resolveCardNetwork,
+  CARD_DOTS_TEXTURE_STYLE,
+  CARD_NETWORK_THEMES,
+  CardNetwork,
+} from "@/components/ui/UnifiedWalletSystem";
 
 export interface AddCardAnimatedModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveCard: (card: {
-    type: "visa" | "mastercard";
+    type: string;
     number: string;
     holder: string;
     exp: string;
-    design?: "carbon" | "holo" | "navy" | string;
+    design?: string;
   }) => Promise<void> | void;
   defaultHolder?: string;
 }
 
-type DetectedBrand = "neutral" | "visa" | "mastercard" | "amex" | "discover";
-
-interface BrandVisualConfig {
-  id: DetectedBrand;
-  storageType: "visa" | "mastercard";
-  name: string;
-  tierLabel: string;
-  subLabel: string;
-  frontGradient: string;
-  backGradient: string;
-  accentRing: string;
-  pillClass: string;
-  glowColor: string;
-  isHolo?: boolean;
-  textColor?: string;
-}
-
-const BRAND_CONFIGS: Record<DetectedBrand, BrandVisualConfig> = {
-  neutral: {
-    id: "neutral",
-    storageType: "visa",
-    name: "Signature Black",
-    tierLabel: "SIGNATURE BLACK",
-    subLabel: "CRÉDITO / DÉBITO",
-    frontGradient:
-      "radial-gradient(circle at 92% 35%, rgba(96, 58, 62, 0.7) 0%, transparent 55%), linear-gradient(105deg, #323438 0%, #2b2d31 58%, #3d2d31 100%)",
-    backGradient: "linear-gradient(105deg, #25262a 0%, #1f2023 58%, #2b2023 100%)",
-    accentRing: "rgba(255, 255, 255, 0.92)",
-    pillClass: "bg-red-500/25 text-red-200 border-red-400/30",
-    glowColor: "rgba(166, 29, 24, 0.35)",
-    textColor: "#ffffff",
-  },
-  visa: {
-    id: "visa",
-    storageType: "visa",
-    name: "Visa",
-    tierLabel: "SIGNATURE BLACK",
-    subLabel: "CRÉDITO / DÉBITO",
-    frontGradient:
-      "radial-gradient(circle at 92% 35%, rgba(96, 58, 62, 0.7) 0%, transparent 55%), linear-gradient(105deg, #323438 0%, #2b2d31 58%, #3d2d31 100%)",
-    backGradient: "linear-gradient(105deg, #25262a 0%, #1f2023 58%, #2b2023 100%)",
-    accentRing: "rgba(255, 255, 255, 0.92)",
-    pillClass: "bg-red-500/25 text-red-200 border-red-400/30",
-    glowColor: "rgba(166, 29, 24, 0.35)",
-    textColor: "#ffffff",
-  },
-  mastercard: {
-    id: "mastercard",
-    storageType: "mastercard",
-    name: "Mastercard",
-    tierLabel: "HORIZON GOLD",
-    subLabel: "WORLD ELITE",
-    frontGradient:
-      "radial-gradient(circle at 68% 35%, rgba(214, 142, 68, 0.95) 0%, rgba(163, 92, 45, 0.85) 32%, transparent 68%), linear-gradient(108deg, #1b2848 0%, #243558 34%, #6e4838 64%, #b87b42 100%)",
-    backGradient: "linear-gradient(108deg, #151e36 0%, #1c2a46 34%, #54372b 64%, #8c5d32 100%)",
-    accentRing: "rgba(255, 255, 255, 0.92)",
-    pillClass: "bg-black/35 text-amber-200 border-amber-200/40",
-    glowColor: "rgba(214, 142, 68, 0.35)",
-    textColor: "#ffffff",
-  },
-  amex: {
-    id: "amex",
-    storageType: "visa",
-    name: "American Express",
-    tierLabel: "CENTURION PLATINUM",
-    subLabel: "CORPORATIVO",
-    frontGradient:
-      "radial-gradient(circle at 80% 30%, rgba(180, 195, 205, 0.35) 0%, transparent 60%), linear-gradient(110deg, #1f2429 0%, #2a313a 52%, #14181c 100%)",
-    backGradient: "linear-gradient(110deg, #161a1e 0%, #20262d 52%, #0e1114 100%)",
-    accentRing: "rgba(255, 255, 255, 0.92)",
-    pillClass: "bg-teal-500/20 text-teal-200 border-teal-400/30",
-    glowColor: "rgba(45, 212, 191, 0.3)",
-    textColor: "#ffffff",
-  },
-  discover: {
-    id: "discover",
-    storageType: "mastercard",
-    name: "Discover",
-    tierLabel: "HOLO PRISM",
-    subLabel: "RAINBOW PRISM",
-    frontGradient:
-      "linear-gradient(100deg, #e3e3e3 0%, #e6e6e6 46%, #ebb665 54%, #c96f49 58%, #3b5998 63%, #4ea8de 69%, #66b2a0 73%, #e29568 79%, #8b9bb1 87%, #cfd6df 95%, #dfdfdf 100%)",
-    backGradient: "linear-gradient(135deg, #dcdcdc 0%, #cccccc 100%)",
-    accentRing: "rgba(255, 255, 255, 1)",
-    pillClass: "bg-neutral-900/15 text-neutral-900 border-neutral-900/20",
-    glowColor: "rgba(235, 182, 101, 0.35)",
-    isHolo: true,
-    textColor: "#1d1d1f",
-  },
-};
-
 /**
  * Real-time BIN detector as the user types each digit
  */
-function detectCardBrandLive(digitsOnly: string): DetectedBrand {
-  if (!digitsOnly || digitsOnly.length === 0) return "neutral";
-
-  // Visa starts with 4
-  if (digitsOnly.startsWith("4")) return "visa";
-
-  // American Express starts with 34 or 37
-  if (/^3[47]/.test(digitsOnly)) return "amex";
-
-  // Mastercard starts with 51-55, 2221-2720, or 5 / 2
-  if (/^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[01]|2720)/.test(digitsOnly)) {
-    return "mastercard";
-  }
-  if (digitsOnly.startsWith("5") || digitsOnly.startsWith("2")) {
-    return "mastercard";
-  }
-
-  // Discover starts with 6011, 65, 644-649
-  if (/^(6011|65|64[4-9])/.test(digitsOnly)) {
-    return "discover";
-  }
-
-  return "visa";
+function detectCardBrandLive(digitsOnly: string): CardNetwork {
+  if (!digitsOnly || digitsOnly.length === 0) return "mastercard";
+  return resolveCardNetwork(undefined, digitsOnly);
 }
 
 function BrandNetworkVector({
-  brand,
+  network,
   size = "md",
-  isHolo = false,
 }: {
-  brand: DetectedBrand;
+  network: CardNetwork;
   size?: "sm" | "md";
   isHolo?: boolean;
 }) {
   const isSmall = size === "sm";
-
-  if (brand === "visa") {
-    return (
-      <motion.div
-        key="logo-visa"
-        initial={{ opacity: 0, y: 6, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -6, scale: 0.9 }}
-        transition={{ duration: 0.22 }}
-        className="inline-flex items-center"
-      >
-        <span
-          className={`font-['Plus_Jakarta_Sans','Inter',sans-serif] font-[800] -skew-x-[11deg] tracking-tight select-none leading-none ${
-            isSmall ? "text-sm text-blue-600 dark:text-blue-400" : "text-xl drop-shadow-md"
-          }`}
-          style={
-            !isSmall && isHolo
-              ? {
-                  color: "#1c1c1e",
-                  textShadow:
-                    "-1.5px -0.5px 0px rgba(217, 130, 54, 0.85), 1.5px 0.5px 0px rgba(59, 130, 246, 0.5)",
-                }
-              : !isSmall
-              ? {
-                  color: "#ffffff",
-                  textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)",
-                }
-              : undefined
-          }
-        >
-          VISA
-        </span>
-      </motion.div>
-    );
-  }
-
-  if (brand === "mastercard") {
-    return (
-      <motion.div
-        key="logo-mastercard"
-        initial={{ opacity: 0, y: 6, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -6, scale: 0.9 }}
-        transition={{ duration: 0.22 }}
-        className="inline-flex items-center"
-      >
-        <div className={`flex items-center ${isSmall ? "-space-x-1.5" : "-space-x-2.5"}`}>
-          <div
-            className={`${
-              isSmall ? "w-4 h-4" : "w-7 h-7"
-            } rounded-full bg-[#EB001B] shadow-sm`}
-          />
-          <div
-            className={`${
-              isSmall ? "w-4 h-4" : "w-7 h-7"
-            } rounded-full bg-[#F79E1B] opacity-90 mix-blend-screen shadow-sm`}
-          />
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (brand === "amex") {
-    return (
-      <motion.div
-        key="logo-amex"
-        initial={{ opacity: 0, y: 6, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -6, scale: 0.9 }}
-        transition={{ duration: 0.22 }}
-        className={`font-black tracking-tighter uppercase rounded px-1.5 py-0.5 ${
-          isSmall
-            ? "text-[10px] bg-teal-600 text-white"
-            : "text-xs bg-white/20 text-white border border-white/30"
-        }`}
-      >
-        AMEX
-      </motion.div>
-    );
-  }
-
-  if (brand === "discover") {
-    return (
-      <motion.div
-        key="logo-discover"
-        initial={{ opacity: 0, y: 6, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -6, scale: 0.9 }}
-        transition={{ duration: 0.22 }}
-        className={`font-black tracking-wider uppercase ${
-          isSmall ? "text-[10px] text-orange-600 dark:text-orange-400" : "text-xs text-orange-300"
-        }`}
-      >
-        DISCOVER
-      </motion.div>
-    );
-  }
-
   return (
-    <motion.div
-      key="logo-neutral"
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.2 }}
-      className="inline-flex items-center gap-1"
-    >
-      <CreditCard className={isSmall ? "w-4 h-4 text-gray-400" : "w-6 h-6 text-amber-200/80"} />
-    </motion.div>
+    <div className={`flex items-center justify-center shrink-0 ${isSmall ? "h-5 min-w-[36px]" : "h-7 min-w-[56px]"}`}>
+      <NetworkBrandLogo network={network} compact={isSmall} />
+    </div>
   );
 }
 
@@ -314,61 +105,8 @@ export function AddCardAnimatedModal({
 
   // Real-time card network detection based on digits typed
   const rawDigits = cardNumber.replace(/\D/g, "");
-  const detectedBrand: DetectedBrand = detectCardBrandLive(rawDigits);
-  const brandVisual = BRAND_CONFIGS[detectedBrand];
-
-  // Acabado de diseño skeuomórfico (Signature Black, Holo Prism, Horizon Gold)
-  const [selectedFinish, setSelectedFinish] = useState<"auto" | "carbon" | "holo" | "navy">("auto");
-
-  const effectiveVisual = React.useMemo(() => {
-    if (selectedFinish === "carbon") {
-      return {
-        ...brandVisual,
-        frontGradient: BRAND_CONFIGS.visa.frontGradient,
-        backGradient: BRAND_CONFIGS.visa.backGradient,
-        tierLabel: "SIGNATURE BLACK",
-        pillClass: BRAND_CONFIGS.visa.pillClass,
-        glowColor: BRAND_CONFIGS.visa.glowColor,
-        textColor: "#ffffff",
-        isHolo: false,
-      };
-    }
-    if (selectedFinish === "holo") {
-      return {
-        ...brandVisual,
-        frontGradient: BRAND_CONFIGS.discover.frontGradient,
-        backGradient: BRAND_CONFIGS.discover.backGradient,
-        tierLabel: "HOLO PRISM",
-        subLabel: "RAINBOW PRISM",
-        pillClass: BRAND_CONFIGS.discover.pillClass,
-        glowColor: BRAND_CONFIGS.discover.glowColor,
-        textColor: "#1d1d1f",
-        isHolo: true,
-      };
-    }
-    if (selectedFinish === "navy") {
-      return {
-        ...brandVisual,
-        frontGradient: BRAND_CONFIGS.mastercard.frontGradient,
-        backGradient: BRAND_CONFIGS.mastercard.backGradient,
-        tierLabel: "HORIZON GOLD",
-        pillClass: BRAND_CONFIGS.mastercard.pillClass,
-        glowColor: BRAND_CONFIGS.mastercard.glowColor,
-        textColor: "#ffffff",
-        isHolo: false,
-      };
-    }
-    return brandVisual;
-  }, [brandVisual, selectedFinish]);
-
-  const effectiveDesign =
-    selectedFinish !== "auto"
-      ? selectedFinish
-      : detectedBrand === "mastercard"
-      ? "navy"
-      : detectedBrand === "discover"
-      ? "holo"
-      : "carbon";
+  const detectedNetwork: CardNetwork = detectCardBrandLive(rawDigits);
+  const theme = CARD_NETWORK_THEMES[detectedNetwork] || CARD_NETWORK_THEMES.mastercard;
 
   const handleCardNumberChange = (rawVal: string) => {
     const digitsOnly = rawVal.replace(/\D/g, "").slice(0, 16);
@@ -433,11 +171,11 @@ export function AddCardAnimatedModal({
     setTimeout(async () => {
       try {
         await onSaveCard({
-          type: brandVisual.storageType,
+          type: detectedNetwork,
           number: cardNumber,
           holder: cardHolder.trim() || defaultHolder,
           exp: cardExp,
-          design: effectiveDesign,
+          design: detectedNetwork,
         });
 
         setStep("success");
@@ -517,8 +255,8 @@ export function AddCardAnimatedModal({
       >
         {/* Top Ambient Luxury Glow */}
         <div
-          className="pointer-events-none absolute -top-24 left-1/4 w-96 h-48 rounded-full blur-3xl transition-all duration-700"
-          style={{ background: effectiveVisual.glowColor }}
+          className="pointer-events-none absolute -top-24 left-1/4 w-96 h-48 rounded-full blur-3xl transition-all duration-700 opacity-25"
+          style={{ background: theme.dotColor }}
         />
 
         {/* Modal Header */}
@@ -570,68 +308,15 @@ export function AddCardAnimatedModal({
                 {/* LEFT COLUMN: LIVE 3D INTERACTIVE MORPHING CARD */}
                 <div className="lg:col-span-6 flex flex-col items-center justify-center">
                   {/* Live Network Pill above the card */}
-                  <div className="mb-2 flex items-center justify-between w-full max-w-[350px] px-1">
+                  <div className="mb-3 flex items-center justify-between w-full max-w-[350px] px-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Entidad Emisora
+                      Red Bancaria
                     </span>
-                    <motion.span
-                      key={detectedBrand + (effectiveVisual.tierLabel || "")}
-                      initial={{ opacity: 0, scale: 0.9, y: 3 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border transition-colors ${effectiveVisual.pillClass}`}
-                    >
-                      <span>{effectiveVisual.name}</span>
-                      {detectedBrand !== "neutral" && <CheckCircle2 className="w-3 h-3" />}
-                    </motion.span>
-                  </div>
-
-                  {/* Selector rápido de acabado skeuomórfico 3D */}
-                  <div className="mb-3 flex items-center justify-center gap-1.5 w-full max-w-[350px]">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedFinish("auto")}
-                      className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-semibold border transition-all cursor-pointer ${
-                        selectedFinish === "auto"
-                          ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-transparent shadow-xs"
-                          : "bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white border-transparent"
-                      }`}
-                    >
-                      Auto
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedFinish("carbon")}
-                      className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-semibold border transition-all cursor-pointer ${
-                        selectedFinish === "carbon"
-                          ? "bg-neutral-900 text-white border-red-400/40 shadow-xs"
-                          : "bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white border-transparent"
-                      }`}
-                    >
-                      Signature Black
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedFinish("holo")}
-                      className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-semibold border transition-all cursor-pointer ${
-                        selectedFinish === "holo"
-                          ? "bg-neutral-200 text-neutral-900 border-neutral-400/50 font-bold shadow-xs"
-                          : "bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white border-transparent"
-                      }`}
-                    >
-                      Holo Prism
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedFinish("navy")}
-                      className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-semibold border transition-all cursor-pointer ${
-                        selectedFinish === "navy"
-                          ? "bg-[#1b2848] text-amber-200 border-amber-300/40 shadow-xs"
-                          : "bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white border-transparent"
-                      }`}
-                    >
-                      Horizon Gold
-                    </button>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border border-white/15 bg-black/40 text-white backdrop-blur-md shadow-xs">
+                      <span>{theme.displayName}</span>
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    </span>
                   </div>
 
                   {/* 3D Card Container */}
@@ -649,78 +334,36 @@ export function AddCardAnimatedModal({
                     >
                       {/* ================= CARD FRONT ================= */}
                       <motion.div
-                        animate={{ background: effectiveVisual.frontGradient }}
+                        animate={{ background: theme.background }}
                         transition={{ duration: 0.45 }}
                         className="absolute inset-0 w-full h-full rounded-[1.35rem] p-5 sm:p-6 flex flex-col justify-between overflow-hidden"
                         style={{
                           backfaceVisibility: "hidden",
                           WebkitBackfaceVisibility: "hidden",
-                          color: effectiveVisual.textColor || "#ffffff",
-                          border: effectiveVisual.isHolo
-                            ? "1.8px solid #ffffff"
-                            : "1.8px solid rgba(255, 255, 255, 0.92)",
-                          boxShadow: `inset 0 1px 1px rgba(255,255,255,0.25), 0 0 0 1px ${effectiveVisual.accentRing}`,
+                          color: "#ffffff",
+                          border: "1.5px solid rgba(255, 255, 255, 0.18)",
+                          boxShadow: "0 -4px 18px rgba(0, 0, 0, 0.45)",
                         }}
                       >
-                        {/* Textura de ruido sutil realista 1:1 con la Billetera */}
+                        {/* Textura de puntos 3D sobresalientes con relieve físico en las 5 redes */}
                         <div
-                          className="pointer-events-none absolute inset-0 z-[1]"
-                          style={{
-                            backgroundImage: "radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 0)",
-                            backgroundSize: "3px 3px",
-                          }}
+                          className="pointer-events-none absolute inset-0 z-[1] select-none"
+                          style={CARD_DOTS_TEXTURE_STYLE}
                         />
 
-                        {/* Brillo iridiscente adicional para Holo Prism */}
-                        {effectiveVisual.isHolo && (
-                          <div
-                            className="pointer-events-none absolute inset-0 z-[2]"
-                            style={{
-                              background:
-                                "linear-gradient(125deg, rgba(255,255,255,0.45) 0%, transparent 40%, rgba(255,255,255,0.2) 70%, transparent 100%)",
-                            }}
-                          />
-                        )}
-
-                        {/* Top Row: EMV Gold Chip, Contactless & Dynamic Tier Label */}
+                        {/* Fila Superior: Chip Plata + Wifi a la izquierda | Logo a la derecha */}
                         <div className="relative z-10 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {/* Precision EMV Chip */}
-                            <div className="w-11 h-8 rounded-lg bg-gradient-to-tr from-[#d4af37] via-[#f9e596] to-[#aa8220] p-1.5 border border-yellow-200/80 shadow-md flex flex-col justify-between shrink-0">
-                              <div className="w-full h-[1px] bg-amber-900/35" />
-                              <div className="flex justify-between w-full h-2.5 border-y border-amber-900/30">
-                                <div className="w-1/3 border-r border-amber-900/35" />
-                                <div className="w-1/3 border-r border-amber-900/35" />
-                              </div>
-                              <div className="w-full h-[1px] bg-amber-900/35" />
-                            </div>
-
-                            <Wifi className={`w-4 h-4 rotate-90 ${effectiveVisual.isHolo ? "text-neutral-700" : "text-white/65"}`} />
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            <SilverEmvChip />
+                            <Wifi className="w-4 h-4 rotate-90 text-slate-200/90 shrink-0" />
                           </div>
 
-                          <div className="text-right">
-                            <AnimatePresence mode="wait">
-                              <motion.span
-                                key={effectiveVisual.tierLabel}
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 4 }}
-                                className="block text-[10px] tracking-[0.22em] font-black uppercase drop-shadow-xs"
-                                style={{ color: effectiveVisual.textColor || "#ffffff" }}
-                              >
-                                {effectiveVisual.tierLabel}
-                              </motion.span>
-                            </AnimatePresence>
-                            <span
-                              className="block text-[8px] tracking-[0.16em] uppercase mt-0.5 opacity-65"
-                              style={{ color: effectiveVisual.textColor || "#ffffff" }}
-                            >
-                              {effectiveVisual.subLabel}
-                            </span>
+                          <div className="h-[30px] min-w-[75px] flex items-center justify-end shrink-0">
+                            <NetworkBrandLogo network={detectedNetwork} />
                           </div>
                         </div>
 
-                        {/* Middle Row: Live Animated 16-Digit Number with Active Field Highlight */}
+                        {/* Fila Media: Número de 16 dígitos en grupos */}
                         <div
                           className={`relative z-10 my-auto py-1.5 px-2.5 -mx-2.5 rounded-xl transition-all duration-300 ${
                             focusedField === "number"
@@ -728,10 +371,7 @@ export function AddCardAnimatedModal({
                               : ""
                           }`}
                         >
-                          <div
-                            className="flex items-center justify-between font-mono text-lg sm:text-[20px] tracking-[0.16em] font-bold drop-shadow-md"
-                            style={{ color: effectiveVisual.textColor || "#ffffff" }}
-                          >
+                          <div className="flex items-center justify-between font-mono text-lg sm:text-[20px] tracking-[0.16em] font-bold drop-shadow-md text-white">
                             {formattedGroups.map((grp, gIdx) => (
                               <span key={gIdx} className="inline-flex">
                                 {grp}
@@ -740,58 +380,40 @@ export function AddCardAnimatedModal({
                           </div>
                         </div>
 
-                        {/* Bottom Row: Cardholder, Expiration & Live Network Vector Logo */}
-                        <div className="relative z-10 flex items-end justify-between gap-2">
+                        {/* Fila Inferior: Titular Verificado a la izquierda | Fecha de expiración a la derecha */}
+                        <div className="relative z-10 flex items-end justify-between gap-2 border-t border-white/15 pt-2">
                           <div
                             className={`space-y-0.5 px-2 py-1 -mx-2 -my-1 rounded-lg transition-all duration-300 min-w-0 flex-1 ${
                               focusedField === "holder" ? "bg-white/10 ring-1 ring-white/35" : ""
                             }`}
                           >
-                            <span
-                              className="text-[8.5px] uppercase tracking-widest block font-semibold opacity-65"
-                              style={{ color: effectiveVisual.textColor || "#ffffff" }}
-                            >
-                              Titular
-                            </span>
-                            <p
-                              className="text-xs font-bold tracking-wider uppercase truncate drop-shadow-xs"
-                              style={{ color: effectiveVisual.textColor || "#ffffff" }}
-                            >
+                            <div className="flex items-center gap-1 text-[8.5px] uppercase tracking-wider font-semibold text-slate-300">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                              <span>Titular Verificado</span>
+                            </div>
+                            <p className="text-xs font-bold tracking-wider uppercase truncate drop-shadow-xs text-white mt-0.5">
                               {cardHolder.trim() || defaultHolder}
                             </p>
                           </div>
 
                           <div
-                            className={`space-y-0.5 text-center px-2 py-1 -my-1 rounded-lg transition-all duration-300 shrink-0 ${
+                            className={`space-y-0.5 text-right px-2 py-1 -my-1 rounded-lg transition-all duration-300 shrink-0 ${
                               focusedField === "exp" ? "bg-white/10 ring-1 ring-white/35" : ""
                             }`}
                           >
-                            <span
-                              className="text-[8.5px] uppercase tracking-widest block font-semibold opacity-65"
-                              style={{ color: effectiveVisual.textColor || "#ffffff" }}
-                            >
+                            <span className="text-[8.5px] uppercase tracking-widest block font-semibold text-slate-300">
                               Expira
                             </span>
-                            <p
-                              className="font-mono text-xs font-bold tracking-widest drop-shadow-xs"
-                              style={{ color: effectiveVisual.textColor || "#ffffff" }}
-                            >
+                            <p className="font-mono text-xs font-bold tracking-widest drop-shadow-xs text-white">
                               {cardExp || "MM/AA"}
                             </p>
-                          </div>
-
-                          {/* Real-Time Morphing Brand Logo */}
-                          <div className="h-8 min-w-[54px] flex items-center justify-end shrink-0">
-                            <AnimatePresence mode="wait">
-                              <BrandNetworkVector brand={detectedBrand} size="md" isHolo={effectiveVisual.isHolo} />
-                            </AnimatePresence>
                           </div>
                         </div>
                       </motion.div>
 
                       {/* ================= CARD BACK (FLIPPED 180 DEG) ================= */}
                       <motion.div
-                        animate={{ background: effectiveVisual.backGradient }}
+                        animate={{ background: theme.background }}
                         transition={{ duration: 0.45 }}
                         className="absolute inset-0 w-full h-full rounded-[1.35rem] pt-4 pb-5 flex flex-col justify-between overflow-hidden border border-white/20 text-white"
                         style={{
@@ -831,7 +453,7 @@ export function AddCardAnimatedModal({
                           <span className="max-w-[200px] leading-tight">
                             Información protegida bajo estándares de seguridad financiera.
                           </span>
-                          <BrandNetworkVector brand={detectedBrand} size="sm" />
+                          <BrandNetworkVector network={detectedNetwork} size="sm" />
                         </div>
                       </motion.div>
                     </motion.div>
@@ -889,7 +511,7 @@ export function AddCardAnimatedModal({
                         />
                         <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                           <AnimatePresence mode="wait">
-                            <BrandNetworkVector brand={detectedBrand} size="sm" />
+                            <BrandNetworkVector network={detectedNetwork} size="sm" />
                           </AnimatePresence>
                         </div>
                       </div>
@@ -1033,34 +655,48 @@ export function AddCardAnimatedModal({
               >
                 <div
                   className="w-full max-w-[340px] aspect-[1.586/1] rounded-[1.35rem] shadow-2xl p-5 flex flex-col justify-between border border-white/20 text-white relative overflow-hidden"
-                  style={{ background: brandVisual.frontGradient }}
+                  style={{ background: theme.background }}
                 >
+                  <div
+                    className="pointer-events-none absolute inset-0 z-[1] select-none"
+                    style={CARD_DOTS_TEXTURE_STYLE}
+                  />
+
                   <div className="flex items-center justify-between relative z-10">
-                    <div className="w-10 h-8 rounded-lg bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 p-1 border border-yellow-300 shadow-md" />
-                    <span className="text-[10px] tracking-[0.2em] font-black uppercase text-white/85">
-                      {brandVisual.tierLabel}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <SilverEmvChip small />
+                      <Wifi className="w-3.5 h-3.5 rotate-90 text-slate-200/90 shrink-0" />
+                    </div>
+                    <NetworkBrandLogo network={detectedNetwork} compact />
                   </div>
                   <div className="font-mono text-lg tracking-[0.2em] text-white font-bold relative z-10">
                     {cardNumber || "•••• •••• •••• ••••"}
                   </div>
-                  <div className="flex items-end justify-between relative z-10">
+                  <div className="flex items-end justify-between relative z-10 border-t border-white/15 pt-2">
                     <div className="text-left">
-                      <span className="text-[8px] uppercase tracking-wider text-white/50 block">
-                        Titular
-                      </span>
-                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px]">
+                      <div className="flex items-center gap-1 text-[8px] uppercase tracking-wider text-slate-300 font-semibold">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span>Titular Verificado</span>
+                      </div>
+                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px] mt-0.5">
                         {cardHolder || defaultHolder}
                       </p>
                     </div>
-                    <BrandNetworkVector brand={detectedBrand} size="md" />
+                    <div className="text-right">
+                      <span className="text-[8px] uppercase tracking-wider text-slate-300 block font-semibold">
+                        Expira
+                      </span>
+                      <p className="font-mono text-xs font-bold text-white">
+                        {cardExp || "MM/AA"}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-1.5 flex flex-col items-center">
                   <div className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
                     <Loader2 className="w-4 h-4 text-amber-600 dark:text-amber-400 animate-spin" />
-                    <span>Registrando tarjeta {brandVisual.name}...</span>
+                    <span>Registrando tarjeta {theme.displayName}...</span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Verificando credenciales con tu entidad financiera
@@ -1080,27 +716,41 @@ export function AddCardAnimatedModal({
               >
                 <div
                   className="w-full max-w-[340px] aspect-[1.586/1] rounded-[1.35rem] shadow-2xl p-5 flex flex-col justify-between border border-emerald-500/40 text-white relative overflow-hidden ring-4 ring-emerald-500/20"
-                  style={{ background: brandVisual.frontGradient }}
+                  style={{ background: theme.background }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-8 rounded-lg bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 p-1 border border-yellow-300" />
-                    <span className="text-[10px] tracking-[0.2em] font-black uppercase text-white/85">
-                      {brandVisual.tierLabel}
-                    </span>
+                  <div
+                    className="pointer-events-none absolute inset-0 z-[1] select-none"
+                    style={CARD_DOTS_TEXTURE_STYLE}
+                  />
+
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-2">
+                      <SilverEmvChip small />
+                      <Wifi className="w-3.5 h-3.5 rotate-90 text-slate-200/90 shrink-0" />
+                    </div>
+                    <NetworkBrandLogo network={detectedNetwork} compact />
                   </div>
-                  <div className="font-mono text-lg tracking-[0.2em] text-white font-bold">
+                  <div className="font-mono text-lg tracking-[0.2em] text-white font-bold relative z-10">
                     •••• •••• •••• {rawDigits.slice(-4) || "8888"}
                   </div>
-                  <div className="flex items-end justify-between">
+                  <div className="flex items-end justify-between relative z-10 border-t border-white/15 pt-2">
                     <div className="text-left">
-                      <span className="text-[8px] uppercase tracking-wider text-white/50 block">
-                        Titular
-                      </span>
-                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px]">
+                      <div className="flex items-center gap-1 text-[8px] uppercase tracking-wider text-slate-300 font-semibold">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span>Titular Verificado</span>
+                      </div>
+                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px] mt-0.5">
                         {cardHolder || defaultHolder}
                       </p>
                     </div>
-                    <BrandNetworkVector brand={detectedBrand} size="md" />
+                    <div className="text-right">
+                      <span className="text-[8px] uppercase tracking-wider text-slate-300 block font-semibold">
+                        Expira
+                      </span>
+                      <p className="font-mono text-xs font-bold text-white">
+                        {cardExp || "MM/AA"}
+                      </p>
+                    </div>
                   </div>
                 </div>
 

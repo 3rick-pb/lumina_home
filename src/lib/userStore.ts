@@ -96,9 +96,9 @@ export interface PaymentCard {
   number: string;
   holder: string;
   exp: string;
-  type: 'mastercard' | 'visa';
+  type: 'mastercard' | 'visa' | 'american-express' | 'diners-club' | 'discover' | string;
   isDefault?: boolean;
-  design?: 'carbon' | 'holo' | 'navy' | string;
+  design?: string;
 }
 
 export interface ShippingAddress {

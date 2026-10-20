@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { NetworkBrandLogo, resolveCardNetwork } from "./UnifiedWalletSystem";
+import {
+  NetworkBrandLogo,
+  resolveCardNetwork,
+  SilverEmvChip,
+  CARD_DOTS_TEXTURE_STYLE,
+  CARD_NETWORK_THEMES,
+} from "./UnifiedWalletSystem";
 
 export interface WalletCardItem {
   id: string;
@@ -22,49 +28,39 @@ export interface WalletCardItem {
 
 const DEFAULT_CARDS: WalletCardItem[] = [
   {
-    id: "signature-black",
+    id: "card-mc",
     brand: "mastercard",
-    tier: "SIGNATURE BLACK",
-    name: "Mastercard Signature Black",
+    name: "Mastercard",
     last4: "0000",
     balanceInt: "4,018",
     balanceDec: ".00",
-    background:
-      "radial-gradient(circle at 88% 30%, rgba(155, 44, 62, 0.35) 0%, transparent 55%), linear-gradient(180deg, #36373b 0%, #242528 100%)",
-    pocketGlow:
-      "radial-gradient(circle at 76% 78%, rgba(190, 24, 24, 0.90) 0%, rgba(125, 18, 18, 0.52) 44%, transparent 76%), linear-gradient(165deg, rgba(39,39,43,0.86) 0%, rgba(22,22,25,0.92) 52%, rgba(78,16,16,0.94) 100%)",
-    dotColor: "#ef4444",
+    background: CARD_NETWORK_THEMES.mastercard.background,
+    pocketGlow: CARD_NETWORK_THEMES.mastercard.pocketGlow,
+    dotColor: CARD_NETWORK_THEMES.mastercard.dotColor,
     darkText: false,
   },
   {
-    id: "holo-prism",
+    id: "card-visa",
     brand: "visa",
-    tier: "HOLO PRISM",
-    name: "Visa Holo Prism",
+    name: "Visa",
     last4: "1005",
     balanceInt: "2,640",
     balanceDec: ".50",
-    background:
-      "linear-gradient(100deg, #e6e7e9 0%, #ededef 50%, #cfd6e3 100%)",
-    pocketGlow:
-      "radial-gradient(circle at 74% 76%, rgba(56, 152, 236, 0.78) 0%, rgba(234, 152, 62, 0.62) 44%, transparent 78%), linear-gradient(165deg, rgba(42,45,52,0.85) 0%, rgba(24,26,32,0.90) 52%, rgba(30,58,95,0.94) 100%)",
-    dotColor: "#38bdf8",
-    darkText: true,
-    holographic: true,
+    background: CARD_NETWORK_THEMES.visa.background,
+    pocketGlow: CARD_NETWORK_THEMES.visa.pocketGlow,
+    dotColor: CARD_NETWORK_THEMES.visa.dotColor,
+    darkText: false,
   },
   {
-    id: "horizon-gold",
+    id: "card-discover",
     brand: "discover",
-    tier: "HORIZON GOLD",
-    name: "Discover Horizon Gold",
+    name: "Discover",
     last4: "7785",
     balanceInt: "8,920",
     balanceDec: ".00",
-    background:
-      "radial-gradient(circle at 78% 42%, rgba(228, 156, 74, 0.95) 0%, rgba(168, 95, 42, 0.68) 38%, transparent 70%), linear-gradient(108deg, #1b2848 0%, #24355c 46%, #7c4d34 100%)",
-    pocketGlow:
-      "radial-gradient(circle at 76% 78%, rgba(224, 132, 44, 0.88) 0%, rgba(36, 68, 128, 0.62) 48%, transparent 78%), linear-gradient(165deg, rgba(34,38,48,0.86) 0%, rgba(22,24,30,0.92) 52%, rgba(78,44,16,0.94) 100%)",
-    dotColor: "#f59e0b",
+    background: CARD_NETWORK_THEMES.discover.background,
+    pocketGlow: CARD_NETWORK_THEMES.discover.pocketGlow,
+    dotColor: CARD_NETWORK_THEMES.discover.dotColor,
     darkText: false,
   },
 ];
@@ -183,10 +179,23 @@ export default function Wallet3D({
                   }}
                   onClick={(e) => handleCardClick(e, card)}
                 >
-                  {card.holographic && <div className="w1-holo-rainbow" />}
+                  {/* Textura de puntos 3D sobresalientes con relieve físico */}
+                  <div
+                    className="pointer-events-none absolute inset-0 z-[1] select-none"
+                    style={CARD_DOTS_TEXTURE_STYLE}
+                  />
 
-                  {/* Fila Superior: Logo Oficial desde thesvg.org + Etiqueta */}
+                  {/* Fila Superior: Chip Plata + Wifi a la izquierda | Logo a la derecha */}
                   <div className="w1-card-top">
+                    <div className="flex items-center gap-2">
+                      <SilverEmvChip small />
+                      <svg className="w-3.5 h-3.5 rotate-90 text-slate-200/90 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M8.5 16.5a5 5 0 0 1 0-9" />
+                        <path d="M12 19a8.5 8.5 0 0 1 0-14" />
+                        <path d="M15.5 21.5a12 12 0 0 1 0-19" />
+                      </svg>
+                    </div>
+
                     <div className="w1-brand-logo-wrap">
                       <NetworkBrandLogo
                         network={resolveCardNetwork(card.brand, card.last4)}
@@ -194,18 +203,18 @@ export default function Wallet3D({
                         darkText={card.darkText}
                       />
                     </div>
-
-                    <span className="w1-tier-pill">
-                      {card.tier || card.name}
-                    </span>
                   </div>
 
-                  {/* Fila Media: Número enmascarado */}
+                  {/* Fila Media: Número y Titular verificado */}
                   <div className="w1-card-mid">
                     <span className="w1-masked-num">
                       •••• &nbsp;•••• &nbsp;•••• &nbsp;
                       <strong>{card.last4}</strong>
                     </span>
+                    <div className="flex items-center gap-1 text-[10px] text-slate-300 font-semibold mt-1">
+                      <span className="text-emerald-400 font-bold">✓</span>
+                      <span className="truncate">{card.name}</span>
+                    </div>
                   </div>
 
                   {/* Fila Inferior: Saldo disponible + Estado */}
