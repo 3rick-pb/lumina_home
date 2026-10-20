@@ -11,6 +11,10 @@ import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
 import {
+  PaymentConfirmationReceipt,
+  ReceiptCardNetwork,
+} from "./PaymentConfirmationReceipt";
+import {
   Wallet3D,
   UserSavedCard,
   mapPaymentCardToUserSavedCard,
@@ -375,6 +379,7 @@ export function CartDrawer() {
     return "visa";
   }, [selectedSavedCardId, userWallet3DCards, cards, cardNumber]);
 
+
   // Field validation to prevent proceeding without valid card / payment & address data
   const isPaymentFieldsValid = useMemo(() => {
     if (selectedPayMethod === "app") {
@@ -435,7 +440,31 @@ export function CartDrawer() {
  const interval = setInterval(update, 60000);
  return () => clearInterval(interval);
  }, [mode]);
- const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
+  const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
+
+  const cardNetworkForReceipt = useMemo((): ReceiptCardNetwork => {
+    if (detectedCardBrand === "amex") return "american-express";
+    if (detectedCardBrand === "diners") return "diners-club";
+    if (detectedCardBrand === "discover") return "discover";
+    if (detectedCardBrand === "mastercard") return "mastercard";
+    return "visa";
+  }, [detectedCardBrand]);
+
+  const receiptLast4 = useMemo(() => {
+    if (selectedSavedCardId !== "new") {
+      const foundWalletCard = userWallet3DCards?.find((c) => c.id === selectedSavedCardId);
+      if (foundWalletCard?.last4) return foundWalletCard.last4;
+      const found = cards?.find((c) => c.id === selectedSavedCardId);
+      if (found?.number) return found.number.replace(/\D/g, "").slice(-4);
+    }
+    const digits = cardNumber.replace(/\D/g, "");
+    if (digits.length >= 4) return digits.slice(-4);
+    if (lastPlacedOrder?.paymentMethod) {
+      const match = lastPlacedOrder.paymentMethod.match(/\d{4}/);
+      if (match) return match[0];
+    }
+    return "5555";
+  }, [selectedSavedCardId, userWallet3DCards, cards, cardNumber, lastPlacedOrder]);
 
  // Detect products with the "AGOTADO" badge in the user's cart
  const agotadoItems = useMemo(() => {
@@ -2886,290 +2915,101 @@ export function CartDrawer() {
   )}
 
   {/* ======================================================================= */}
-  {/* STEP 3: ORDER CONFIRMED CELEBRATION + WALLET PASS & QR CODE (Spacious 2-Col) */}
+  {/* STEP 3: ORDER CONFIRMED RECEIPT 3D PRINTER (Centered)                  */}
   {/* ======================================================================= */}
   {step === "success" && lastPlacedOrder && (
-  <div className="w-full max-w-6xl mx-auto py-4 sm:py-6 space-y-6 sm:space-y-8 animate-fade-in pb-12 sm:pb-16">
-  
-  {/* Celebration Header */}
-  <div className="text-center space-y-3">
-    <div className="relative inline-flex items-center justify-center">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-emerald-500/20 via-teal-500/15 to-[#8c9276]/20 flex items-center justify-center p-1.5 ring-1 ring-emerald-500/30">
-        <div className="w-full h-full rounded-full bg-white dark:bg-[#1f1f23] flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-md">
-          <Check className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.8]" />
-        </div>
-      </div>
-      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shadow-md">
-        <Sparkles className="w-3.5 h-3.5" />
-      </div>
+    <div className="w-full flex flex-col items-center justify-center py-2 sm:py-6 animate-fade-in pb-12 sm:pb-16">
+      <PaymentConfirmationReceipt
+        orderId={lastPlacedOrder.id}
+        amount={`$${Number(lastPlacedOrder.total || 0).toFixed(2)}`}
+        currency="USD"
+        dateText={
+          lastPlacedOrder.date ||
+          new Intl.DateTimeFormat("es-EC", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            hour12: true,
+          }).format(new Date())
+        }
+        customerName={formatCleanName(
+          lastPlacedOrder.customerName ||
+            lastPlacedOrder.recipient ||
+            user?.name ||
+            "Cliente Lumina"
+        )}
+        shippingLocation={`${
+          lastPlacedOrder.shippingAddress?.city || address?.city || "Quito"
+        }${
+          lastPlacedOrder.shippingAddress?.state || address?.state
+            ? `, ${lastPlacedOrder.shippingAddress?.state || address?.state}`
+            : ""
+        } · ${
+          lastPlacedOrder.shippingAddress?.country ||
+          address?.country ||
+          "Ecuador"
+        }`}
+        itemSummary={
+          lastPlacedOrder.items && lastPlacedOrder.items.length > 0
+            ? lastPlacedOrder.items.length === 1
+              ? `${
+                  lastPlacedOrder.items[0].isBundle
+                    ? lastPlacedOrder.items[0].bundleName || "Pack Promocional"
+                    : lastPlacedOrder.items[0].product?.title || "Artículo"
+                } (x${lastPlacedOrder.items[0].quantity})`
+              : `${
+                  lastPlacedOrder.items[0].isBundle
+                    ? lastPlacedOrder.items[0].bundleName || "Pack Promocional"
+                    : lastPlacedOrder.items[0].product?.title || "Artículo"
+                } (+${lastPlacedOrder.items.length - 1} más)`
+            : "Colección Lumina"
+        }
+        cardNetwork={cardNetworkForReceipt}
+        cardLast4={receiptLast4}
+        googleWalletPassUrl={`${
+          typeof window !== "undefined"
+            ? window.location.origin
+            : "https://luminahome.ec"
+        }/api/wallet/pass?type=order&orderId=${encodeURIComponent(
+          lastPlacedOrder.id
+        )}&total=${encodeURIComponent(
+          String(lastPlacedOrder.total || 0)
+        )}&status=${encodeURIComponent(
+          lastPlacedOrder.status || "Procesando"
+        )}&customer=${encodeURIComponent(
+          lastPlacedOrder.customerName || user?.name || "Cliente Lumina"
+        )}&date=${encodeURIComponent(lastPlacedOrder.date || "Reciente")}`}
+        printerFinish="gold"
+        onAddToGoogleWallet={() => setWalletPopupPlatform("google")}
+        onViewOrderInProfile={() => {
+          setIsOpen(false);
+          router.push("/profile");
+        }}
+        onContinueShopping={() => {
+          setIsOpen(false);
+          setStep("bag");
+        }}
+      />
+
+      {/* In-Page Wallet Pass Popup Modal (No external tab!) */}
+      <WalletPassPopupModal
+        open={walletPopupPlatform !== null}
+        onClose={() => setWalletPopupPlatform(null)}
+        orderId={lastPlacedOrder.id}
+        total={lastPlacedOrder.total}
+        status={lastPlacedOrder.status}
+        customerName={
+          lastPlacedOrder.customerName || user?.name || "Cliente Lumina"
+        }
+        trackingNumber={lastPlacedOrder.trackingNumber}
+        trackingUrl={lastPlacedOrder.trackingUrl}
+        carrierName={lastPlacedOrder.carrierName}
+        date={lastPlacedOrder.date}
+        initialPlatform="google"
+      />
     </div>
-
-    <div>
-      <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-[0.2em] border border-emerald-200/60 dark:border-emerald-500/20 mb-2">
-        <ShieldCheck className="w-3.5 h-3.5" /> Adquisición Confirmada · Atelier Lumina
-      </span>
-      <h3 className="font-display italic font-semibold text-2xl sm:text-4xl text-gray-950 dark:text-white tracking-tight mt-1">
-        Una adquisición de distinción.
-      </h3>
-      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 max-w-lg mx-auto leading-relaxed">
-        Tu compra ha sido procesada con éxito. Hemos iniciado la preparación en nuestro atelier bajo empaque sellado de colección.
-      </p>
-    </div>
-
-    {/* 4-Step Linear Atelier Progress Tracker */}
-    <div className="max-w-2xl mx-auto p-3.5 sm:p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/5 space-y-2.5">
-      <div className="flex items-center justify-between text-[10.5px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1">
-        <span>Itinerario del Pedido</span>
-        <span className="text-[#8c9276] font-mono">Fase 2 de 4</span>
-      </div>
-      
-      <div className="grid grid-cols-4 gap-2 pt-0.5">
-        <div className="space-y-1 text-center">
-          <div className="h-1.5 rounded-full bg-emerald-500" />
-          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block truncate">
-            ✓ Autorizado
-          </span>
-        </div>
-        <div className="space-y-1 text-center">
-          <div className="h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 block truncate">
-            Atelier
-          </span>
-        </div>
-        <div className="space-y-1 text-center">
-          <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
-          <span className="text-[10px] font-medium text-gray-400 block truncate">
-            Inspección
-          </span>
-        </div>
-        <div className="space-y-1 text-center">
-          <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
-          <span className="text-[10px] font-medium text-gray-400 block truncate">
-            Despacho
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {/* 2-Column Responsive Layout */}
-  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start w-full">
-    
-    {/* Left Column (7 cols): Double-Bezel Receipt Summary + Destination Address + Items */}
-    <div className="lg:col-span-7 space-y-5">
-      {/* Double-Bezel Receipt Summary Card */}
-      <div className="w-full p-1.5 sm:p-2 rounded-[2rem] bg-black/[0.03] dark:bg-white/[0.04] ring-1 ring-black/[0.06] dark:ring-white/10">
-        <div className="rounded-[calc(2rem-0.375rem)] bg-white dark:bg-[#141416] border border-black/[0.06] dark:border-white/10 p-5 sm:p-6 shadow-xs text-left space-y-3.5">
-          <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
-            <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Número de Orden</span>
-            <span className="font-mono font-bold text-gray-950 dark:text-white text-sm">{lastPlacedOrder.id}</span>
-          </div>
-          <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
-            <span className="text-gray-400 font-mono uppercase tracking-wider text-[10px]">Estado Actual</span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              Preparación en Atelier
-            </span>
-          </div>
-          <div className="space-y-1.5 pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs">
-            <div className="flex justify-between text-gray-500 dark:text-gray-400">
-              <span>Empaque de Colección:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Cortesía</span>
-            </div>
-            <div className="flex justify-between text-gray-500 dark:text-gray-400">
-              <span>Seguro de Tránsito:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Incluido</span>
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between pt-1">
-            <div>
-              <span className="font-sans font-bold text-gray-950 dark:text-white text-sm block">
-                Total Pagado
-              </span>
-              <span className="text-[10px] text-gray-400 font-mono">
-                Modalidad: {lastPlacedOrder.paymentMethod || "PayPhone Card Gateway"}
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white">
-                ${Number(lastPlacedOrder?.total || 0).toFixed(2)}
-              </span>
-              <span className="text-xs font-mono font-bold text-[#8c9276] ml-1">USD</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Shipping Destination Card */}
-      <div className="p-4 sm:p-5 rounded-[1.75rem] bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/10 shadow-xs space-y-2.5 text-left">
-        <div className="flex items-center gap-2 pb-2 border-b border-black/[0.06] dark:border-white/10">
-          <MapPin className="w-4 h-4 text-[#8c9276]" />
-          <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-white">
-            Destino de Entrega Registrado
-          </h4>
-        </div>
-        <div className="space-y-1 text-xs">
-          <p className="font-bold text-gray-900 dark:text-white">
-            {formatCleanName(lastPlacedOrder.customerName || lastPlacedOrder.recipient || user?.name || "Cliente Lumina")}
-          </p>
-          <p className="text-gray-600 dark:text-gray-300">
-            {lastPlacedOrder.shippingAddress?.street || address?.street || "Dirección confirmada"}
-            {(lastPlacedOrder.shippingAddress?.exteriorNumber || address?.exteriorNumber) ? ` #${lastPlacedOrder.shippingAddress?.exteriorNumber || address?.exteriorNumber}` : ""}
-            {(lastPlacedOrder.shippingAddress?.interiorNumber || address?.interiorNumber) ? ` (${lastPlacedOrder.shippingAddress?.interiorNumber || address?.interiorNumber})` : ""}
-          </p>
-          <p className="text-gray-400 dark:text-gray-500 text-[11px]">
-            {lastPlacedOrder.shippingAddress?.city || address?.city || "Ecuador"}{lastPlacedOrder.shippingAddress?.state || address?.state ? `, ${lastPlacedOrder.shippingAddress?.state || address?.state}` : ""} · {lastPlacedOrder.shippingAddress?.country || address?.country || "Ecuador"}
-          </p>
-        </div>
-      </div>
-
-      {/* Purchased Items Mini-Gallery */}
-      {lastPlacedOrder.items && lastPlacedOrder.items.length > 0 && (
-        <div className="p-4 sm:p-5 rounded-[1.75rem] bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/10 shadow-xs space-y-3 text-left">
-          <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] dark:border-white/10">
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-[#8c9276]" />
-              <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-white">
-                Piezas en Preparación ({lastPlacedOrder.items.length})
-              </h4>
-            </div>
-            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-500/20">
-              En Atelier
-            </span>
-          </div>
-          <div className="max-h-52 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
-            {lastPlacedOrder.items.map((item, idx) => (
-              <div key={`${item.id || idx}`} className="flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
-                    <Image 
-                      src={item.product?.imageUrl || (item.product?.images && item.product.images[0]) || "/placeholder.jpg"} 
-                      alt={item.product?.title || "Producto"} 
-                      fill 
-                      className="object-cover" 
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-[11.5px]">
-                      {item.isBundle ? (item.bundleName || "Pack Promocional") : item.product?.title}
-                    </p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
-                      Cant: {item.quantity} {item.color ? `· ${item.color}` : ""}
-                    </p>
-                  </div>
-                </div>
-                <span className="font-mono font-bold text-gray-900 dark:text-white shrink-0 text-xs">
-                  ${((item.bundleCustomPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-
-    {/* Right Column (5 cols, sticky on lg): 3D Tilt QR Code + Google Wallet + Action Buttons */}
-    <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-4">
-      {/* Scannable 3D Tilt Card QR Code (@beui/tilt-card) & Google Wallet */}
-      <div className="w-full rounded-[2rem] p-5 sm:p-6 bg-gradient-to-br from-[#141417] via-[#1c1b20] to-[#111114] text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-left relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row lg:flex-col items-center gap-4 sm:gap-5 text-center lg:text-left">
-          {/* 3D Tilt Card QR */}
-          <BeUITiltCard maxTilt={15} scaleOnHover={1.04} glareOpacity={0.32} className="shrink-0 rounded-2xl mx-auto">
-            <button
-              type="button"
-              onClick={() => setWalletPopupPlatform("google")}
-              className="group/qr p-3 rounded-2xl bg-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] border border-white/30 flex flex-col items-center gap-1.5 cursor-pointer"
-              title="Abrir Pase Digital y Código QR en ventana interactiva"
-            >
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=6&data=${encodeURIComponent(
-                  `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/api/wallet/pass?type=order&orderId=${encodeURIComponent(lastPlacedOrder.id)}&total=${encodeURIComponent(String(lastPlacedOrder.total || 0))}&status=${encodeURIComponent(lastPlacedOrder.status || "Procesando")}&customer=${encodeURIComponent(lastPlacedOrder.customerName || user?.name || "Cliente Lumina")}&date=${encodeURIComponent(lastPlacedOrder.date || "Reciente")}`
-                )}`}
-                alt={`QR Pase de Pedido ${lastPlacedOrder.id}`}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg object-contain select-none"
-              />
-              <span className="text-[9px] font-mono font-extrabold uppercase tracking-wider text-gray-900 flex items-center gap-1">
-                <QrCode className="w-3 h-3 text-[#8c9276]" />
-                Escanear o Ampliar
-              </span>
-            </button>
-          </BeUITiltCard>
-
-          {/* Wallet Pass Details */}
-          <div className="flex-1 space-y-2.5 text-center lg:text-left">
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-[9.5px] font-bold uppercase tracking-widest">
-                Pase Digital en Tiempo Real
-              </span>
-              <h4 className="font-display font-bold text-base sm:text-lg text-white mt-1">
-                Guarda tu Pedido en tu Billetera
-              </h4>
-              <p className="text-[11.5px] text-white/70 leading-relaxed mt-0.5">
-                Escanea el QR o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> para recibir actualizaciones en tiempo real.
-              </p>
-            </div>
-
-            <div className="pt-1 flex justify-center lg:justify-start">
-              <GoogleWalletButton
-                onClick={() => setWalletPopupPlatform("google")}
-                topText="Agregar a"
-                className="w-full sm:w-auto"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="w-full space-y-2.5 pt-1">
-        <button 
-          onClick={() => {
-            setIsOpen(false);
-            router.push("/profile");
-          }}
-          className="group w-full h-13 sm:h-14 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] font-bold text-xs sm:text-sm flex items-center justify-between px-5 shadow-[0_10px_28px_rgba(0,0,0,0.18)] hover:opacity-95 transition-all cursor-pointer"
-        >
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-[#18181b]" />
-          </div>
-          <span>Ver Pedido en mi Perfil</span>
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-          </div>
-        </button>
-
-        <button 
-          onClick={() => {
-            setIsOpen(false);
-            setStep("bag");
-          }}
-          className="w-full py-3 sm:py-3.5 px-6 rounded-full bg-black/[0.04] dark:bg-white/5 hover:bg-black/[0.07] dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 text-xs sm:text-sm font-bold transition-all cursor-pointer"
-        >
-          Seguir Explorando Colecciones
-        </button>
-      </div>
-
-    </div>
-
-  </div>
-
-  {/* In-Page Wallet Pass Popup Modal (No external tab!) */}
-  <WalletPassPopupModal
-    open={walletPopupPlatform !== null}
-    onClose={() => setWalletPopupPlatform(null)}
-    orderId={lastPlacedOrder.id}
-    total={lastPlacedOrder.total}
-    status={lastPlacedOrder.status}
-    customerName={lastPlacedOrder.customerName || user?.name || "Cliente Lumina"}
-    trackingNumber={lastPlacedOrder.trackingNumber}
-    trackingUrl={lastPlacedOrder.trackingUrl}
-    carrierName={lastPlacedOrder.carrierName}
-    date={lastPlacedOrder.date}
-    initialPlatform="google"
-  />
-
-  </div>
   )}
 
   </div>
