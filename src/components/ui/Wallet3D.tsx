@@ -1,242 +1,320 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
-export interface WalletCard {
-  id: "crimson" | "holo" | "amber";
+export interface WalletCardItem {
+  id: string;
   name: string;
   number: string;
   balanceInt: string;
   balanceDec: string;
-  expiry: string;
+  brand?: string;
+  /** Cualquier color CSS, hex (#ff0055), rgb() o linear-gradient(...) */
+  background: string;
+  /** Color opcional para el reflejo en el cuero. Si no se envía, usa el mismo `background` de la tarjeta */
+  glowColor?: string;
+  /** Si la tarjeta es muy clara (ej. plateada o blanca), pon true para texto oscuro */
+  darkText?: boolean;
+  /** Opcional: franja holográfica estilo Apple/VISA Holo */
+  holographic?: boolean;
 }
 
-const DEFAULT_CARDS: WalletCard[] = [
+const DEFAULT_CARDS: WalletCardItem[] = [
   {
-    id: "crimson",
+    id: "card-charcoal",
     name: "VISA Signature Black",
     number: "•••• 8842",
     balanceInt: "4,018",
     balanceDec: ".00",
-    expiry: "09/28",
+    brand: "VISA",
+    background:
+      "radial-gradient(circle at 92% 35%, rgba(165, 42, 62, 0.45) 0%, transparent 60%), linear-gradient(180deg, #35363a 0%, #252629 100%)",
+    glowColor:
+      "radial-gradient(circle at 75% 78%, rgba(190, 24, 24, 0.92) 0%, rgba(125, 18, 18, 0.55) 45%, transparent 76%)",
+    darkText: false,
   },
   {
-    id: "holo",
+    id: "card-holo",
     name: "VISA Holo Edition",
     number: "•••• 3109",
     balanceInt: "2,850",
     balanceDec: ".50",
-    expiry: "12/27",
+    brand: "VISA",
+    background:
+      "linear-gradient(100deg, #e5e6e8 0%, #ededef 50%, #cfd6e3 100%)",
+    glowColor:
+      "linear-gradient(125deg, rgba(245, 158, 11, 0.85) 0%, rgba(236, 72, 153, 0.75) 35%, rgba(59, 130, 246, 0.9) 70%, rgba(56, 189, 248, 0.8) 100%)",
+    darkText: true,
+    holographic: true,
   },
   {
-    id: "amber",
+    id: "card-navy-gold",
     name: "VISA Infinite Gold",
     number: "•••• 5514",
     balanceInt: "6,420",
     balanceDec: ".75",
-    expiry: "04/29",
+    brand: "VISA",
+    background:
+      "radial-gradient(circle at 78% 42%, rgba(226, 155, 75, 0.95) 0%, rgba(168, 95, 42, 0.65) 38%, transparent 70%), linear-gradient(108deg, #1b2848 0%, #24355c 46%, #7c4d34 100%)",
+    darkText: false,
   },
 ];
 
 interface Wallet3DProps {
-  onSelectCard?: (card: WalletCard) => void;
+  cards?: WalletCardItem[];
+  selectedCardId?: string;
+  onSelectCard?: (card: WalletCardItem) => void;
 }
 
-export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
+export default function Wallet3D({
+  cards = DEFAULT_CARDS,
+  selectedCardId,
+  onSelectCard,
+}: Wallet3DProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeId, setActiveId] = useState<"crimson" | "holo" | "amber">("crimson");
+  const [activeId, setActiveId] = useState<string>(
+    selectedCardId || cards[0]?.id || ""
+  );
   const [balanceLabel, setBalanceLabel] = useState("Total balance");
 
-  const activeCard = DEFAULT_CARDS.find((c) => c.id === activeId) || DEFAULT_CARDS[0];
+  // Double-buffer para transicionar suavemente entre CUALQUIER color o gradiente
+  const [glowLayers, setGlowLayers] = useState<{
+    layerA: string;
+    layerB: string;
+    activeLayer: "A" | "B";
+  }>({
+    layerA: cards[0]?.glowColor || cards[0]?.background || "#b91c1c",
+    layerB: cards[0]?.glowColor || cards[0]?.background || "#b91c1c",
+    activeLayer: "A",
+  });
 
-  const handleCardClick = (e: React.MouseEvent, card: WalletCard) => {
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const activeCard =
+    cards.find((c) => c.id === activeId) || cards[0] || DEFAULT_CARDS[0];
+
+  // Sincroniza si selectedCardId cambia desde afuera (ej. estado global de la tienda)
+  useEffect(() => {
+    if (selectedCardId && selectedCardId !== activeId) {
+      const target = cards.find((c) => c.id === selectedCardId);
+      if (target) triggerColorReflection(target);
+      setActiveId(selectedCardId);
+    }
+  }, [selectedCardId, cards]);
+
+  // Extrae el color real de la tarjeta (por prop o leyendo el DOM computado)
+  const triggerColorReflection = (card: WalletCardItem) => {
+    let realPigment = card.glowColor || card.background;
+
+    // Si la tarjeta fue estilizada con clases externas (ej. Tailwind), lee su estilo real del DOM
+    const domNode = cardRefs.current[card.id];
+    if (!realPigment && domNode && typeof window !== "undefined") {
+      const computed = window.getComputedStyle(domNode);
+      realPigment =
+        computed.backgroundImage !== "none"
+          ? computed.backgroundImage
+          : computed.backgroundColor;
+    }
+
+    setGlowLayers((prev) =>
+      prev.activeLayer === "A"
+        ? { ...prev, layerB: realPigment, activeLayer: "B" }
+        : { ...prev, layerA: realPigment, activeLayer: "A" }
+    );
+  };
+
+  const handleCardClick = (e: React.MouseEvent, card: WalletCardItem) => {
     e.stopPropagation();
     if (!isOpen) {
       setIsOpen(true);
       return;
     }
+
     setActiveId(card.id);
-    setBalanceLabel(`VISA ${card.number}`);
+    setBalanceLabel(`${card.brand || "VISA"} ${card.number}`);
+    triggerColorReflection(card);
+
     if (onSelectCard) onSelectCard(card);
+
     setTimeout(() => {
       setIsOpen(false);
-    }, 260);
+    }, 240);
   };
 
-  const toggleWallet = () => {
-    setIsOpen((prev) => !prev);
-  };
-
-  // Determina el orden visual (slot 0 = frente, slot 1 = medio, slot 2 = fondo)
-  const getSlot = (cardId: "crimson" | "holo" | "amber") => {
-    if (cardId === activeId) return 0;
-    const remaining = DEFAULT_CARDS.filter((c) => c.id !== activeId);
-    return remaining[0].id === cardId ? 1 : 2;
-  };
+  // Ordena las tarjetas para que la activa siempre esté al frente (índice 0)
+  const orderedCards = [
+    activeCard,
+    ...cards.filter((c) => c.id !== activeCard.id),
+  ];
 
   return (
-    <div className="w3d-isolated-root">
+    <div className="w3d-stage-wrapper">
       <div
-        className={`w3d-shell ${isOpen ? "is-open" : ""}`}
-        data-active-glow={activeId}
-        onClick={toggleWallet}
+        className={`w3d-gpu-wallet ${isOpen ? "is-open" : ""}`}
+        onClick={() => setIsOpen((prev) => !prev)}
       >
-        <div className="w3d-inner">
-          {/* Header */}
-          <div className="w3d-header">
-            <span className="w3d-title">Wallet</span>
-            <span className="w3d-hint">
-              {isOpen ? "Elige una tarjeta" : "Toca para abrir"}
-            </span>
-          </div>
-
-          {/* Área de tarjetas */}
-          <div className="w3d-cards-stage">
-            {/* 4ta tarjeta decorativa que asoma a la derecha */}
-            <div className="w3d-peek-card" />
-
-            {/* Tarjeta 1: Navy / Amber */}
-            <div
-              className={`w3d-card w3d-card-amber slot-${getSlot("amber")} ${
-                activeId === "amber" ? "is-selected" : ""
-              }`}
-              onClick={(e) => handleCardClick(e, DEFAULT_CARDS[2])}
-            >
-              <div className="w3d-card-top">
-                <span className="w3d-visa-logo">VISA</span>
-                <span className="w3d-card-badge">
-                  {activeId === "amber" ? "✓ Activa" : "Seleccionar"}
-                </span>
-              </div>
-              <div className="w3d-card-bottom">
-                <div className="w3d-card-meta">
-                  <span className="w3d-card-name">{DEFAULT_CARDS[2].name}</span>
-                  <span className="w3d-card-num">{DEFAULT_CARDS[2].number}</span>
-                </div>
-                <span className="w3d-card-bal">
-                  ${DEFAULT_CARDS[2].balanceInt}
-                  <small>{DEFAULT_CARDS[2].balanceDec}</small>
-                </span>
-              </div>
-            </div>
-
-            {/* Tarjeta 2: Silver Holográfica */}
-            <div
-              className={`w3d-card w3d-card-holo slot-${getSlot("holo")} ${
-                activeId === "holo" ? "is-selected" : ""
-              }`}
-              onClick={(e) => handleCardClick(e, DEFAULT_CARDS[1])}
-            >
-              <div className="w3d-holo-prism" />
-              <div className="w3d-card-top">
-                <span className="w3d-visa-logo w3d-visa-dark" data-text="VISA">
-                  VISA
-                </span>
-                <span className="w3d-card-badge w3d-badge-dark">
-                  {activeId === "holo" ? "✓ Activa" : "Seleccionar"}
-                </span>
-              </div>
-              <div className="w3d-card-bottom w3d-text-dark">
-                <div className="w3d-card-meta">
-                  <span className="w3d-card-name">{DEFAULT_CARDS[1].name}</span>
-                  <span className="w3d-card-num">{DEFAULT_CARDS[1].number}</span>
-                </div>
-                <span className="w3d-card-bal">
-                  ${DEFAULT_CARDS[1].balanceInt}
-                  <small>{DEFAULT_CARDS[1].balanceDec}</small>
-                </span>
-              </div>
-            </div>
-
-            {/* Tarjeta 3: Charcoal Dark */}
-            <div
-              className={`w3d-card w3d-card-crimson slot-${getSlot("crimson")} ${
-                activeId === "crimson" ? "is-selected" : ""
-              }`}
-              onClick={(e) => handleCardClick(e, DEFAULT_CARDS[0])}
-            >
-              <div className="w3d-card-top">
-                <span className="w3d-visa-logo">VISA</span>
-                <span className="w3d-card-badge">
-                  {activeId === "crimson" ? "✓ Activa" : "Seleccionar"}
-                </span>
-              </div>
-              <div className="w3d-card-bottom">
-                <div className="w3d-card-meta">
-                  <span className="w3d-card-name">{DEFAULT_CARDS[0].name}</span>
-                  <span className="w3d-card-num">{DEFAULT_CARDS[0].number}</span>
-                </div>
-                <span className="w3d-card-bal">
-                  ${DEFAULT_CARDS[0].balanceInt}
-                  <small>{DEFAULT_CARDS[0].balanceDec}</small>
-                </span>
-              </div>
+        {/* MITAD SUPERIOR DEL CHASIS (Se desliza con translate3d sin recalcular height) */}
+        <div className="w3d-cap-top">
+          <div className="w3d-cap-top-inner">
+            <div className="w3d-header">
+              <span className="w3d-title">Wallet</span>
+              <span className="w3d-hint">
+                {isOpen ? "Toca una tarjeta para elegir" : "Toca para abrir"}
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Bolsillo delantero de cuero con costuras y reflejo 3D */}
-          <div className="w3d-leather-pocket">
-            {/* 3 Capas de color pre-renderizadas en GPU (Sin lag) */}
-            <div className="w3d-glow-layer w3d-glow-crimson" />
-            <div className="w3d-glow-layer w3d-glow-holo" />
-            <div className="w3d-glow-layer w3d-glow-amber" />
+        {/* MITAD INFERIOR DEL CHASIS */}
+        <div className="w3d-cap-bottom">
+          <div className="w3d-cap-bottom-inner" />
+        </div>
 
-            {/* Reflejo especular 3D izquierdo y bisel acolchado */}
-            <div className="w3d-specular-left" />
-            <div className="w3d-bevel-frame" />
+        {/* ESCENARIO DE TARJETAS (100% acelerado por GPU con translate3d) */}
+        <div className="w3d-cards-container">
+          {/* 4ta tarjeta blanca decorativa que asoma por la derecha */}
+          <div className="w3d-peek-card" />
 
-            {/* Costura perimetral en relieve (SVG puro sin filtros pesados) */}
-            <svg
-              className="w3d-stitching"
-              viewBox="0 0 364 196"
-              fill="none"
-              preserveAspectRatio="none"
-            >
-              {/* Surco oscuro hundido en el cuero */}
-              <rect
-                x="10"
-                y="11"
-                width="344"
-                height="175"
-                rx="30"
-                stroke="rgba(0, 0, 0, 0.85)"
-                strokeWidth="2.6"
-                strokeDasharray="6.5 5.5"
-                strokeLinecap="round"
-              />
-              {/* Hilo claro superior */}
-              <rect
-                x="10"
-                y="10"
-                width="344"
-                height="175"
-                rx="30"
-                stroke="rgba(255, 255, 255, 0.28)"
-                strokeWidth="1.6"
-                strokeDasharray="6.5 5.5"
-                strokeLinecap="round"
-              />
-            </svg>
+          {orderedCards.map((card, slotIndex) => {
+            const isSelected = card.id === activeCard.id;
 
-            {/* Texto central de saldo */}
-            <div className="w3d-balance-box">
-              <span className="w3d-balance-label">{balanceLabel}</span>
-              <div className="w3d-balance-amount">
-                <span className="w3d-currency">$</span>
-                <span className="w3d-int">{activeCard.balanceInt}</span>
-                <span className="w3d-dec">{activeCard.balanceDec}</span>
+            // Posición cerrada (clon exacto de la imagen) vs abierta (abanico dinámico)
+            let closedTransform = "translate3d(0px, 0px, 0px) rotate(0deg)";
+            if (slotIndex === 1) {
+              closedTransform = "translate3d(0px, -32px, 0px) rotate(-3.2deg)";
+            } else if (slotIndex === 2) {
+              closedTransform = "translate3d(4px, -56px, 0px) rotate(-9.2deg)";
+            } else if (slotIndex > 2) {
+              closedTransform = `translate3d(6px, -${64 + (slotIndex - 2) * 8}px, 0px) rotate(-11deg)`;
+            }
+
+            // Cuando se abre, se despliegan en abanico vertical limpio sin importar cuántas sean
+            const openY = -72 + (orderedCards.length - 1 - slotIndex) * 64;
+            const openScale = 1 - slotIndex * 0.022;
+            const openTransform = `translate3d(0px, ${openY}px, 0px) rotate(0deg) scale(${openScale})`;
+
+            return (
+              <div
+                key={card.id}
+                ref={(el) => {
+                  cardRefs.current[card.id] = el;
+                }}
+                className={`w3d-card ${card.darkText ? "w3d-dark-ink" : ""} ${
+                  isSelected ? "is-selected" : ""
+                }`}
+                style={{
+                  background: card.background,
+                  zIndex: 20 - slotIndex,
+                  transform: isOpen ? openTransform : closedTransform,
+                }}
+                onClick={(e) => handleCardClick(e, card)}
+              >
+                {card.holographic && <div className="w3d-holo-prism" />}
+
+                <div className="w3d-card-top">
+                  <span
+                    className={`w3d-visa-logo ${
+                      card.holographic ? "w3d-visa-chromatic" : ""
+                    }`}
+                  >
+                    {card.brand || "VISA"}
+                  </span>
+                  <span className="w3d-card-badge">
+                    {isSelected ? "✓ Activa" : "Elegir"}
+                  </span>
+                </div>
+
+                <div className="w3d-card-bottom">
+                  <div className="w3d-card-meta">
+                    <span className="w3d-card-name">{card.name}</span>
+                    <span className="w3d-card-num">{card.number}</span>
+                  </div>
+                  <span className="w3d-card-bal">
+                    ${card.balanceInt}
+                    <small>{card.balanceDec}</small>
+                  </span>
+                </div>
               </div>
+            );
+          })}
+        </div>
+
+        {/* BOLSILLO DELANTERO DE CUERO COSIDO CON PROYECTOR ÓPTICO DINÁMICO */}
+        <div className="w3d-leather-pocket">
+          {/* Base de cuero negro profundo */}
+          <div className="w3d-leather-base" />
+
+          {/* Proyector Óptico Dinámico (Refleja el color/gradiente REAL de cualquier tarjeta) */}
+          <div
+            className="w3d-optical-projector"
+            style={{
+              background: glowLayers.layerA,
+              opacity: glowLayers.activeLayer === "A" ? 0.88 : 0,
+            }}
+          />
+          <div
+            className="w3d-optical-projector"
+            style={{
+              background: glowLayers.layerB,
+              opacity: glowLayers.activeLayer === "B" ? 0.88 : 0,
+            }}
+          />
+
+          {/* Tubo de luz especular 3D izquierdo y bisel acolchado */}
+          <div className="w3d-specular-left" />
+          <div className="w3d-bevel-frame" />
+
+          {/* Costura perimetral en relieve (Geometría SVG pura, 0% CPU) */}
+          <svg
+            className="w3d-stitching"
+            viewBox="0 0 364 196"
+            fill="none"
+            preserveAspectRatio="none"
+          >
+            <rect
+              x="10"
+              y="11"
+              width="344"
+              height="175"
+              rx="30"
+              stroke="rgba(0, 0, 0, 0.88)"
+              strokeWidth="2.6"
+              strokeDasharray="6.5 5.5"
+              strokeLinecap="round"
+            />
+            <rect
+              x="10"
+              y="10"
+              width="344"
+              height="175"
+              rx="30"
+              stroke="rgba(255, 255, 255, 0.28)"
+              strokeWidth="1.6"
+              strokeDasharray="6.5 5.5"
+              strokeLinecap="round"
+            />
+          </svg>
+
+          {/* Saldo de la tarjeta activa */}
+          <div className="w3d-balance-box">
+            <span className="w3d-balance-label">{balanceLabel}</span>
+            <div className="w3d-balance-amount">
+              <span className="w3d-currency">$</span>
+              <span className="w3d-int">{activeCard.balanceInt}</span>
+              <span className="w3d-dec">{activeCard.balanceDec}</span>
             </div>
           </div>
         </div>
       </div>
 
       <style>{`
-        .w3d-isolated-root {
+        /* Contenedor con espacio reservado para evitar Layout Reflow en la tienda */
+        .w3d-stage-wrapper {
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 20px;
+          min-height: 520px;
+          padding: 16px;
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
           -webkit-font-smoothing: antialiased;
           user-select: none;
@@ -244,51 +322,75 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           isolation: isolate;
         }
 
-        /* Carcasa exterior gris plata con transición GPU */
-        .w3d-shell {
+        .w3d-gpu-wallet {
           position: relative;
           width: 392px;
           height: 368px;
-          border-radius: 54px;
+          cursor: pointer;
+          transform: translate3d(0, 0, 0);
+        }
+
+        /* --- CHASIS DIVIDIDO EN 2 CAPAS (0% Reflow, solo translate3d) --- */
+        .w3d-cap-top,
+        .w3d-cap-bottom {
+          position: absolute;
+          left: 0;
+          right: 0;
           background: linear-gradient(180deg, #c5c7c9 0%, #b4b6b8 100%);
           padding: 13px;
           box-sizing: border-box;
+          transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+
+        .w3d-cap-top {
+          top: 0;
+          height: 270px;
+          border-radius: 54px 54px 0 0;
+          padding-bottom: 0;
+          z-index: 1;
           box-shadow: 
-            0 26px 50px -14px rgba(0, 0, 0, 0.32),
-            0 4px 12px rgba(0, 0, 0, 0.12),
-            inset 0 1.5px 1px rgba(255, 255, 255, 0.75);
-          cursor: pointer;
-          transition: height 0.52s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s ease;
-          transform: translate3d(0, 0, 0);
-          will-change: height;
+            0 -6px 24px rgba(0, 0, 0, 0.08),
+            inset 0 1.5px 1px rgba(255, 255, 255, 0.78);
         }
 
-        .w3d-shell:hover {
-          transform: translate3d(0, -2px, 0);
+        .w3d-cap-bottom {
+          bottom: 0;
+          height: 270px;
+          border-radius: 0 0 54px 54px;
+          padding-top: 0;
+          z-index: 2;
+          box-shadow: 0 26px 48px -12px rgba(0, 0, 0, 0.34);
         }
 
-        .w3d-shell.is-open {
-          height: 530px;
-        }
-
-        /* Interior oscuro carbón */
-        .w3d-inner {
-          position: relative;
+        .w3d-cap-top-inner,
+        .w3d-cap-bottom-inner {
           width: 100%;
           height: 100%;
           background: #2b2c2f;
-          border-radius: 42px;
-          overflow: hidden;
-          box-shadow: inset 0 6px 16px rgba(0, 0, 0, 0.65);
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
         }
 
-        /* Cabecera Wallet */
+        .w3d-cap-top-inner {
+          border-radius: 42px 42px 0 0;
+          box-shadow: inset 0 6px 16px rgba(0, 0, 0, 0.65);
+        }
+
+        .w3d-cap-bottom-inner {
+          border-radius: 0 0 42px 42px;
+        }
+
+        /* Apertura 100% en GPU: la tapa superior sube y la inferior baja */
+        .w3d-gpu-wallet.is-open .w3d-cap-top {
+          transform: translate3d(0, -76px, 0);
+        }
+
+        .w3d-gpu-wallet.is-open .w3d-cap-bottom {
+          transform: translate3d(0, 76px, 0);
+        }
+
+        /* Header Wallet */
         .w3d-header {
-          position: relative;
-          z-index: 2;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -306,31 +408,26 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
         .w3d-hint {
           font-size: 11px;
           font-weight: 500;
-          color: rgba(255, 255, 255, 0.36);
+          color: rgba(255, 255, 255, 0.4);
           margin-top: 4px;
           opacity: 0;
-          transform: translateY(-4px);
-          transition: opacity 0.25s ease, transform 0.25s ease;
+          transition: opacity 0.25s ease;
         }
 
-        .w3d-shell:hover .w3d-hint,
-        .w3d-shell.is-open .w3d-hint {
+        .w3d-gpu-wallet:hover .w3d-hint,
+        .w3d-gpu-wallet.is-open .w3d-hint {
           opacity: 1;
-          transform: translateY(0);
         }
 
-        /* Escenario de las tarjetas */
-        .w3d-cards-stage {
+        /* --- CONTENEDOR DE TARJETAS --- */
+        .w3d-cards-container {
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 3;
+          inset: 13px;
+          z-index: 5;
           pointer-events: none;
         }
 
-        /* 4ta tarjeta blanca que asoma por la derecha */
+        /* 4ta tarjeta blanca que asoma a la derecha */
         .w3d-peek-card {
           position: absolute;
           width: 280px;
@@ -342,20 +439,22 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           border: 1.5px solid rgba(255, 255, 255, 0.92);
           transform: translate3d(0, 0, 0) rotate(14.5deg);
           transform-origin: bottom right;
-          transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+          transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
           z-index: 1;
           box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.25);
+          will-change: transform, opacity;
         }
 
-        .w3d-shell.is-open .w3d-peek-card {
+        .w3d-gpu-wallet.is-open .w3d-peek-card {
           opacity: 0;
           transform: translate3d(20px, 40px, 0) rotate(22deg);
         }
 
-        /* Estructura base de cada tarjeta VISA */
+        /* Tarjeta individual */
         .w3d-card {
           position: absolute;
           left: 20px;
+          top: 108px;
           width: 326px;
           height: 184px;
           border-radius: 26px;
@@ -366,30 +465,26 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           justify-content: space-between;
           pointer-events: auto;
           cursor: pointer;
+          color: #ffffff;
           border: 1.8px solid rgba(255, 255, 255, 0.88);
           box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.38);
-          transition: transform 0.54s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+          transform-origin: bottom left;
+          transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
           will-change: transform;
           backface-visibility: hidden;
           overflow: hidden;
         }
 
-        /* --- ESTILOS VISUALES DE LAS 3 TARJETAS --- */
-        /* 1. Navy & Dorado (Fondo original) */
-        .w3d-card-amber {
-          background: 
-            radial-gradient(circle at 78% 42%, rgba(226, 155, 75, 0.95) 0%, rgba(168, 95, 42, 0.65) 38%, transparent 70%),
-            linear-gradient(108deg, #1b2848 0%, #24355c 46%, #7c4d34 100%);
-          color: #ffffff;
-        }
-
-        /* 2. Plateada con arcoíris holográfico (Medio original) */
-        .w3d-card-holo {
-          background: linear-gradient(100deg, #e5e6e8 0%, #ededef 52%, #cfd6e3 100%);
-          border-color: rgba(255, 255, 255, 0.98);
+        .w3d-card.w3d-dark-ink {
           color: #1c1d1f;
+          border-color: rgba(255, 255, 255, 0.98);
         }
 
+        .w3d-gpu-wallet.is-open .w3d-card:hover {
+          filter: brightness(1.06);
+        }
+
+        /* Efecto arcoíris para tarjetas holográficas */
         .w3d-holo-prism {
           position: absolute;
           top: -20%;
@@ -409,70 +504,6 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           pointer-events: none;
         }
 
-        /* 3. Carbón Mate (Frente original) */
-        .w3d-card-crimson {
-          background: 
-            radial-gradient(circle at 92% 35%, rgba(122, 58, 74, 0.38) 0%, transparent 58%),
-            linear-gradient(180deg, #35363a 0%, #27282b 100%);
-          color: #ffffff;
-        }
-
-        /* --- POSICIONES CERRADAS (CLON 1:1 DE LA IMAGEN) --- */
-        /* Slot 2: Tarjeta del fondo */
-        .w3d-card.slot-2 {
-          z-index: 2;
-          top: 52px;
-          transform: translate3d(4px, 0, 0) rotate(-9.2deg);
-          transform-origin: bottom left;
-        }
-
-        /* Slot 1: Tarjeta del medio */
-        .w3d-card.slot-1 {
-          z-index: 3;
-          top: 76px;
-          transform: translate3d(0, 0, 0) rotate(-3.2deg);
-          transform-origin: bottom left;
-        }
-
-        /* Slot 0: Tarjeta activa al frente */
-        .w3d-card.slot-0 {
-          z-index: 4;
-          top: 108px;
-          transform: translate3d(0, 0, 0) rotate(0deg);
-          transform-origin: center center;
-        }
-
-        /* --- POSICIONES ABIERTAS (ABANICO INTERACTIVO) --- */
-        .w3d-shell.is-open .w3d-card.slot-2 {
-          transform: translate3d(0, 2px, 0) rotate(0deg) scale(0.95);
-        }
-
-        .w3d-shell.is-open .w3d-card.slot-1 {
-          transform: translate3d(0, 68px, 0) rotate(0deg) scale(0.975);
-        }
-
-        .w3d-shell.is-open .w3d-card.slot-0 {
-          transform: translate3d(0, 126px, 0) rotate(0deg) scale(1);
-          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
-        }
-
-        .w3d-shell.is-open .w3d-card:hover {
-          filter: brightness(1.06);
-        }
-
-        .w3d-shell.is-open .w3d-card.slot-2:hover {
-          transform: translate3d(0, -6px, 0) rotate(0deg) scale(0.97);
-        }
-
-        .w3d-shell.is-open .w3d-card.slot-1:hover {
-          transform: translate3d(0, 60px, 0) rotate(0deg) scale(0.99);
-        }
-
-        .w3d-shell.is-open .w3d-card.slot-0:hover {
-          transform: translate3d(0, 118px, 0) rotate(0deg) scale(1.015);
-        }
-
-        /* Tipografía VISA y detalles internos de cada tarjeta */
         .w3d-card-top {
           position: relative;
           z-index: 2;
@@ -487,14 +518,12 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           font-style: italic;
           letter-spacing: -0.04em;
           line-height: 0.88;
-          color: #ffffff;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
-        /* Efecto cromático en el logo VISA negro de la tarjeta plateada */
-        .w3d-visa-dark {
+        .w3d-visa-chromatic {
           color: #1d1e21;
-          text-shadow: -1.5px -0.5px 0px rgba(228, 148, 54, 0.85), 1.5px 0.5px 0px rgba(56, 165, 224, 0.75);
+          text-shadow: -1.5px -0.5px 0px rgba(228, 148, 54, 0.85),
+            1.5px 0.5px 0px rgba(56, 165, 224, 0.75);
         }
 
         .w3d-card-badge {
@@ -502,26 +531,19 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           font-weight: 600;
           padding: 4px 10px;
           border-radius: 99px;
-          background: rgba(255, 255, 255, 0.18);
-          color: #ffffff;
+          background: rgba(0, 0, 0, 0.28);
+          color: #fff;
           opacity: 0;
-          transform: translateY(-4px);
-          transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease;
-        }
-
-        .w3d-badge-dark {
-          background: rgba(0, 0, 0, 0.12);
-          color: #18191b;
+          transition: opacity 0.22s ease;
         }
 
         .w3d-card.is-selected .w3d-card-badge {
-          background: rgba(255, 255, 255, 0.92);
-          color: #111;
+          background: #ffffff;
+          color: #111111;
         }
 
-        .w3d-shell.is-open .w3d-card-badge {
+        .w3d-gpu-wallet.is-open .w3d-card-badge {
           opacity: 1;
-          transform: translateY(0);
         }
 
         .w3d-card-bottom {
@@ -531,17 +553,11 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           justify-content: space-between;
           align-items: flex-end;
           opacity: 0;
-          transform: translateY(6px);
-          transition: opacity 0.25s ease, transform 0.25s ease;
+          transition: opacity 0.22s ease;
         }
 
-        .w3d-shell.is-open .w3d-card-bottom {
+        .w3d-gpu-wallet.is-open .w3d-card-bottom {
           opacity: 1;
-          transform: translateY(0);
-        }
-
-        .w3d-text-dark {
-          color: #1d1e20;
         }
 
         .w3d-card-meta {
@@ -553,7 +569,7 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
         .w3d-card-name {
           font-size: 12px;
           font-weight: 600;
-          opacity: 0.78;
+          opacity: 0.8;
         }
 
         .w3d-card-num {
@@ -569,19 +585,18 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
 
         .w3d-card-bal small {
           font-size: 13px;
-          opacity: 0.65;
+          opacity: 0.68;
         }
 
-        /* --- BOLSILLO DE CUERO DELANTERO CON 3 CAPAS DE COLOR GPU --- */
+        /* --- BOLSILLO DE CUERO DELANTERO + PROYECTOR ÓPTICO DINÁMICO --- */
         .w3d-leather-pocket {
           position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
+          bottom: 13px;
+          left: 13px;
+          right: 13px;
           height: 196px;
-          z-index: 10;
+          z-index: 30;
           border-radius: 36px 36px 40px 40px;
-          background: #18181b;
           overflow: hidden;
           box-shadow: 
             0 -10px 24px rgba(0, 0, 0, 0.55),
@@ -589,52 +604,51 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
           display: flex;
           align-items: center;
           justify-content: center;
+          transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
           transform: translate3d(0, 0, 0);
+          will-change: transform;
+          backface-visibility: hidden;
         }
 
-        /* Capas de brillo pre-renderizadas: cambian solo con opacity (0% lag) */
-        .w3d-glow-layer {
+        .w3d-gpu-wallet.is-open .w3d-leather-pocket {
+          transform: translate3d(0, 76px, 0);
+        }
+
+        .w3d-leather-base {
           position: absolute;
           inset: 0;
-          opacity: 0;
-          transition: opacity 0.45s ease;
+          background: linear-gradient(165deg, #27272b 0%, #161619 62%, #121215 100%);
+          z-index: 1;
+        }
+
+        /* El Proyector Óptico toma el color/gradiente REAL de la tarjeta y lo difumina en la esquina inferior derecha */
+        .w3d-optical-projector {
+          position: absolute;
+          inset: -20px;
+          z-index: 2;
           pointer-events: none;
+          /* Máscara radial para concentrar la luz en la zona inferior derecha igual a la referencia */
+          -webkit-mask-image: radial-gradient(
+            circle at 76% 78%,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.75) 34%,
+            rgba(0, 0, 0, 0.25) 58%,
+            transparent 78%
+          );
+          mask-image: radial-gradient(
+            circle at 76% 78%,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.75) 34%,
+            rgba(0, 0, 0, 0.25) 58%,
+            transparent 78%
+          );
+          filter: blur(18px) saturate(1.65) brightness(1.1);
+          transform: translateZ(0);
+          transition: opacity 0.42s ease;
           will-change: opacity;
         }
 
-        /* Brillo Rojo Carmesí (Original de la imagen) */
-        .w3d-glow-crimson {
-          background: 
-            radial-gradient(circle at 76% 78%, rgba(178, 28, 28, 0.88) 0%, rgba(122, 18, 18, 0.52) 42%, rgba(24, 24, 27, 0) 75%),
-            linear-gradient(165deg, #27272b 0%, #18181b 52%, #4a1212 100%);
-        }
-
-        /* Brillo Cian / Prisma Holográfico (Al elegir la plateada) */
-        .w3d-glow-holo {
-          background: 
-            radial-gradient(circle at 76% 78%, rgba(38, 132, 225, 0.85) 0%, rgba(124, 58, 237, 0.48) 44%, rgba(24, 24, 27, 0) 76%),
-            linear-gradient(165deg, #272930 0%, #18191e 52%, #17365c 100%);
-        }
-
-        /* Brillo Ámbar / Oro Cálido (Al elegir la azul/dorada) */
-        .w3d-glow-amber {
-          background: 
-            radial-gradient(circle at 76% 78%, rgba(217, 119, 36, 0.88) 0%, rgba(146, 64, 14, 0.52) 44%, rgba(24, 24, 27, 0) 76%),
-            linear-gradient(165deg, #282624 0%, #191817 52%, #4d260b 100%);
-        }
-
-        /* Activación infalible por atributo data-active-glow */
-        .w3d-shell[data-active-glow="crimson"] .w3d-glow-crimson {
-          opacity: 1;
-        }
-        .w3d-shell[data-active-glow="holo"] .w3d-glow-holo {
-          opacity: 1;
-        }
-        .w3d-shell[data-active-glow="amber"] .w3d-glow-amber {
-          opacity: 1;
-        }
-
-        /* Tubo de luz especular 3D en el borde izquierdo (idéntico a la referencia) */
+        /* Reflejo especular 3D izquierdo */
         .w3d-specular-left {
           position: absolute;
           left: 14px;
@@ -650,11 +664,12 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
             rgba(255, 255, 255, 0.05) 100%
           );
           filter: blur(3.5px);
+          transform: translateZ(0);
           pointer-events: none;
-          z-index: 2;
+          z-index: 3;
         }
 
-        /* Bisel acolchado 3D interior del cuero */
+        /* Bisel acolchado 3D */
         .w3d-bevel-frame {
           position: absolute;
           inset: 0;
@@ -664,23 +679,21 @@ export default function Wallet3D({ onSelectCard }: Wallet3DProps) {
             inset 0 -18px 20px -8px rgba(0, 0, 0, 0.85),
             inset -14px 0 18px -10px rgba(0, 0, 0, 0.7);
           pointer-events: none;
-          z-index: 2;
+          z-index: 4;
         }
 
-        /* Costura perimetral SVG */
         .w3d-stitching {
           position: absolute;
           inset: 0;
           width: 100%;
           height: 100%;
           pointer-events: none;
-          z-index: 3;
+          z-index: 5;
         }
 
-        /* Texto central del saldo */
         .w3d-balance-box {
           position: relative;
-          z-index: 4;
+          z-index: 6;
           display: flex;
           flex-direction: column;
           align-items: center;

@@ -10,7 +10,7 @@ import { LiquidGlass, LiquidGlassButton } from "./LiquidGlass";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
-import Wallet3D, { WalletCard } from "./Wallet3D";
+import Wallet3D, { WalletCardItem } from "./Wallet3D";
 import { 
  X, 
  Plus, 
@@ -284,12 +284,127 @@ export function CartDrawer() {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [walletPopupPlatform, setWalletPopupPlatform] = useState<"apple" | "google" | null>(null);
 
-  const handleSelectWallet3DCard = (card: WalletCard) => {
+  const userWallet3DCards = useMemo<WalletCardItem[] | undefined>(() => {
+    if (!cards || cards.length === 0) {
+      return undefined;
+    }
+
+    const GRADIENT_PALETTES = [
+      {
+        design: "carbon",
+        tier: "Signature Black",
+        background:
+          "radial-gradient(circle at 92% 35%, rgba(165, 42, 62, 0.45) 0%, transparent 60%), linear-gradient(180deg, #35363a 0%, #252629 100%)",
+        glowColor:
+          "radial-gradient(circle at 75% 78%, rgba(190, 24, 24, 0.92) 0%, rgba(125, 18, 18, 0.55) 45%, transparent 76%)",
+        darkText: false,
+        holographic: false,
+        balanceInt: "4,018",
+        balanceDec: ".00",
+      },
+      {
+        design: "holo",
+        tier: "Holo Edition",
+        background:
+          "linear-gradient(100deg, #e5e6e8 0%, #ededef 50%, #cfd6e3 100%)",
+        glowColor:
+          "linear-gradient(125deg, rgba(245, 158, 11, 0.85) 0%, rgba(236, 72, 153, 0.75) 35%, rgba(59, 130, 246, 0.9) 70%, rgba(56, 189, 248, 0.8) 100%)",
+        darkText: true,
+        holographic: true,
+        balanceInt: "2,850",
+        balanceDec: ".50",
+      },
+      {
+        design: "navy",
+        tier: "Infinite Gold",
+        background:
+          "radial-gradient(circle at 78% 42%, rgba(226, 155, 75, 0.95) 0%, rgba(168, 95, 42, 0.65) 38%, transparent 70%), linear-gradient(108deg, #1b2848 0%, #24355c 46%, #7c4d34 100%)",
+        glowColor:
+          "radial-gradient(circle at 76% 78%, rgba(217, 119, 36, 0.88) 0%, rgba(146, 64, 14, 0.52) 44%, transparent 76%)",
+        darkText: false,
+        holographic: false,
+        balanceInt: "6,420",
+        balanceDec: ".75",
+      },
+      {
+        design: "emerald",
+        tier: "Emerald Reserve",
+        background:
+          "radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.55) 0%, transparent 60%), linear-gradient(135deg, #064e3b 0%, #022c22 65%, #0f172a 100%)",
+        glowColor:
+          "radial-gradient(circle at 75% 78%, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.55) 45%, transparent 76%)",
+        darkText: false,
+        holographic: false,
+        balanceInt: "5,340",
+        balanceDec: ".20",
+      },
+      {
+        design: "violet",
+        tier: "Aether Obsidian",
+        background:
+          "radial-gradient(circle at 82% 38%, rgba(168, 85, 247, 0.65) 0%, transparent 62%), linear-gradient(135deg, #3b0764 0%, #1e1b4b 60%, #0f172a 100%)",
+        glowColor:
+          "radial-gradient(circle at 75% 78%, rgba(168, 85, 247, 0.92) 0%, rgba(126, 34, 206, 0.55) 45%, transparent 76%)",
+        darkText: false,
+        holographic: false,
+        balanceInt: "8,190",
+        balanceDec: ".80",
+      },
+    ];
+
+    return cards.map((c, index) => {
+      const designKey = (c.design || "").toLowerCase();
+      let matchedPalette = GRADIENT_PALETTES.find((p) => p.design === designKey);
+      
+      if (!matchedPalette) {
+        if (designKey.includes("holo")) {
+          matchedPalette = GRADIENT_PALETTES[1];
+        } else if (designKey.includes("navy") || designKey.includes("gold")) {
+          matchedPalette = GRADIENT_PALETTES[2];
+        } else if (designKey.includes("carbon") || designKey.includes("obsidian") || designKey.includes("black")) {
+          matchedPalette = GRADIENT_PALETTES[0];
+        } else {
+          matchedPalette = GRADIENT_PALETTES[index % GRADIENT_PALETTES.length];
+        }
+      }
+
+      const isCustomCssBg = 
+        typeof c.design === "string" && 
+        (c.design.startsWith("linear-gradient") || 
+         c.design.startsWith("radial-gradient") || 
+         c.design.startsWith("#") || 
+         c.design.startsWith("rgb"));
+
+      const realBackground = isCustomCssBg ? c.design! : matchedPalette.background;
+      const realGlow = isCustomCssBg ? c.design! : matchedPalette.glowColor;
+      const last4 = c.number.replace(/\D/g, "").slice(-4) || "4242";
+      const brandStr = c.type === "mastercard" ? "MASTERCARD" : "VISA";
+      const cardTitle = `${brandStr} ${matchedPalette.tier}`;
+
+      return {
+        id: c.id,
+        name: c.holder ? `${brandStr} • ${c.holder}` : cardTitle,
+        number: `•••• ${last4}`,
+        balanceInt: matchedPalette.balanceInt,
+        balanceDec: matchedPalette.balanceDec,
+        brand: brandStr,
+        background: realBackground,
+        glowColor: realGlow,
+        darkText: isCustomCssBg ? false : matchedPalette.darkText,
+        holographic: isCustomCssBg ? false : matchedPalette.holographic,
+      };
+    });
+  }, [cards]);
+
+  const handleSelectWallet3DCard = (card: WalletCardItem) => {
     setSelectedSavedCardId(card.id);
-    const last4 = card.number.replace(/\D/g, "") || "8842";
-    setCardNumber(`4532 8910 2233 ${last4}`);
-    setCardExpiry(card.expiry || "09/28");
-    setCardHolder(user?.name || "CLIENTE LUMINA");
+    const last4 = card.number.replace(/\D/g, "").slice(-4) || "4242";
+    const isMaster = card.brand?.toLowerCase().includes("master");
+    const prefix = isMaster ? "5412 7500 8899" : "4532 8910 2233";
+    setCardNumber(`${prefix} ${last4}`);
+    const savedCard = cards?.find((c) => c.id === card.id);
+    setCardExpiry(savedCard?.exp || "12/28");
+    setCardHolder(savedCard?.holder || user?.name || "CLIENTE LUMINA");
     setCardCvv("");
     playEnvelopeSound("open");
   };
@@ -318,8 +433,11 @@ export function CartDrawer() {
   // Detect card brand for live button display (Visa, Mastercard, Amex, Diners, Discover)
   const detectedCardBrand = useMemo(() => {
     if (selectedSavedCardId !== "new") {
-      if (selectedSavedCardId === "crimson" || selectedSavedCardId === "holo" || selectedSavedCardId === "amber") {
-        return "visa";
+      const foundWalletCard = userWallet3DCards?.find((c) => c.id === selectedSavedCardId);
+      if (foundWalletCard?.brand) {
+        const b = foundWalletCard.brand.toLowerCase();
+        if (b.includes("master")) return "mastercard";
+        if (b.includes("visa")) return "visa";
       }
       const found = cards?.find((c) => c.id === selectedSavedCardId);
       if (found?.type) {
@@ -2504,7 +2622,11 @@ export function CartDrawer() {
           <div className="pt-2 space-y-4 font-sans">
             <div className="w-full flex justify-center overflow-x-clip sm:overflow-visible py-1">
               <div className="origin-top scale-[0.82] min-[390px]:scale-[0.92] min-[435px]:scale-100 -my-6 min-[435px]:my-0 transition-transform">
-                <Wallet3D onSelectCard={handleSelectWallet3DCard} />
+                <Wallet3D
+                  cards={userWallet3DCards}
+                  selectedCardId={selectedSavedCardId}
+                  onSelectCard={handleSelectWallet3DCard}
+                />
               </div>
             </div>
 
