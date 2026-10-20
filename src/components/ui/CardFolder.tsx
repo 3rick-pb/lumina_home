@@ -15,6 +15,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { playCardEnvelopeSound } from "@/lib/soundUtils";
 import { useDeviceUnlock } from "@/hooks/useDeviceUnlock";
+import { NetworkBrandLogo, resolveCardNetwork } from "./UnifiedWalletSystem";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -525,7 +526,7 @@ export interface LuminaCardFolderItemProps {
   onRemove?: (id: string) => void;
 }
 
-export type SkeuomorphicCardTheme = "carbon" | "holo" | "navy";
+export type SkeuomorphicCardTheme = "carbon" | "holo" | "navy" | "cobalt" | "emerald";
 
 export interface SkeuomorphicThemeConfig {
   id: SkeuomorphicCardTheme;
@@ -539,13 +540,13 @@ export interface SkeuomorphicThemeConfig {
   isHolo?: boolean;
 }
 
-export const SKEUOMORPHIC_THEMES: Record<SkeuomorphicCardTheme, SkeuomorphicThemeConfig> = {
+export const SKEUOMORPHIC_THEMES: Record<string, SkeuomorphicThemeConfig> = {
   carbon: {
     id: "carbon",
     name: "Signature Black",
-    tierLabel: "Signature Black",
+    tierLabel: "SIGNATURE BLACK",
     background:
-      "radial-gradient(circle at 92% 35%, rgba(96, 58, 62, 0.7) 0%, transparent 55%), linear-gradient(105deg, #323438 0%, #2b2d31 58%, #3d2d31 100%)",
+      "radial-gradient(circle at 86% 24%, rgba(235, 0, 27, 0.42) 0%, rgba(247, 158, 27, 0.18) 38%, transparent 64%), linear-gradient(170deg, #2d2e33 0%, #17181c 100%)",
     border: "1.8px solid rgba(255, 255, 255, 0.92)",
     textColor: "#ffffff",
     subtextColor: "rgba(255, 255, 255, 0.75)",
@@ -554,9 +555,9 @@ export const SKEUOMORPHIC_THEMES: Record<SkeuomorphicCardTheme, SkeuomorphicThem
   holo: {
     id: "holo",
     name: "Holo Prism",
-    tierLabel: "Holo Prism",
+    tierLabel: "HOLO PRISM",
     background:
-      "linear-gradient(100deg, #e3e3e3 0%, #e6e6e6 46%, #ebb665 54%, #c96f49 58%, #3b5998 63%, #4ea8de 69%, #66b2a0 73%, #e29568 79%, #8b9bb1 87%, #cfd6df 95%, #dfdfdf 100%)",
+      "linear-gradient(102deg, #e5e7ec 0%, #f1f2f6 48%, #cad4e4 100%)",
     border: "1.8px solid #ffffff",
     textColor: "#1d1d1f",
     subtextColor: "#52525b",
@@ -566,13 +567,35 @@ export const SKEUOMORPHIC_THEMES: Record<SkeuomorphicCardTheme, SkeuomorphicThem
   navy: {
     id: "navy",
     name: "Horizon Gold",
-    tierLabel: "Horizon Gold",
+    tierLabel: "HORIZON GOLD",
     background:
-      "radial-gradient(circle at 68% 35%, rgba(214, 142, 68, 0.95) 0%, rgba(163, 92, 45, 0.85) 32%, transparent 68%), linear-gradient(108deg, #1b2848 0%, #243558 34%, #6e4838 64%, #b87b42 100%)",
+      "radial-gradient(circle at 78% 40%, rgba(249, 115, 22, 0.92) 0%, rgba(180, 83, 9, 0.62) 38%, transparent 70%), linear-gradient(110deg, #19233c 0%, #26365c 46%, #7c3f20 100%)",
     border: "1.8px solid rgba(255, 255, 255, 0.92)",
     textColor: "#ffffff",
     subtextColor: "rgba(255, 255, 255, 0.75)",
     pillClass: "bg-black/25 text-amber-200 border border-amber-200/30",
+  },
+  cobalt: {
+    id: "cobalt",
+    name: "Centurion Cobalt",
+    tierLabel: "CENTURION COBALT",
+    background:
+      "radial-gradient(circle at 84% 24%, rgba(56, 189, 248, 0.48) 0%, rgba(37, 99, 235, 0.32) 42%, transparent 70%), linear-gradient(135deg, #0b1d3a 0%, #173b7a 52%, #081226 100%)",
+    border: "1.8px solid rgba(255, 255, 255, 0.92)",
+    textColor: "#ffffff",
+    subtextColor: "rgba(255, 255, 255, 0.75)",
+    pillClass: "bg-sky-500/25 text-sky-200 border-sky-400/30",
+  },
+  emerald: {
+    id: "emerald",
+    name: "Imperial Emerald",
+    tierLabel: "IMPERIAL EMERALD",
+    background:
+      "radial-gradient(circle at 82% 26%, rgba(16, 185, 129, 0.45) 0%, rgba(217, 119, 6, 0.22) 44%, transparent 70%), linear-gradient(135deg, #072c24 0%, #0d473b 52%, #041915 100%)",
+    border: "1.8px solid rgba(255, 255, 255, 0.92)",
+    textColor: "#ffffff",
+    subtextColor: "rgba(255, 255, 255, 0.75)",
+    pillClass: "bg-emerald-500/25 text-emerald-200 border-emerald-400/30",
   },
 };
 
@@ -596,21 +619,34 @@ export function LuminaCardFolderItem({
   const [isOpen, setIsOpen] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(false);
 
-  // Mapear el diseño skeuomórfico exacto de la billetera
-  let effectiveTheme: SkeuomorphicCardTheme = "carbon";
+  const resolvedNetwork = resolveCardNetwork(type || design, number);
+
+  // Mapear el diseño skeuomórfico exacto de la billetera según diseño explícito o red bancaria
+  let effectiveTheme: string = "carbon";
   if (design === "holo" || design === "holographic") {
     effectiveTheme = "holo";
   } else if (design === "navy") {
     effectiveTheme = "navy";
   } else if (design === "carbon" || design === "obsidian") {
     effectiveTheme = "carbon";
+  } else if (design === "cobalt") {
+    effectiveTheme = "cobalt";
+  } else if (design === "emerald") {
+    effectiveTheme = "emerald";
   } else {
-    // Si no se especifica, ciclar para que coincidan con la billetera (0: Carbon, 1: Holo, 2: Navy)
-    const cycle: SkeuomorphicCardTheme[] = ["carbon", "holo", "navy"];
-    effectiveTheme = cycle[index % 3];
+    // Si no se especifica, asociar con el tema oficial de la red bancaria
+    if (resolvedNetwork === "visa") effectiveTheme = "holo";
+    else if (resolvedNetwork === "mastercard") effectiveTheme = "carbon";
+    else if (resolvedNetwork === "discover") effectiveTheme = "navy";
+    else if (resolvedNetwork === "american-express") effectiveTheme = "cobalt";
+    else if (resolvedNetwork === "diners-club") effectiveTheme = "emerald";
+    else {
+      const cycle = ["carbon", "holo", "navy"];
+      effectiveTheme = cycle[index % 3];
+    }
   }
 
-  const themeConfig = SKEUOMORPHIC_THEMES[effectiveTheme];
+  const themeConfig = SKEUOMORPHIC_THEMES[effectiveTheme] || SKEUOMORPHIC_THEMES.carbon;
   const isHolo = effectiveTheme === "holo";
   const textColor = themeConfig.textColor;
   const subtextColor = themeConfig.subtextColor;
@@ -667,32 +703,13 @@ export function LuminaCardFolderItem({
           )}
         </div>
 
-        {/* Emblema de Red Bancaria (Mastercard / VISA) */}
+        {/* Emblema oficial de Red Bancaria desde thesvg.org */}
         <div className="flex items-center shrink-0">
-          {type === "mastercard" ? (
-            <div className="flex items-center -space-x-2 select-none">
-              <span className="w-5 h-5 rounded-full bg-[#EB001B] shadow-sm inline-block" />
-              <span className="w-5 h-5 rounded-full bg-[#F79E1B] shadow-sm inline-block opacity-95" />
-            </div>
-          ) : (
-            <span
-              className="font-['Plus_Jakarta_Sans','Inter',sans-serif] font-[800] text-lg sm:text-xl tracking-tight -skew-x-[11deg] select-none leading-none inline-block"
-              style={
-                isHolo
-                  ? {
-                      color: "#1c1c1e",
-                      textShadow:
-                        "-1.5px -0.5px 0px rgba(217, 130, 54, 0.85), 1.5px 0.5px 0px rgba(59, 130, 246, 0.5)",
-                    }
-                  : {
-                      color: "#ffffff",
-                      textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)",
-                    }
-              }
-            >
-              VISA
-            </span>
-          )}
+          <NetworkBrandLogo
+            network={resolvedNetwork}
+            compact
+            darkText={isHolo}
+          />
         </div>
       </div>
 
