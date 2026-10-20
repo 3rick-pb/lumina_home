@@ -108,8 +108,13 @@ function AuthCallbackContent() {
         const isLinkedFlow = searchParams.get("linked") === "true";
         const isMerged = Boolean(verifyData.isMerged);
 
+        const alreadyNotified = typeof window !== "undefined" && Boolean(
+          verifyData.mergedEmail &&
+          localStorage.getItem(`lumina_merged_notified_${verifyData.mergedEmail.toLowerCase().trim()}`) === "true"
+        );
+
         let finalRedirect = nextTarget;
-        if (isMerged) {
+        if (isMerged && !alreadyNotified) {
           try {
             sessionStorage.setItem(
               "lumina_merged_account_notification",

@@ -1764,42 +1764,34 @@ const handleConfirmDeleteNiche = async () => {
  </div>
 
         {/* ========================================================================= */}
-        {/* TAB VIEWS CONTAINER WITH SMOOTH DIAGONAL BOTTOM-LEFT TO TOP-RIGHT SWEEP */}
+        {/* TAB VIEWS CONTAINER WITH ULTRA-STABLE FLUID HORIZONTAL LEFT-TO-RIGHT GLIDE */}
         {/* ========================================================================= */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{
-              opacity: 0,
-              x: -20,
-              y: 28,
-              scale: 0.985,
-              clipPath: "polygon(0 100%, 0 100%, 0 100%, 0 100%)",
-            }}
-            animate={{
-              opacity: 1,
-              x: 0,
-              y: 0,
-              scale: 1,
-              clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
-            }}
-            exit={{
-              opacity: 0,
-              transition: { duration: 0.1, ease: "easeOut" },
-            }}
-            transition={{
-              duration: 0.4,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            style={{
-              transformOrigin: "bottom left",
-              willChange: "transform, opacity, clip-path",
-              WebkitBackfaceVisibility: "hidden",
-              backfaceVisibility: "hidden",
-              transform: "translateZ(0)",
-            }}
-            className="w-full flex-1 flex flex-col min-w-0"
-          >
+        <div className="w-full flex-1 flex flex-col min-w-0 overflow-x-hidden relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{
+                opacity: 0,
+                x: -18,
+              }}
+              animate={{
+                opacity: 1,
+                x: 0,
+              }}
+              exit={{
+                opacity: 0,
+                x: 18,
+                transition: { duration: 0.15, ease: "easeOut" },
+              }}
+              transition={{
+                duration: 0.28,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              style={{
+                willChange: "transform, opacity",
+              }}
+              className="w-full flex-1 flex flex-col min-w-0"
+            >
             {/* VIEW 1: OVERVIEW (MASTER BENTO GRID) */}
             {activeTab === "overview" && (
               <ProfileTabErrorBoundary tabName="Vista General">
@@ -1918,6 +1910,7 @@ const handleConfirmDeleteNiche = async () => {
             )}
           </motion.div>
         </AnimatePresence>
+      </div>
 
  </main>
 

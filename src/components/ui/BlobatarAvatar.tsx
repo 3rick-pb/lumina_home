@@ -13,6 +13,7 @@ export interface BlobatarAvatarProps {
   title?: string;
   onClick?: (e: React.MouseEvent) => void;
   showGlow?: boolean;
+  hardwareAccelerate?: boolean;
 }
 
 export const BlobatarAvatar = React.memo(function BlobatarAvatar({
@@ -25,6 +26,7 @@ export const BlobatarAvatar = React.memo(function BlobatarAvatar({
   title,
   onClick,
   showGlow = false,
+  hardwareAccelerate = false,
 }: BlobatarAvatarProps) {
   // Ensure a stable, non-empty string seed for deterministic avatar generation
   const seed = (name && name.trim().length > 0) ? name.trim() : "lumina-client";
@@ -57,8 +59,8 @@ export const BlobatarAvatar = React.memo(function BlobatarAvatar({
         width: size, 
         height: size,
         borderRadius,
-        transform: "translateZ(0)",
-        backfaceVisibility: "hidden",
+        isolation: "isolate",
+        ...(hardwareAccelerate ? { transform: "translateZ(0)", backfaceVisibility: "hidden" as const } : {}),
       }}
       className={`relative shrink-0 flex items-center justify-center select-none overflow-hidden transition-transform duration-200 [&>svg]:w-full [&>svg]:h-full [&>svg]:block [&>img]:w-full [&>img]:block ${
         onClick ? "cursor-pointer hover:scale-105 active:scale-95" : ""

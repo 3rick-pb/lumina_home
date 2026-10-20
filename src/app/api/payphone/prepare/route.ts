@@ -44,6 +44,7 @@ interface PrepareRequestBody {
     country?: string;
   };
   couponCode?: string;
+  hasPriorityShipping?: boolean;
   clientClaimedTotal?: number;
 }
 
@@ -184,7 +185,10 @@ export async function POST(request: Request) {
       shippingCost = 4.99;
     }
 
-    const verifiedTotal = Math.max(0, Number((calculatedSubtotal - discountAmount + shippingCost).toFixed(2)));
+    // Priority Shipping Upsell (+USD 2.15)
+    const priorityShippingCost = body.hasPriorityShipping ? 2.15 : 0;
+
+    const verifiedTotal = Math.max(0, Number((calculatedSubtotal - discountAmount + shippingCost + priorityShippingCost).toFixed(2)));
 
     // Anti-Tampering: Check if client manipulated total
     if (clientClaimedTotal !== undefined) {

@@ -316,7 +316,7 @@ export function Header() {
             <Link 
               href={isAuthenticated ? '/profile' : '/auth/login'}
               aria-label="Perfil" 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/45 dark:bg-[#18181b]/50 backdrop-blur-md border border-white/75 dark:border-white/20 text-gray-700 dark:text-gray-200 hover:bg-white/65 dark:hover:bg-[#18181b]/70 transition-all shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden active:scale-95 cursor-pointer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/60 dark:bg-[#18181b]/60 border border-white/75 dark:border-white/20 text-gray-700 dark:text-gray-200 hover:bg-white/80 dark:hover:bg-[#18181b]/80 transition-all shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden active:scale-95 cursor-pointer isolate"
               title={isAuthenticated ? `Mi Perfil (${user?.name || 'Cuenta'})` : "Iniciar Sesión"}
             >
               {isAuthenticated && user && showAvatarInNavbar ? (
@@ -326,6 +326,7 @@ export function Header() {
                   animate="hover"
                   background="circle"
                   role={user.role}
+                  hardwareAccelerate={false}
                 />
               ) : (
                 <User className="w-4 h-4" />

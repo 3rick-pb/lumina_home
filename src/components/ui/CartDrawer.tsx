@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -17,12 +17,14 @@ import {
 import {
   Wallet3D,
   UserSavedCard,
+  DEMO_UNIFIED_CARDS,
   mapPaymentCardToUserSavedCard,
   resolveCardNetwork,
   NetworkBrandLogo,
 } from "./UnifiedWalletSystem";
 import { 
  X, 
+ Zap,
  Plus, 
  ShoppingBag, 
  ArrowRight, 
@@ -274,32 +276,56 @@ export function CartDrawer() {
   const [cardHolder, setCardHolder] = useState(user?.name || "");
   const [payphoneAppPhone, setPayphoneAppPhone] = useState("");
 
-  // Auto-select default saved card if user has saved cards in their account
-  useEffect(() => {
-    if (cards && cards.length > 0 && selectedSavedCardId === "new" && !cardNumber) {
-      const defCard = cards.find((c) => c.isDefault) || cards[0];
-      if (defCard) {
-        const last4 = defCard.number.replace(/\D/g, "").slice(-4) || "4242";
-        const prefix = defCard.type === "mastercard" ? "5412 7500 8899" : "4532 8910 2233";
-        setSelectedSavedCardId(defCard.id);
-        setCardNumber(`${prefix} ${last4}`);
-        setCardExpiry(defCard.exp || "12/29");
-        setCardHolder(defCard.holder || user?.name || "CLIENTE LUMINA");
-        setCardCvv("");
-      }
-    }
-  }, [cards, selectedSavedCardId, cardNumber, user?.name]);
+  // Strategic Upsell: Prioridad de Envío del Paquete (+$2.15 USD)
+  const [hasPriorityShipping, setHasPriorityShipping] = useState(false);
+
+  // Dedicated ref for Step 2 items summary scroll container with authentic MacOSScrollbar
+  const summaryScrollRef = useRef<HTMLDivElement>(null);
 
   const [isMiniWalletOpen, setIsMiniWalletOpen] = useState(false);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [walletPopupPlatform, setWalletPopupPlatform] = useState<"apple" | "google" | null>(null);
 
+  // Map user saved cards or fallback to DEMO cards so wallet and auto-fill always work seamlessly
   const userWallet3DCards = useMemo<UserSavedCard[]>(() => {
     if (!cards || cards.length === 0) {
-      return [];
+      return DEMO_UNIFIED_CARDS;
     }
     return cards.map((c, index) => mapPaymentCardToUserSavedCard(c, index));
   }, [cards]);
+
+  // Auto-fill form with the default card or user selected card automatically; CVV is strictly kept empty
+  useEffect(() => {
+    if (userWallet3DCards && userWallet3DCards.length > 0 && selectedSavedCardId === "new" && !cardNumber) {
+      const defCard = userWallet3DCards.find((c) => c.isDefault) || userWallet3DCards[0];
+      if (defCard) {
+        setSelectedSavedCardId(defCard.id);
+        const last4 = defCard.last4 || "4242";
+        const isMaster = defCard.network === "mastercard";
+        const isAmex = defCard.network === "american-express";
+        const isDiners = defCard.network === "diners-club";
+        const isDiscover = defCard.network === "discover";
+        const prefix = isMaster
+          ? "5412 7500 8899"
+          : isAmex
+          ? "3782 822463 1"
+          : isDiners
+          ? "3654 1198 76"
+          : isDiscover
+          ? "6011 4902 8831"
+          : "4532 8910 2233";
+        const cleanFull = (defCard.fullNumber || "").replace(/\D/g, "");
+        const formattedNum = cleanFull.length >= 14
+          ? (cleanFull.match(/.{1,4}/g)?.join(" ") || cleanFull)
+          : `${prefix} ${last4}`;
+
+        setCardNumber(formattedNum);
+        setCardExpiry(defCard.expiry || "12/28");
+        setCardHolder(defCard.holderName || user?.name || "CLIENTE LUMINA");
+        setCardCvv(""); // Never auto-fill CVV
+      }
+    }
+  }, [userWallet3DCards, selectedSavedCardId, cardNumber, user?.name]);
 
   const handleSelectWallet3DCard = (card: UserSavedCard) => {
     setSelectedSavedCardId(card.id);
@@ -317,11 +343,16 @@ export function CartDrawer() {
       : isDiscover
       ? "6011 4902 8831"
       : "4532 8910 2233";
-    setCardNumber(card.fullNumber || `${prefix} ${last4}`);
+    const cleanFull = (card.fullNumber || "").replace(/\D/g, "");
+    const formattedNum = cleanFull.length >= 14
+      ? (cleanFull.match(/.{1,4}/g)?.join(" ") || cleanFull)
+      : `${prefix} ${last4}`;
+
+    setCardNumber(formattedNum);
     const savedCard = cards?.find((c) => c.id === card.id);
     setCardExpiry(savedCard?.exp || card.expiry || "12/28");
     setCardHolder(savedCard?.holder || card.holderName || user?.name || "CLIENTE LUMINA");
-    setCardCvv("");
+    setCardCvv(""); // Never auto-fill CVV
     playEnvelopeSound("open");
   };
 
@@ -335,14 +366,33 @@ export function CartDrawer() {
       setCardHolder(user?.name || "");
       return;
     }
+    const foundWallet = userWallet3DCards?.find((c) => c.id === cardId);
     const found = cards?.find((c) => c.id === cardId);
-    if (found) {
-      const last4 = found.number.replace(/\D/g, "").slice(-4) || "4242";
-      const prefix = found.type === "mastercard" ? "5412 7500 8899" : "4532 8910 2233";
-      setCardNumber(`${prefix} ${last4}`);
-      setCardExpiry(found.exp || "12/29");
-      setCardHolder(found.holder || user?.name || "CLIENTE LUMINA");
-      setCardCvv("");
+    if (found || foundWallet) {
+      const net = foundWallet?.network || found?.type || "visa";
+      const isMaster = net.includes("master");
+      const isAmex = net.includes("amex") || net.includes("american");
+      const isDiners = net.includes("diner");
+      const isDiscover = net.includes("discover");
+      const prefix = isMaster
+        ? "5412 7500 8899"
+        : isAmex
+        ? "3782 822463 1"
+        : isDiners
+        ? "3654 1198 76"
+        : isDiscover
+        ? "6011 4902 8831"
+        : "4532 8910 2233";
+      const last4 = (found?.number || foundWallet?.last4 || "4242").replace(/\D/g, "").slice(-4);
+      const cleanFull = ((found?.number || foundWallet?.fullNumber || "")).replace(/\D/g, "");
+      const formattedNum = cleanFull.length >= 14
+        ? (cleanFull.match(/.{1,4}/g)?.join(" ") || cleanFull)
+        : `${prefix} ${last4}`;
+
+      setCardNumber(formattedNum);
+      setCardExpiry(found?.exp || foundWallet?.expiry || "12/29");
+      setCardHolder(found?.holder || foundWallet?.holderName || user?.name || "CLIENTE LUMINA");
+      setCardCvv(""); // Never auto-fill CVV
     }
   };
 
@@ -658,7 +708,8 @@ export function CartDrawer() {
  const subtotal = getSubtotal();
  const discountAmount = getDiscountAmount();
  const shipping = getShipping();
- const finalTotal = getTotal();
+ const priorityShippingCost = hasPriorityShipping ? 2.15 : 0;
+ const finalTotal = getTotal() + priorityShippingCost;
 
  // Free shipping threshold progress ($100 target)
  const FREE_SHIPPING_TARGET = 100;
@@ -953,6 +1004,7 @@ export function CartDrawer() {
             postalCode: shippingAddr?.postalCode || addrPostal || "170150",
             country: "Ecuador"
           },
+          hasPriorityShipping,
           couponCode: couponCode || undefined,
           clientClaimedTotal: finalTotal
         })
@@ -978,6 +1030,7 @@ export function CartDrawer() {
               orderData: {
                 orderId,
                 total: data.verifiedTotal || finalTotal,
+                hasPriorityShipping,
                 items: [...items],
                 customerName,
                 customerEmail,
@@ -1833,13 +1886,13 @@ export function CartDrawer() {
               setCouponInput(e.target.value.toUpperCase());
               if (couponFeedback) setCouponFeedback(null);
             }}
-            placeholder="Código confidencial"
+            placeholder="Código de descuento"
             autoComplete="new-password"
             autoCorrect="off"
             autoCapitalize="characters"
             spellCheck={false}
             data-lpignore="true"
-            className="w-full bg-transparent text-xs font-mono font-medium tracking-wider outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 pr-7"
+            className="w-full bg-transparent text-xs font-mono font-medium outline-none text-gray-900 dark:text-gray-100 placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder-gray-400 pr-7"
           />
           {couponInput.length > 0 && (
             <button
@@ -1956,6 +2009,16 @@ export function CartDrawer() {
           )}
         </span>
       </div>
+
+      {hasPriorityShipping && (
+        <div className="flex items-center justify-between text-xs sm:text-sm text-amber-600 dark:text-amber-400 font-medium animate-fade-in">
+          <span className="flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-[#FF5900]" />
+            Prioridad de Despacho Inmediato
+          </span>
+          <span className="font-mono font-bold">+$2.15 USD</span>
+        </div>
+      )}
 
       <div className="pt-3.5 border-t border-gray-200 dark:border-white/15 flex items-baseline justify-between">
         <div>
@@ -2818,36 +2881,100 @@ export function CartDrawer() {
         </button>
       </div>
 
-      <div className="max-h-48 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-stone-700">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
-                <Image 
-                  src={item.product?.imageUrl || (item.product?.images && item.product.images[0]) || "/placeholder.jpg"} 
-                  alt={item.product?.title || "Producto"} 
-                  fill 
-                  className="object-cover" 
-                />
+      <div className="relative">
+        <div 
+          ref={summaryScrollRef}
+          onWheel={(e) => {
+            if (cartScrollRef.current) {
+              cartScrollRef.current.scrollTop += e.deltaY;
+            }
+          }}
+          className="max-h-48 overflow-y-auto space-y-2.5 pr-2.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+        >
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
+                  <Image 
+                    src={item.product?.imageUrl || (item.product?.images && item.product.images[0]) || "/placeholder.jpg"} 
+                    alt={item.product?.title || "Producto"} 
+                    fill 
+                    className="object-cover" 
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-[11.5px]">
+                    {item.isBundle ? (item.bundleName || "Pack Promocional") : item.product?.title}
+                  </p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                    Cant: {item.quantity} {item.color ? `· ${item.color}` : ""}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-[11.5px]">
-                  {item.isBundle ? (item.bundleName || "Pack Promocional") : item.product?.title}
-                </p>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
-                  Cant: {item.quantity} {item.color ? `· ${item.color}` : ""}
-                </p>
-              </div>
+              <span className="font-mono font-bold text-gray-900 dark:text-white shrink-0 text-xs">
+                ${((item.bundleCustomPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}
+              </span>
             </div>
-            <span className="font-mono font-bold text-gray-900 dark:text-white shrink-0 text-xs">
-              ${((item.bundleCustomPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
+        <MacOSScrollbar containerRef={summaryScrollRef} insetTop={2} insetBottom={2} />
       </div>
     </div>
 
-    {/* 2. High-Ticket Financial Ledger Summary */}
+    {/* 2. Strategic Upsell: Prioridad de Envío del Paquete (+$2.15 USD) */}
+    <div 
+      onClick={() => setHasPriorityShipping(!hasPriorityShipping)}
+      className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 select-none ${
+        hasPriorityShipping
+          ? "bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/40 shadow-[0_4px_16px_rgba(245,158,11,0.12)]"
+          : "bg-white dark:bg-[#18181b] border-gray-200 dark:border-white/10 hover:border-amber-500/30 shadow-xs"
+      }`}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+          hasPriorityShipping 
+            ? "bg-gradient-to-tr from-amber-500 to-[#FF6611] text-white shadow-xs" 
+            : "bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400"
+        }`}>
+          <Zap className="w-4 h-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-sans font-bold text-xs sm:text-[13px] text-gray-950 dark:text-white">
+              Prioridad de envío del paquete
+            </span>
+            <span className="font-mono font-extrabold text-[11px] text-[#FF5900] bg-[#FF5900]/10 px-1.5 py-0.5 rounded">
+              +$2.15 USD
+            </span>
+          </div>
+          <p className="text-[10.5px] text-gray-500 dark:text-gray-400 leading-tight truncate">
+            Tu pedido se procesa y empaca en el 1er turno para salida inmediata
+          </p>
+        </div>
+      </div>
+
+      {/* iOS-Style Toggle Switch */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={hasPriorityShipping}
+        onClick={(e) => {
+          e.stopPropagation();
+          setHasPriorityShipping(!hasPriorityShipping);
+        }}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+          hasPriorityShipping ? "bg-[#FF5900]" : "bg-gray-300 dark:bg-gray-700"
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+            hasPriorityShipping ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </div>
+
+    {/* 3. High-Ticket Financial Ledger Summary */}
     <div className="p-4 sm:p-5 rounded-[1.75rem] bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2.5">
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <span>Subtotal de selección</span>
@@ -2860,6 +2987,15 @@ export function CartDrawer() {
             Cupón {couponCode ? `(${couponCode})` : ""}
           </span>
           <span className="font-mono font-bold">-USD {getDiscountAmount().toFixed(2)}</span>
+        </div>
+      )}
+      {hasPriorityShipping && (
+        <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400 font-medium animate-fade-in">
+          <span className="flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-[#FF5900]" />
+            Prioridad de Envío del Paquete
+          </span>
+          <span className="font-mono font-bold">+$2.15 USD</span>
         </div>
       )}
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -2909,16 +3045,16 @@ export function CartDrawer() {
       </div>
     )}
 
-    {/* Action Button: Dynamic "Pagar con [Brand]" Button */}
+    {/* Action Button: Dynamic "Pagar con [Brand]" Button Restored to commit 6b82237 */}
     <div className="pt-2 flex flex-col items-center justify-center gap-2">
       <button
         type="button"
         onClick={handleTriggerPaymentWithAnimation}
-        disabled={!isCheckoutReady}
-        className={`relative w-full max-w-[270px] sm:max-w-[295px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 flex items-center justify-center select-none mx-auto ${
-          !isCheckoutReady
-            ? "bg-stone-300 dark:bg-stone-800 text-stone-500 dark:text-stone-400 opacity-60 cursor-not-allowed shadow-none"
-            : "bg-gradient-to-b from-[#FF6611] to-[#EA5200] hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] cursor-pointer"
+        disabled={isProcessing || !isPaymentFieldsValid || !hasShippingAddress}
+        className={`relative w-full max-w-[270px] sm:max-w-[295px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] flex items-center justify-center select-none mx-auto ${
+          !isPaymentFieldsValid || !hasShippingAddress
+            ? "opacity-55 cursor-not-allowed shadow-none"
+            : "hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] cursor-pointer"
         }`}
       >
         {isProcessing ? (

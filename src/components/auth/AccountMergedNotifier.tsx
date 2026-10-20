@@ -29,10 +29,8 @@ export function AccountMergedNotifier() {
     } catch {}
 
     if (isMergedParam || storedNotice) {
-      const email = storedNotice?.email || user?.email || "";
-      setMergedEmail(email);
-      setIsOpen(true);
-
+      const email = (storedNotice?.email || user?.email || "").toLowerCase().trim();
+      
       // Clean up sessionStorage
       try {
         sessionStorage.removeItem("lumina_merged_account_notification");
@@ -45,10 +43,30 @@ export function AccountMergedNotifier() {
         const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
         router.replace(newUrl, { scroll: false });
       }
+
+      // Check if this account has already seen the unification notice once
+      if (email) {
+        const storageKey = `lumina_merged_notified_${email}`;
+        try {
+          if (localStorage.getItem(storageKey) === "true") {
+            return;
+          }
+          // Mark as notified in localStorage
+          localStorage.setItem(storageKey, "true");
+        } catch {}
+      }
+
+      setMergedEmail(email);
+      setIsOpen(true);
     }
   }, [searchParams, pathname, router, user?.email]);
 
   const handleDismiss = () => {
+    if (mergedEmail) {
+      try {
+        localStorage.setItem(`lumina_merged_notified_${mergedEmail.toLowerCase().trim()}`, "true");
+      } catch {}
+    }
     setIsOpen(false);
   };
 

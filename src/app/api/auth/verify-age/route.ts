@@ -190,6 +190,10 @@ interface GooglePersonData {
       (existingUserProfile && !existingUserProfile.google_connected && existingUserProfile.created_at)
     );
 
+    // Only notify the user on the very first unification event, NOT on every login
+    const alreadyMergedInPast = Boolean(existingProfile?.account_merged);
+    const isNewMergeEvent = isMergedAccount && !alreadyMergedInPast;
+
     // If an existing profile belonged to an older user_id, migrate related data
     const oldUserId =
       existingUserProfile?.user_id && existingUserProfile.user_id !== user.id
@@ -276,7 +280,7 @@ interface GooglePersonData {
     return NextResponse.json({
       success: true,
       age: exactAge,
-      isMerged: isMergedAccount,
+      isMerged: isNewMergeEvent,
       mergedEmail: cleanEmail,
       user: {
         id: user.id,

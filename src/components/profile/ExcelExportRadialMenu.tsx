@@ -15,21 +15,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import MicrosoftExcel from "@thesvg/react/microsoft-excel";
-import dynamic from "next/dynamic";
-import { useMetalBend, BEND, PRESETS, setSharedPresetMode } from "metal-fx";
 import type * as XLSXTypes from "xlsx";
-
-const DynamicMetalFx = dynamic(
-  () => import("metal-fx").then((mod) => mod.MetalFx),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="relative shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#18181b] shadow-[0_4px_16px_rgba(0,0,0,0.4)] flex items-center justify-center">
-        <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 opacity-90" />
-      </div>
-    ),
-  }
-);
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
@@ -140,25 +126,6 @@ if (typeof window !== "undefined") {
   }
 }
 
-class MetalFxErrorBoundary extends React.Component<
-  { fallback: React.ReactNode; children: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error: unknown) {
-    console.warn("MetalFx fallback active on this device:", error);
-  }
-  render() {
-    if (this.state.hasError) return this.props.fallback;
-    return this.props.children;
-  }
-}
 
 /**
  * Authentic Liquid Metal Silver (Mercury / Plata Líquida) Ring:
@@ -325,95 +292,9 @@ function LiquidMetalSilverRing({
   );
 }
 
-function LiquidMetalButtonFallback({
-  isMobile,
-  isOpen,
-  onClick,
-}: {
-  isMobile: boolean;
-  isOpen: boolean;
-  onClick: () => void;
-}) {
-  const size = isMobile ? 44 : 48;
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "9999px",
-      }}
-      className="relative z-50 shrink-0 flex items-center justify-center bg-[#18181b] shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
-    >
-      <LiquidMetalSilverRing size={size} hasFinePointer={false} />
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label="Exportar datos a Excel"
-        title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-        className="relative z-30 h-full w-full rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
-      >
-        <motion.div
-          animate={{ 
-            rotate: isOpen ? 90 : 0, 
-            scale: isOpen ? 1.05 : 1 
-          }}
-          transition={{ type: "spring", stiffness: 380, damping: 20 }}
-          className="relative z-10 flex items-center justify-center select-none"
-        >
-          {isOpen ? (
-            <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-          ) : (
-            <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
-          )}
-        </motion.div>
-      </button>
-    </div>
-  );
-}
 
 interface ExcelExportRadialMenuProps {
   onOpenChange?: (open: boolean) => void;
-}
-
-/**
- * Isolated Metal Bend Controller:
- * Mounts ONLY after MetalFx's WebGL canvas is mounted in the DOM.
- * Seamlessly hooks useMetalBend immediately on the first visit to "Mi Perfil".
- * Controlled: Active with physical inertia when a cursor is present (desktop/mouse);
- * gracefully inactive on touchscreens/tablets/phones to prevent touch conflicts.
- */
-function MetalBendController({
-  targetRef,
-  enabled,
-}: {
-  targetRef: React.RefObject<HTMLDivElement | null>;
-  enabled: boolean;
-}) {
-  useMetalBend(
-    targetRef as React.RefObject<HTMLDivElement>,
-    useCallback(
-      () => ({
-        ...BEND,
-        enabled,
-        applyTo: "ring" as const,
-        strength: 0.6,
-        reach: 22,
-        blob: 10,
-        liquidBlob: 8,
-        maxDisp: 6,
-        liquid: 5.5,
-        gain: 0.6,
-        pressGain: 0.45,
-        pullGain: 0.42,
-        follow: 0.35,
-        smoothMs: 160,
-        fadeInMs: 180,
-        fadeOutMs: 280,
-      }),
-      [enabled]
-    )
-  );
-  return null;
 }
 
 export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuProps = {}) {
@@ -424,7 +305,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
   const [successExport, setSuccessExport] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
   const [hasFinePointer, setHasFinePointer] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(pointer: fine)").matches;
@@ -432,7 +312,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const metalRef = useRef<HTMLDivElement>(null);
 
   // Fine pointer (mouse) detection
   useEffect(() => {
@@ -442,61 +321,6 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
     const handler = (e: MediaQueryListEvent) => setHasFinePointer(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  // Immediate detection of MetalFx canvas mounting
-  useEffect(() => {
-    const check = () => {
-      if (metalRef.current?.querySelector("canvas.metal-fx-canvas")) {
-        setCanvasReady(true);
-        return true;
-      }
-      return false;
-    };
-
-    if (check()) return;
-
-    const timer = setInterval(() => {
-      if (check()) clearInterval(timer);
-    }, 20);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Continuous autonomous fluid orbit of the liquid metal shader:
-  // Dynamically rotates angle and rotation continuously across 360 degrees so that on mobile,
-  // tablets, and touch screens (where there is no cursor hover), the liquid metal caustics and waves
-  // visibly and smoothly orbit around the button at all times.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let rafId: number;
-    let angle = 0;
-    const baseSilver = PRESETS.silver.modes.dark;
-
-    const orbitLoop = () => {
-      // Rotate ~0.85 degrees per frame -> continuous ~7.0s full fluid orbit cycle
-      angle = (angle + 0.85) % 360;
-      try {
-        setSharedPresetMode({
-          ...baseSilver,
-          angle,
-          rotation: angle,
-          speed: 1.2,
-          repetition: 2.2,
-          softness: 0.08,
-          shiftRed: 0.25,
-          shiftBlue: 0.25,
-          distortion: 0.16,
-          contour: 0.45,
-          colorTint: "#ffffffee",
-          shaderOpacity: 1,
-        });
-      } catch {}
-      rafId = requestAnimationFrame(orbitLoop);
-    };
-
-    rafId = requestAnimationFrame(orbitLoop);
-    return () => cancelAnimationFrame(rafId);
   }, []);
 
   useEffect(() => {
@@ -1283,70 +1107,43 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
             className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-tr from-red-500/55 via-rose-400/45 to-orange-500/50 dark:from-cyan-500/25 dark:via-blue-500/20 dark:to-purple-500/25 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
           />
 
-          {canvasReady && (
-            <MetalBendController
-              targetRef={metalRef}
-              enabled={hasFinePointer}
+          <div
+            style={{
+              width: isMobile ? 44 : 48,
+              height: isMobile ? 44 : 48,
+              borderRadius: "9999px",
+            }}
+            className="relative z-50 shrink-0 flex items-center justify-center bg-[#18181b] shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+          >
+            {/* 100% Reliable, Instant 60/120 FPS Liquid Metal Silver Mercury Caustics Ring */}
+            <LiquidMetalSilverRing
+              size={isMobile ? 44 : 48}
+              hasFinePointer={hasFinePointer}
             />
-          )}
 
-          {mounted ? (
-            <MetalFxErrorBoundary
-              fallback={
-                <LiquidMetalButtonFallback
-                  isMobile={isMobile}
-                  isOpen={isOpen}
-                  onClick={handleToggleMenu}
-                />
-              }
-            >
-              <DynamicMetalFx
-                ref={metalRef}
-                preset="silver"
-                variant="circle"
-                theme="dark"
-                innerShadow
-                ringCssPx={isMobile ? 3.0 : 2.8}
-                shaderScale={1.3}
-                strength={1}
-                className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
-                style={{
-                  width: isMobile ? 44 : 48,
-                  height: isMobile ? 44 : 48,
-                  borderRadius: "9999px",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={handleToggleMenu}
-                  aria-label="Exportar datos a Excel"
-                  title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-                  className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
-                >
-                  <motion.div
-                    animate={{ 
-                      rotate: isOpen ? 90 : 0, 
-                      scale: isOpen ? 1.05 : 1 
-                    }}
-                    transition={{ type: "spring", stiffness: 380, damping: 20 }}
-                    className="relative z-10 flex items-center justify-center select-none"
-                  >
-                    {isOpen ? (
-                      <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-                    ) : (
-                      <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
-                    )}
-                  </motion.div>
-                </button>
-              </DynamicMetalFx>
-            </MetalFxErrorBoundary>
-          ) : (
-            <LiquidMetalButtonFallback
-              isMobile={isMobile}
-              isOpen={isOpen}
+            <button
+              type="button"
               onClick={handleToggleMenu}
-            />
-          )}
+              aria-label="Exportar datos a Excel"
+              title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+              className="relative z-30 h-full w-full rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
+            >
+              <motion.div
+                animate={{ 
+                  rotate: isOpen ? 90 : 0, 
+                  scale: isOpen ? 1.05 : 1 
+                }}
+                transition={{ type: "spring", stiffness: 380, damping: 20 }}
+                className="relative z-10 flex items-center justify-center select-none"
+              >
+                {isOpen ? (
+                  <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                ) : (
+                  <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
+                )}
+              </motion.div>
+            </button>
+          </div>
         </div>
       </div>
 
