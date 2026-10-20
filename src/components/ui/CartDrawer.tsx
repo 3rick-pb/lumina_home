@@ -10,7 +10,13 @@ import { LiquidGlass, LiquidGlassButton } from "./LiquidGlass";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
-import Wallet3D, { WalletCardItem } from "./Wallet3D";
+import {
+  Wallet3D,
+  UserSavedCard,
+  mapPaymentCardToUserSavedCard,
+  resolveCardNetwork,
+  NetworkBrandLogo,
+} from "./UnifiedWalletSystem";
 import { 
  X, 
  Plus, 
@@ -284,134 +290,33 @@ export function CartDrawer() {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [walletPopupPlatform, setWalletPopupPlatform] = useState<"apple" | "google" | null>(null);
 
-  const userWallet3DCards = useMemo<WalletCardItem[]>(() => {
+  const userWallet3DCards = useMemo<UserSavedCard[]>(() => {
     if (!cards || cards.length === 0) {
       return [];
     }
-
-    const GRADIENT_PALETTES = [
-      {
-        design: "carbon",
-        tier: "SIGNATURE BLACK",
-        background:
-          "radial-gradient(circle at 88% 30%, rgba(155, 44, 62, 0.35) 0%, transparent 55%), linear-gradient(180deg, #36373b 0%, #242528 100%)",
-        pocketGlow:
-          "radial-gradient(circle at 76% 78%, rgba(190, 24, 24, 0.90) 0%, rgba(125, 18, 18, 0.52) 44%, transparent 76%), linear-gradient(165deg, rgba(39,39,43,0.86) 0%, rgba(22,22,25,0.92) 52%, rgba(78,16,16,0.94) 100%)",
-        dotColor: "#ef4444",
-        darkText: false,
-        holographic: false,
-        balanceInt: "4,018",
-        balanceDec: ".00",
-      },
-      {
-        design: "holo",
-        tier: "HOLO PRISM",
-        background:
-          "linear-gradient(100deg, #e6e7e9 0%, #ededef 50%, #cfd6e3 100%)",
-        pocketGlow:
-          "radial-gradient(circle at 74% 76%, rgba(56, 152, 236, 0.78) 0%, rgba(234, 152, 62, 0.62) 44%, transparent 78%), linear-gradient(165deg, rgba(42,45,52,0.85) 0%, rgba(24,26,32,0.90) 52%, rgba(30,58,95,0.94) 100%)",
-        dotColor: "#38bdf8",
-        darkText: true,
-        holographic: true,
-        balanceInt: "2,640",
-        balanceDec: ".50",
-      },
-      {
-        design: "navy",
-        tier: "HORIZON GOLD",
-        background:
-          "radial-gradient(circle at 78% 42%, rgba(228, 156, 74, 0.95) 0%, rgba(168, 95, 42, 0.68) 38%, transparent 70%), linear-gradient(108deg, #1b2848 0%, #24355c 46%, #7c4d34 100%)",
-        pocketGlow:
-          "radial-gradient(circle at 76% 78%, rgba(224, 132, 44, 0.88) 0%, rgba(36, 68, 128, 0.62) 48%, transparent 78%), linear-gradient(165deg, rgba(34,38,48,0.86) 0%, rgba(22,24,30,0.92) 52%, rgba(78,44,16,0.94) 100%)",
-        dotColor: "#f59e0b",
-        darkText: false,
-        holographic: false,
-        balanceInt: "8,920",
-        balanceDec: ".00",
-      },
-      {
-        design: "emerald",
-        tier: "EMERALD RESERVE",
-        background:
-          "radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.55) 0%, transparent 60%), linear-gradient(135deg, #064e3b 0%, #022c22 65%, #0f172a 100%)",
-        pocketGlow:
-          "radial-gradient(circle at 75% 78%, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.55) 45%, transparent 76%)",
-        dotColor: "#10b981",
-        darkText: false,
-        holographic: false,
-        balanceInt: "5,340",
-        balanceDec: ".20",
-      },
-      {
-        design: "violet",
-        tier: "AETHER OBSIDIAN",
-        background:
-          "radial-gradient(circle at 82% 38%, rgba(168, 85, 247, 0.65) 0%, transparent 62%), linear-gradient(135deg, #3b0764 0%, #1e1b4b 60%, #0f172a 100%)",
-        pocketGlow:
-          "radial-gradient(circle at 75% 78%, rgba(168, 85, 247, 0.92) 0%, rgba(126, 34, 206, 0.55) 45%, transparent 76%)",
-        dotColor: "#a855f7",
-        darkText: false,
-        holographic: false,
-        balanceInt: "7,190",
-        balanceDec: ".80",
-      },
-    ];
-
-    return cards.map((c, index) => {
-      const designKey = (c.design || "").toLowerCase();
-      let matchedPalette = GRADIENT_PALETTES.find((p) => p.design === designKey);
-      
-      if (!matchedPalette) {
-        if (designKey.includes("holo")) {
-          matchedPalette = GRADIENT_PALETTES[1];
-        } else if (designKey.includes("navy") || designKey.includes("gold")) {
-          matchedPalette = GRADIENT_PALETTES[2];
-        } else if (designKey.includes("carbon") || designKey.includes("obsidian") || designKey.includes("black")) {
-          matchedPalette = GRADIENT_PALETTES[0];
-        } else {
-          matchedPalette = GRADIENT_PALETTES[index % GRADIENT_PALETTES.length];
-        }
-      }
-
-      const isCustomCssBg = 
-        typeof c.design === "string" && 
-        (c.design.startsWith("linear-gradient") || 
-         c.design.startsWith("radial-gradient") || 
-         c.design.startsWith("#") || 
-         c.design.startsWith("rgb"));
-
-      const realBackground = isCustomCssBg ? c.design! : matchedPalette.background;
-      const realGlow = isCustomCssBg ? c.design! : matchedPalette.pocketGlow;
-      const last4 = c.number.replace(/\D/g, "").slice(-4) || "4242";
-      const brandStr = c.type === "mastercard" ? "MASTERCARD" : "VISA";
-      const cardTitle = `${brandStr} ${matchedPalette.tier}`;
-
-      return {
-        id: c.id,
-        brand: brandStr,
-        tier: matchedPalette.tier,
-        name: c.holder ? `${brandStr} • ${c.holder}` : cardTitle,
-        last4: last4,
-        balanceInt: matchedPalette.balanceInt,
-        balanceDec: matchedPalette.balanceDec,
-        background: realBackground,
-        pocketGlow: realGlow,
-        dotColor: matchedPalette.dotColor,
-        darkText: isCustomCssBg ? false : matchedPalette.darkText,
-        holographic: isCustomCssBg ? false : matchedPalette.holographic,
-      };
-    });
+    return cards.map((c, index) => mapPaymentCardToUserSavedCard(c, index));
   }, [cards]);
 
-  const handleSelectWallet3DCard = (card: WalletCardItem) => {
+  const handleSelectWallet3DCard = (card: UserSavedCard) => {
     setSelectedSavedCardId(card.id);
     const last4 = card.last4 || "4242";
-    const isMaster = card.brand?.toLowerCase().includes("master");
-    const prefix = isMaster ? "5412 7500 8899" : "4532 8910 2233";
-    setCardNumber(`${prefix} ${last4}`);
+    const isMaster = card.network === "mastercard";
+    const isAmex = card.network === "american-express";
+    const isDiners = card.network === "diners-club";
+    const isDiscover = card.network === "discover";
+    const prefix = isMaster
+      ? "5412 7500 8899"
+      : isAmex
+      ? "3782 822463 1"
+      : isDiners
+      ? "3654 1198 76"
+      : isDiscover
+      ? "6011 4902 8831"
+      : "4532 8910 2233";
+    setCardNumber(card.fullNumber || `${prefix} ${last4}`);
     const savedCard = cards?.find((c) => c.id === card.id);
-    setCardExpiry(savedCard?.exp || "12/28");
-    setCardHolder(savedCard?.holder || user?.name || "CLIENTE LUMINA");
+    setCardExpiry(savedCard?.exp || card.expiry || "12/28");
+    setCardHolder(savedCard?.holder || card.holderName || user?.name || "CLIENTE LUMINA");
     setCardCvv("");
     playEnvelopeSound("open");
   };
@@ -441,10 +346,12 @@ export function CartDrawer() {
   const detectedCardBrand = useMemo(() => {
     if (selectedSavedCardId !== "new") {
       const foundWalletCard = userWallet3DCards?.find((c) => c.id === selectedSavedCardId);
-      if (foundWalletCard?.brand) {
-        const b = foundWalletCard.brand.toLowerCase();
-        if (b.includes("master")) return "mastercard";
-        if (b.includes("visa")) return "visa";
+      if (foundWalletCard?.network) {
+        if (foundWalletCard.network === "mastercard") return "mastercard";
+        if (foundWalletCard.network === "visa") return "visa";
+        if (foundWalletCard.network === "american-express") return "amex";
+        if (foundWalletCard.network === "diners-club") return "diners";
+        if (foundWalletCard.network === "discover") return "discover";
       }
       const found = cards?.find((c) => c.id === selectedSavedCardId);
       if (found?.type) {
@@ -466,7 +373,7 @@ export function CartDrawer() {
     if (digits.startsWith("30") || digits.startsWith("36") || digits.startsWith("38")) return "diners";
     if (digits.startsWith("6011") || digits.startsWith("65")) return "discover";
     return "visa";
-  }, [selectedSavedCardId, cards, cardNumber]);
+  }, [selectedSavedCardId, userWallet3DCards, cards, cardNumber]);
 
   // Field validation to prevent proceeding without valid card / payment & address data
   const isPaymentFieldsValid = useMemo(() => {
@@ -2678,13 +2585,9 @@ export function CartDrawer() {
                 />
               </div>
               <div className="shrink-0 flex items-center">
-                {cardNumber.replace(/\s/g, "").startsWith("4") ? (
-                  <div className="px-2 py-0.5 rounded-md bg-[#1a1f71]/10 dark:bg-white/10 flex items-center">
-                    <VisaLogo className="h-3.5" fill="#1a1f71" />
-                  </div>
-                ) : cardNumber.replace(/\s/g, "").startsWith("5") ? (
+                {cardNumber.replace(/\s/g, "").length >= 1 ? (
                   <div className="px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 flex items-center">
-                    <MastercardLogo className="h-4" />
+                    <NetworkBrandLogo network={resolveCardNetwork(undefined, cardNumber)} compact />
                   </div>
                 ) : (
                   <span className="text-[10px] font-mono uppercase text-gray-400 tracking-wider">

@@ -5,7 +5,7 @@ import { CreditCard, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUserStore, syncCardsToCloud } from "@/lib/userStore";
 import { CloudSyncStatus } from "../CloudSyncStatus";
-import { LuminaCardFolderItem } from "@/components/ui/CardFolder";
+import { AccountMethodCard, mapPaymentCardToUserSavedCard } from "@/components/ui/UnifiedWalletSystem";
 
 interface CardsTabProps {
   setShowCardModal: (show: boolean) => void;
@@ -86,17 +86,10 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
                   transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.4), ease: [0.16, 1, 0.3, 1] }}
                   className="w-full flex justify-center"
                 >
-                  <LuminaCardFolderItem
-                    id={c?.id || `card-${index}`}
-                    holder={c?.holder || "Titular Lumina"}
-                    number={c?.number || ""}
-                    exp={c?.exp || "12/28"}
-                    type={c?.type === "mastercard" ? "mastercard" : "visa"}
-                    design={c?.design}
-                    isDefault={Boolean(c?.isDefault)}
-                    index={index}
+                  <AccountMethodCard
+                    card={mapPaymentCardToUserSavedCard(c, index)}
                     onSetDefault={setDefaultCard}
-                    onRemove={removeCard}
+                    onDelete={removeCard}
                   />
                 </motion.div>
               ))}
