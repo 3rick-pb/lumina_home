@@ -10,7 +10,7 @@ import { LiquidGlass, LiquidGlassButton } from "./LiquidGlass";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
-import { SkeuomorphicWallet } from "./SkeuomorphicWallet";
+import Wallet3D, { WalletCard } from "./Wallet3D";
 import { 
  X, 
  Plus, 
@@ -284,6 +284,16 @@ export function CartDrawer() {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [walletPopupPlatform, setWalletPopupPlatform] = useState<"apple" | "google" | null>(null);
 
+  const handleSelectWallet3DCard = (card: WalletCard) => {
+    setSelectedSavedCardId(card.id);
+    const last4 = card.number.replace(/\D/g, "") || "8842";
+    setCardNumber(`4532 8910 2233 ${last4}`);
+    setCardExpiry(card.expiry || "09/28");
+    setCardHolder(user?.name || "CLIENTE LUMINA");
+    setCardCvv("");
+    playEnvelopeSound("open");
+  };
+
   const handleSelectSavedCard = (cardId: string) => {
     setSelectedSavedCardId(cardId);
     setIsMiniWalletOpen(false);
@@ -308,6 +318,9 @@ export function CartDrawer() {
   // Detect card brand for live button display (Visa, Mastercard, Amex, Diners, Discover)
   const detectedCardBrand = useMemo(() => {
     if (selectedSavedCardId !== "new") {
+      if (selectedSavedCardId === "crimson" || selectedSavedCardId === "holo" || selectedSavedCardId === "amber") {
+        return "visa";
+      }
       const found = cards?.find((c) => c.id === selectedSavedCardId);
       if (found?.type) {
         const t = found.type.toLowerCase();
@@ -2489,33 +2502,11 @@ export function CartDrawer() {
         {/* Method 1: Card Checkout (Default) */}
         {selectedPayMethod === "card" ? (
           <div className="pt-2 space-y-4 font-sans">
-            <SkeuomorphicWallet
-              amount={finalTotal}
-              currencySymbol="$"
-              label="Total a Pagar"
-              activeCardId={selectedSavedCardId}
-              onSelectCard={(cardId) => {
-                handleSelectSavedCard(cardId);
-                playEnvelopeSound("open");
-              }}
-              isOpen={isMiniWalletOpen}
-              onToggleOpen={(nextState) => {
-                playEnvelopeSound(nextState ? "open" : "close");
-                setIsMiniWalletOpen(nextState);
-              }}
-              cards={
-                cards && cards.length > 0
-                  ? cards.map((c, i) => ({
-                      id: c.id,
-                      number: c.number,
-                      holder: c.holder,
-                      exp: c.exp,
-                      type: c.type || "visa",
-                      design: c.design || (i === 0 ? "carbon" : i === 1 ? "holo" : "navy"),
-                    }))
-                  : undefined
-              }
-            />
+            <div className="w-full flex justify-center overflow-x-clip sm:overflow-visible py-1">
+              <div className="origin-top scale-[0.82] min-[390px]:scale-[0.92] min-[435px]:scale-100 -my-6 min-[435px]:my-0 transition-transform">
+                <Wallet3D onSelectCard={handleSelectWallet3DCard} />
+              </div>
+            </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
           <div className="flex items-center gap-2">
