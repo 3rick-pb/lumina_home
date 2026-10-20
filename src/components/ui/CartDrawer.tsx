@@ -292,11 +292,12 @@ export function CartDrawer() {
     const GRADIENT_PALETTES = [
       {
         design: "carbon",
-        tier: "Signature Black",
+        tier: "SIGNATURE BLACK",
         background:
-          "radial-gradient(circle at 92% 35%, rgba(165, 42, 62, 0.45) 0%, transparent 60%), linear-gradient(180deg, #35363a 0%, #252629 100%)",
-        glowColor:
-          "radial-gradient(circle at 75% 78%, rgba(190, 24, 24, 0.92) 0%, rgba(125, 18, 18, 0.55) 45%, transparent 76%)",
+          "radial-gradient(circle at 88% 30%, rgba(155, 44, 62, 0.35) 0%, transparent 55%), linear-gradient(180deg, #36373b 0%, #242528 100%)",
+        pocketGlow:
+          "radial-gradient(circle at 76% 78%, rgba(190, 24, 24, 0.90) 0%, rgba(125, 18, 18, 0.52) 44%, transparent 76%), linear-gradient(165deg, rgba(39,39,43,0.86) 0%, rgba(22,22,25,0.92) 52%, rgba(78,16,16,0.94) 100%)",
+        dotColor: "#ef4444",
         darkText: false,
         holographic: false,
         balanceInt: "4,018",
@@ -304,35 +305,38 @@ export function CartDrawer() {
       },
       {
         design: "holo",
-        tier: "Holo Edition",
+        tier: "HOLO PRISM",
         background:
-          "linear-gradient(100deg, #e5e6e8 0%, #ededef 50%, #cfd6e3 100%)",
-        glowColor:
-          "linear-gradient(125deg, rgba(245, 158, 11, 0.85) 0%, rgba(236, 72, 153, 0.75) 35%, rgba(59, 130, 246, 0.9) 70%, rgba(56, 189, 248, 0.8) 100%)",
+          "linear-gradient(100deg, #e6e7e9 0%, #ededef 50%, #cfd6e3 100%)",
+        pocketGlow:
+          "radial-gradient(circle at 74% 76%, rgba(56, 152, 236, 0.78) 0%, rgba(234, 152, 62, 0.62) 44%, transparent 78%), linear-gradient(165deg, rgba(42,45,52,0.85) 0%, rgba(24,26,32,0.90) 52%, rgba(30,58,95,0.94) 100%)",
+        dotColor: "#38bdf8",
         darkText: true,
         holographic: true,
-        balanceInt: "2,850",
+        balanceInt: "2,640",
         balanceDec: ".50",
       },
       {
         design: "navy",
-        tier: "Infinite Gold",
+        tier: "HORIZON GOLD",
         background:
-          "radial-gradient(circle at 78% 42%, rgba(226, 155, 75, 0.95) 0%, rgba(168, 95, 42, 0.65) 38%, transparent 70%), linear-gradient(108deg, #1b2848 0%, #24355c 46%, #7c4d34 100%)",
-        glowColor:
-          "radial-gradient(circle at 76% 78%, rgba(217, 119, 36, 0.88) 0%, rgba(146, 64, 14, 0.52) 44%, transparent 76%)",
+          "radial-gradient(circle at 78% 42%, rgba(228, 156, 74, 0.95) 0%, rgba(168, 95, 42, 0.68) 38%, transparent 70%), linear-gradient(108deg, #1b2848 0%, #24355c 46%, #7c4d34 100%)",
+        pocketGlow:
+          "radial-gradient(circle at 76% 78%, rgba(224, 132, 44, 0.88) 0%, rgba(36, 68, 128, 0.62) 48%, transparent 78%), linear-gradient(165deg, rgba(34,38,48,0.86) 0%, rgba(22,24,30,0.92) 52%, rgba(78,44,16,0.94) 100%)",
+        dotColor: "#f59e0b",
         darkText: false,
         holographic: false,
-        balanceInt: "6,420",
-        balanceDec: ".75",
+        balanceInt: "8,920",
+        balanceDec: ".00",
       },
       {
         design: "emerald",
-        tier: "Emerald Reserve",
+        tier: "EMERALD RESERVE",
         background:
           "radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.55) 0%, transparent 60%), linear-gradient(135deg, #064e3b 0%, #022c22 65%, #0f172a 100%)",
-        glowColor:
+        pocketGlow:
           "radial-gradient(circle at 75% 78%, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.55) 45%, transparent 76%)",
+        dotColor: "#10b981",
         darkText: false,
         holographic: false,
         balanceInt: "5,340",
@@ -340,14 +344,15 @@ export function CartDrawer() {
       },
       {
         design: "violet",
-        tier: "Aether Obsidian",
+        tier: "AETHER OBSIDIAN",
         background:
           "radial-gradient(circle at 82% 38%, rgba(168, 85, 247, 0.65) 0%, transparent 62%), linear-gradient(135deg, #3b0764 0%, #1e1b4b 60%, #0f172a 100%)",
-        glowColor:
+        pocketGlow:
           "radial-gradient(circle at 75% 78%, rgba(168, 85, 247, 0.92) 0%, rgba(126, 34, 206, 0.55) 45%, transparent 76%)",
+        dotColor: "#a855f7",
         darkText: false,
         holographic: false,
-        balanceInt: "8,190",
+        balanceInt: "7,190",
         balanceDec: ".80",
       },
     ];
@@ -376,20 +381,22 @@ export function CartDrawer() {
          c.design.startsWith("rgb"));
 
       const realBackground = isCustomCssBg ? c.design! : matchedPalette.background;
-      const realGlow = isCustomCssBg ? c.design! : matchedPalette.glowColor;
+      const realGlow = isCustomCssBg ? c.design! : matchedPalette.pocketGlow;
       const last4 = c.number.replace(/\D/g, "").slice(-4) || "4242";
       const brandStr = c.type === "mastercard" ? "MASTERCARD" : "VISA";
       const cardTitle = `${brandStr} ${matchedPalette.tier}`;
 
       return {
         id: c.id,
+        brand: brandStr,
+        tier: matchedPalette.tier,
         name: c.holder ? `${brandStr} • ${c.holder}` : cardTitle,
-        number: `•••• ${last4}`,
+        last4: last4,
         balanceInt: matchedPalette.balanceInt,
         balanceDec: matchedPalette.balanceDec,
-        brand: brandStr,
         background: realBackground,
-        glowColor: realGlow,
+        pocketGlow: realGlow,
+        dotColor: matchedPalette.dotColor,
         darkText: isCustomCssBg ? false : matchedPalette.darkText,
         holographic: isCustomCssBg ? false : matchedPalette.holographic,
       };
@@ -398,7 +405,7 @@ export function CartDrawer() {
 
   const handleSelectWallet3DCard = (card: WalletCardItem) => {
     setSelectedSavedCardId(card.id);
-    const last4 = card.number.replace(/\D/g, "").slice(-4) || "4242";
+    const last4 = card.last4 || "4242";
     const isMaster = card.brand?.toLowerCase().includes("master");
     const prefix = isMaster ? "5412 7500 8899" : "4532 8910 2233";
     setCardNumber(`${prefix} ${last4}`);
