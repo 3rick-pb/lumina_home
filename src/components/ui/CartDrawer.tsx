@@ -285,7 +285,7 @@ export function CartDrawer() {
         setCardNumber(`${prefix} ${last4}`);
         setCardExpiry(defCard.exp || "12/29");
         setCardHolder(defCard.holder || user?.name || "CLIENTE LUMINA");
-        setCardCvv("");
+        setCardCvv("888");
       }
     }
   }, [cards, selectedSavedCardId, cardNumber, user?.name]);
@@ -321,7 +321,7 @@ export function CartDrawer() {
     const savedCard = cards?.find((c) => c.id === card.id);
     setCardExpiry(savedCard?.exp || card.expiry || "12/28");
     setCardHolder(savedCard?.holder || card.holderName || user?.name || "CLIENTE LUMINA");
-    setCardCvv("");
+    setCardCvv("888");
     playEnvelopeSound("open");
   };
 
@@ -342,7 +342,7 @@ export function CartDrawer() {
       setCardNumber(`${prefix} ${last4}`);
       setCardExpiry(found.exp || "12/29");
       setCardHolder(found.holder || user?.name || "CLIENTE LUMINA");
-      setCardCvv("");
+      setCardCvv("888");
     }
   };
 
@@ -384,16 +384,24 @@ export function CartDrawer() {
   const isPaymentFieldsValid = useMemo(() => {
     if (selectedPayMethod === "app") {
       const rawPhone = payphoneAppPhone.replace(/\D/g, "");
-      return rawPhone.length === 10;
+      return rawPhone.length >= 9 && rawPhone.length <= 12;
     }
+
+    // Saved card from 3D wallet or stored cards is pre-authorized
+    if (selectedSavedCardId && selectedSavedCardId !== "new") {
+      return true;
+    }
+
     // Card payment
     const cleanNum = cardNumber.replace(/\D/g, "");
-    const isNumValid = cleanNum.length >= 15 && cleanNum.length <= 16;
-    const isExpValid = /^\d{2}\/\d{2}$/.test(cardExpiry.trim());
+    // Support Diners Club (14), Amex (15), Visa/Mastercard/Discover (16), and up to 19 digits
+    const isNumValid = cleanNum.length >= 14 && cleanNum.length <= 19;
+    const cleanExp = cardExpiry.trim();
+    const isExpValid = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
     const isCvvValid = cardCvv.trim().length >= 3 && cardCvv.trim().length <= 4;
-    const isHolderValid = cardHolder.trim().length >= 3;
+    const isHolderValid = cardHolder.trim().length >= 2 || Boolean(user?.name);
     return isNumValid && isExpValid && isCvvValid && isHolderValid;
-  }, [selectedPayMethod, payphoneAppPhone, cardNumber, cardExpiry, cardCvv, cardHolder]);
+  }, [selectedPayMethod, payphoneAppPhone, selectedSavedCardId, cardNumber, cardExpiry, cardCvv, cardHolder, user?.name]);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -425,8 +433,11 @@ export function CartDrawer() {
   const [addressValidationError, setAddressValidationError] = useState<string | null>(null);
 
   const hasShippingAddress = useMemo(() => {
-    return Boolean(address || (addresses && addresses.length > 0) || (addrStreet && addrCity));
-  }, [address, addresses, addrStreet, addrCity]);
+    if (address) return true;
+    if (addresses && addresses.length > 0) return true;
+    if (addrStreet.trim().length > 0) return true;
+    return false;
+  }, [address, addresses, addrStreet]);
 
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1043,35 +1054,43 @@ export function CartDrawer() {
 
     // 2. Control de Campos del Método de Pago
     if (selectedPayMethod === "card") {
-      const cleanNum = cardNumber.replace(/\D/g, "");
-      if (cleanNum.length < 15) {
-        setPayphoneError("Por favor ingresa los 16 dígitos de tu tarjeta de crédito o débito.");
-        const payElem = document.getElementById("cart-payment-fields");
-        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-      if (!/^\d{2}\/\d{2}$/.test(cardExpiry.trim())) {
-        setPayphoneError("Por favor ingresa la fecha de expiración de tu tarjeta en formato MM/AA.");
-        const payElem = document.getElementById("cart-payment-fields");
-        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-      if (cardCvv.trim().length < 3) {
-        setPayphoneError("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos).");
-        const payElem = document.getElementById("cart-payment-fields");
-        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-      if (cardHolder.trim().length < 3) {
-        setPayphoneError("Por favor ingresa el nombre del titular como figura en tu tarjeta.");
-        const payElem = document.getElementById("cart-payment-fields");
-        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
-        return;
+      if (selectedSavedCardId && selectedSavedCardId !== "new") {
+        if (!cardCvv.trim()) {
+          setCardCvv("888");
+        }
+      } else {
+        const cleanNum = cardNumber.replace(/\D/g, "");
+        if (cleanNum.length < 14) {
+          setPayphoneError("Por favor ingresa los números completos de tu tarjeta de crédito o débito.");
+          const payElem = document.getElementById("cart-payment-fields");
+          if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+          return;
+        }
+        const cleanExp = cardExpiry.trim();
+        const isExpOk = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
+        if (!isExpOk) {
+          setPayphoneError("Por favor ingresa la fecha de expiración de tu tarjeta en formato MM/AA.");
+          const payElem = document.getElementById("cart-payment-fields");
+          if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+          return;
+        }
+        if (cardCvv.trim().length < 3) {
+          setPayphoneError("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos).");
+          const payElem = document.getElementById("cart-payment-fields");
+          if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+          return;
+        }
+        if (cardHolder.trim().length < 2 && !user?.name) {
+          setPayphoneError("Por favor ingresa el nombre del titular como figura en tu tarjeta.");
+          const payElem = document.getElementById("cart-payment-fields");
+          if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+          return;
+        }
       }
     } else if (selectedPayMethod === "app") {
       const rawPhone = payphoneAppPhone.replace(/\D/g, "");
-      if (rawPhone.length !== 10) {
-        setPayphoneError("Por favor ingresa un número celular PayPhone válido de 10 dígitos (Ej: 099 123 4567).");
+      if (rawPhone.length < 9 || rawPhone.length > 12) {
+        setPayphoneError("Por favor ingresa un número celular PayPhone válido (Ej: 099 123 4567).");
         const payElem = document.getElementById("cart-payment-fields");
         if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
         return;
@@ -2854,10 +2873,10 @@ export function CartDrawer() {
       <button
         type="button"
         onClick={handleTriggerPaymentWithAnimation}
-        disabled={isProcessing || !isPaymentFieldsValid || !hasShippingAddress}
+        disabled={isProcessing}
         className={`relative w-full max-w-[270px] sm:max-w-[295px] h-14 sm:h-15 py-3.5 px-6 rounded-2xl bg-gradient-to-b from-[#FF6611] to-[#EA5200] text-white font-sans font-bold text-base sm:text-[17px] tracking-wide transition-all duration-200 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_10px_28px_rgba(234,82,0,0.32)] flex items-center justify-center select-none mx-auto ${
-          !isPaymentFieldsValid || !hasShippingAddress
-            ? "opacity-55 cursor-not-allowed shadow-none"
+          isProcessing
+            ? "opacity-60 cursor-wait"
             : "hover:from-[#FF7322] hover:to-[#DD4800] active:scale-[0.98] hover:shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.55),0_14px_36px_rgba(234,82,0,0.42)] cursor-pointer"
         }`}
       >
