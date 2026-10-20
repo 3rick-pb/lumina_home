@@ -336,13 +336,15 @@ export function AddCardAnimatedModal({
                       <motion.div
                         animate={{ background: theme.background }}
                         transition={{ duration: 0.45 }}
-                        className="absolute inset-0 w-full h-full rounded-[1.35rem] p-5 sm:p-6 flex flex-col justify-between overflow-hidden"
+                        className="absolute inset-0 w-full h-full rounded-[1.35rem] p-5 sm:p-6 flex flex-col justify-between overflow-hidden select-none"
                         style={{
                           backfaceVisibility: "hidden",
                           WebkitBackfaceVisibility: "hidden",
                           color: "#ffffff",
                           border: "1.5px solid rgba(255, 255, 255, 0.18)",
                           boxShadow: "0 -4px 18px rgba(0, 0, 0, 0.45)",
+                          userSelect: "none",
+                          WebkitUserSelect: "none",
                         }}
                       >
                         {/* Textura de puntos 3D sobresalientes con relieve físico en las 5 redes */}
@@ -352,59 +354,59 @@ export function AddCardAnimatedModal({
                         />
 
                         {/* Fila Superior: Chip Plata + Wifi a la izquierda | Logo a la derecha */}
-                        <div className="relative z-10 flex items-center justify-between">
+                        <div className="relative z-10 flex items-center justify-between select-none">
                           <div className="flex items-center gap-2.5 shrink-0">
                             <SilverEmvChip />
                             <Wifi className="w-4 h-4 rotate-90 text-slate-200/90 shrink-0" />
                           </div>
 
-                          <div className="h-[30px] min-w-[75px] flex items-center justify-end shrink-0">
+                          <div className="h-[30px] min-w-[75px] flex items-center justify-end shrink-0 select-none">
                             <NetworkBrandLogo network={detectedNetwork} />
                           </div>
                         </div>
 
                         {/* Fila Media: Número de 16 dígitos en grupos */}
                         <div
-                          className={`relative z-10 my-auto py-1.5 px-2.5 -mx-2.5 rounded-xl transition-all duration-300 ${
+                          className={`relative z-10 my-auto py-1.5 px-2.5 -mx-2.5 rounded-xl transition-all duration-300 select-none ${
                             focusedField === "number"
                               ? "bg-white/10 ring-1 ring-white/40 shadow-[0_0_16px_rgba(255,255,255,0.12)]"
                               : ""
                           }`}
                         >
-                          <div className="flex items-center justify-between font-mono text-lg sm:text-[20px] tracking-[0.16em] font-bold drop-shadow-md text-white">
+                          <div className="flex items-center justify-between font-mono text-lg sm:text-[20px] tracking-[0.16em] font-bold drop-shadow-md text-white select-none">
                             {formattedGroups.map((grp, gIdx) => (
-                              <span key={gIdx} className="inline-flex">
+                              <span key={gIdx} className="inline-flex select-none">
                                 {grp}
                               </span>
                             ))}
                           </div>
                         </div>
 
-                        {/* Fila Inferior: Titular Verificado a la izquierda | Fecha de expiración a la derecha */}
-                        <div className="relative z-10 flex items-end justify-between gap-2 border-t border-white/15 pt-2">
+                        {/* Fila Inferior: Titular a la izquierda | Fecha de expiración a la derecha */}
+                        <div className="relative z-10 flex items-end justify-between gap-2 border-t border-white/15 pt-2 select-none">
                           <div
-                            className={`space-y-0.5 px-2 py-1 -mx-2 -my-1 rounded-lg transition-all duration-300 min-w-0 flex-1 ${
+                            className={`space-y-0.5 px-2 py-1 -mx-2 -my-1 rounded-lg transition-all duration-300 min-w-0 flex-1 select-none ${
                               focusedField === "holder" ? "bg-white/10 ring-1 ring-white/35" : ""
                             }`}
                           >
                             <div className="flex items-center gap-1 text-[8.5px] uppercase tracking-wider font-semibold text-slate-300">
                               <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                              <span>Titular Verificado</span>
+                              <span>TITULAR</span>
                             </div>
-                            <p className="text-xs font-bold tracking-wider uppercase truncate drop-shadow-xs text-white mt-0.5">
+                            <p className="text-xs font-bold tracking-wider uppercase truncate drop-shadow-xs text-white mt-0.5 select-none">
                               {cardHolder.trim() || defaultHolder}
                             </p>
                           </div>
 
                           <div
-                            className={`space-y-0.5 text-right px-2 py-1 -my-1 rounded-lg transition-all duration-300 shrink-0 ${
+                            className={`space-y-0.5 text-right px-2 py-1 -my-1 rounded-lg transition-all duration-300 shrink-0 select-none ${
                               focusedField === "exp" ? "bg-white/10 ring-1 ring-white/35" : ""
                             }`}
                           >
-                            <span className="text-[8.5px] uppercase tracking-widest block font-semibold text-slate-300">
+                            <span className="text-[8.5px] uppercase tracking-widest block font-semibold text-slate-300 select-none">
                               Expira
                             </span>
-                            <p className="font-mono text-xs font-bold tracking-widest drop-shadow-xs text-white">
+                            <p className="font-mono text-xs font-bold tracking-widest drop-shadow-xs text-white select-none">
                               {cardExp || "MM/AA"}
                             </p>
                           </div>
@@ -415,11 +417,13 @@ export function AddCardAnimatedModal({
                       <motion.div
                         animate={{ background: theme.background }}
                         transition={{ duration: 0.45 }}
-                        className="absolute inset-0 w-full h-full rounded-[1.35rem] pt-4 pb-5 flex flex-col justify-between overflow-hidden border border-white/20 text-white"
+                        className="absolute inset-0 w-full h-full rounded-[1.35rem] pt-4 pb-5 flex flex-col justify-between overflow-hidden border border-white/20 text-white select-none"
                         style={{
                           transform: "rotateY(180deg)",
                           backfaceVisibility: "hidden",
                           WebkitBackfaceVisibility: "hidden",
+                          userSelect: "none",
+                          WebkitUserSelect: "none",
                         }}
                       >
                         <div className="w-full h-10 bg-black/90 shadow-inner" />
@@ -654,7 +658,7 @@ export function AddCardAnimatedModal({
                 className="flex flex-col items-center justify-center py-8 text-center space-y-6"
               >
                 <div
-                  className="w-full max-w-[340px] aspect-[1.586/1] rounded-[1.35rem] shadow-2xl p-5 flex flex-col justify-between border border-white/20 text-white relative overflow-hidden"
+                  className="w-full max-w-[340px] aspect-[1.586/1] rounded-[1.35rem] shadow-2xl p-5 flex flex-col justify-between border border-white/20 text-white relative overflow-hidden select-none"
                   style={{ background: theme.background }}
                 >
                   <div
@@ -662,31 +666,31 @@ export function AddCardAnimatedModal({
                     style={CARD_DOTS_TEXTURE_STYLE}
                   />
 
-                  <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center justify-between relative z-10 select-none">
                     <div className="flex items-center gap-2">
                       <SilverEmvChip small />
                       <Wifi className="w-3.5 h-3.5 rotate-90 text-slate-200/90 shrink-0" />
                     </div>
                     <NetworkBrandLogo network={detectedNetwork} compact />
                   </div>
-                  <div className="font-mono text-lg tracking-[0.2em] text-white font-bold relative z-10">
+                  <div className="font-mono text-lg tracking-[0.2em] text-white font-bold relative z-10 select-none">
                     {cardNumber || "•••• •••• •••• ••••"}
                   </div>
-                  <div className="flex items-end justify-between relative z-10 border-t border-white/15 pt-2">
-                    <div className="text-left">
+                  <div className="flex items-end justify-between relative z-10 border-t border-white/15 pt-2 select-none">
+                    <div className="text-left select-none">
                       <div className="flex items-center gap-1 text-[8px] uppercase tracking-wider text-slate-300 font-semibold">
                         <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                        <span>Titular Verificado</span>
+                        <span>TITULAR</span>
                       </div>
-                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px] mt-0.5">
+                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px] mt-0.5 select-none">
                         {cardHolder || defaultHolder}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[8px] uppercase tracking-wider text-slate-300 block font-semibold">
+                    <div className="text-right select-none">
+                      <span className="text-[8px] uppercase tracking-wider text-slate-300 block font-semibold select-none">
                         Expira
                       </span>
-                      <p className="font-mono text-xs font-bold text-white">
+                      <p className="font-mono text-xs font-bold text-white select-none">
                         {cardExp || "MM/AA"}
                       </p>
                     </div>
@@ -715,7 +719,7 @@ export function AddCardAnimatedModal({
                 className="flex flex-col items-center justify-center py-8 text-center space-y-6"
               >
                 <div
-                  className="w-full max-w-[340px] aspect-[1.586/1] rounded-[1.35rem] shadow-2xl p-5 flex flex-col justify-between border border-emerald-500/40 text-white relative overflow-hidden ring-4 ring-emerald-500/20"
+                  className="w-full max-w-[340px] aspect-[1.586/1] rounded-[1.35rem] shadow-2xl p-5 flex flex-col justify-between border border-emerald-500/40 text-white relative overflow-hidden ring-4 ring-emerald-500/20 select-none"
                   style={{ background: theme.background }}
                 >
                   <div
@@ -723,31 +727,31 @@ export function AddCardAnimatedModal({
                     style={CARD_DOTS_TEXTURE_STYLE}
                   />
 
-                  <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center justify-between relative z-10 select-none">
                     <div className="flex items-center gap-2">
                       <SilverEmvChip small />
                       <Wifi className="w-3.5 h-3.5 rotate-90 text-slate-200/90 shrink-0" />
                     </div>
                     <NetworkBrandLogo network={detectedNetwork} compact />
                   </div>
-                  <div className="font-mono text-lg tracking-[0.2em] text-white font-bold relative z-10">
+                  <div className="font-mono text-lg tracking-[0.2em] text-white font-bold relative z-10 select-none">
                     •••• •••• •••• {rawDigits.slice(-4) || "8888"}
                   </div>
-                  <div className="flex items-end justify-between relative z-10 border-t border-white/15 pt-2">
-                    <div className="text-left">
+                  <div className="flex items-end justify-between relative z-10 border-t border-white/15 pt-2 select-none">
+                    <div className="text-left select-none">
                       <div className="flex items-center gap-1 text-[8px] uppercase tracking-wider text-slate-300 font-semibold">
                         <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                        <span>Titular Verificado</span>
+                        <span>TITULAR</span>
                       </div>
-                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px] mt-0.5">
+                      <p className="text-xs font-bold uppercase text-white truncate max-w-[170px] mt-0.5 select-none">
                         {cardHolder || defaultHolder}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[8px] uppercase tracking-wider text-slate-300 block font-semibold">
+                    <div className="text-right select-none">
+                      <span className="text-[8px] uppercase tracking-wider text-slate-300 block font-semibold select-none">
                         Expira
                       </span>
-                      <p className="font-mono text-xs font-bold text-white">
+                      <p className="font-mono text-xs font-bold text-white select-none">
                         {cardExp || "MM/AA"}
                       </p>
                     </div>

@@ -164,7 +164,7 @@ export default function Wallet3D({
               return (
                 <div
                   key={card.id}
-                  className={`w1-card ${slotClass} ${
+                  className={`w1-card ${slotClass} select-none ${
                     card.darkText ? "is-light-card" : ""
                   } ${isSelected ? "is-active" : ""}`}
                   style={{
@@ -186,7 +186,7 @@ export default function Wallet3D({
                   />
 
                   {/* Fila Superior: Chip Plata + Wifi a la izquierda | Logo a la derecha */}
-                  <div className="w1-card-top">
+                  <div className="w1-card-top select-none">
                     <div className="flex items-center gap-2">
                       <SilverEmvChip small />
                       <svg className="w-3.5 h-3.5 rotate-90 text-slate-200/90 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -196,7 +196,7 @@ export default function Wallet3D({
                       </svg>
                     </div>
 
-                    <div className="w1-brand-logo-wrap">
+                    <div className="w1-brand-logo-wrap select-none">
                       <NetworkBrandLogo
                         network={resolveCardNetwork(card.brand, card.last4)}
                         compact
@@ -205,14 +205,14 @@ export default function Wallet3D({
                     </div>
                   </div>
 
-                  {/* Fila Media: Número y Titular verificado */}
-                  <div className="w1-card-mid">
-                    <span className="w1-masked-num">
+                  {/* Fila Media: Número y Titular */}
+                  <div className="w1-card-mid select-none">
+                    <span className="w1-masked-num select-none">
                       •••• &nbsp;•••• &nbsp;•••• &nbsp;
                       <strong>{card.last4}</strong>
                     </span>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-300 font-semibold mt-1">
-                      <span className="text-emerald-400 font-bold">✓</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-300 font-semibold mt-1 select-none">
+                      <span className="text-[8px] uppercase tracking-wider text-slate-400 font-medium">TITULAR</span>
                       <span className="truncate">{card.name}</span>
                     </div>
                   </div>
@@ -471,6 +471,8 @@ export default function Wallet3D({
             box-shadow 0.3s ease;
           will-change: top, transform;
           overflow: hidden;
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         .w1-card.is-light-card {

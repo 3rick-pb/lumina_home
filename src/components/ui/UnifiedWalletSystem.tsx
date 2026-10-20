@@ -47,7 +47,7 @@ export interface NetworkThemeConfig {
  */
 export const CARD_DOTS_TEXTURE_STYLE: React.CSSProperties = {
   backgroundImage:
-    "radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.16) 1.2px, transparent 1.2px), radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.65) 1.2px, transparent 1.2px)",
+    "radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 0.95px, transparent 0.95px), radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.28) 0.95px, transparent 0.95px)",
   backgroundSize: "6px 6px",
 };
 
@@ -454,20 +454,21 @@ export function NetworkBrandLogo({
     );
   }
 
-  // Por defecto: VISA oficial de thesvg.org normalizada en tamaño óptico
+  // Por defecto: VISA oficial de thesvg.org calibrada un poco más pequeña ópticamente
+  const visaHeight = compact ? 16 : 19.5;
   return (
     <div
-      className="u-brand-logo-wrap"
+      className="u-brand-logo-wrap select-none"
       title="Visa (thesvg.org/icon/visa)"
       data-svg-src={theme.theSvgCdnUrl}
     >
       <svg
-        height={logoHeight}
+        height={visaHeight}
         viewBox="0 8.2 24 7.6"
         fill="#FFFFFF"
         role="img"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-auto shrink-0 drop-shadow-sm"
+        className="w-auto shrink-0 drop-shadow-sm select-none"
       >
         <title>Visa</title>
         <path d="M9.112 8.262L5.97 15.758H3.92L2.374 9.775c-.094-.368-.175-.503-.461-.658C1.447 8.864.677 8.627 0 8.479l.046-.217h3.3a.904.904 0 01.894.764l.817 4.338 2.018-5.102zm8.033 5.049c.008-1.979-2.736-2.088-2.717-2.972.006-.269.262-.555.822-.628a3.66 3.66 0 011.913.336l.34-1.59a5.207 5.207 0 00-1.814-.333c-1.917 0-3.266 1.02-3.278 2.479-.012 1.079.963 1.68 1.698 2.04.756.367 1.01.603 1.006.931-.005.504-.602.725-1.16.734-.975.015-1.54-.263-1.992-.473l-.351 1.642c.453.208 1.289.39 2.156.398 2.037 0 3.37-1.006 3.377-2.564m5.061 2.447H24l-1.565-7.496h-1.656a.883.883 0 00-.826.55l-2.909 6.946h2.036l.405-1.12h2.488zm-2.163-2.656l1.02-2.815.588 2.815zm-8.16-4.84l-1.603 7.496H8.34l1.605-7.496z" />
@@ -515,7 +516,7 @@ export function AccountMethodCard({
 
   return (
     <div
-      className={`u-MethodCard ${theme.darkText ? "is-light-skin" : ""}`}
+      className={`u-MethodCard select-none ${theme.darkText ? "is-light-skin" : ""}`}
       style={{ background: theme.background }}
     >
       <UnifiedWalletStyles />
@@ -566,7 +567,7 @@ export function AccountMethodCard({
 
       {/* Cuerpo Medio: Número de tarjeta (Sin subtítulos ni tiers) */}
       <div className="u-mc-body">
-        <div className="u-mc-number">
+        <div className="u-mc-number select-none">
           {revealed
             ? card.fullNumber || `•••• •••• •••• ${card.last4}`
             : `••••  ••••  ••••  ${card.last4}`}
@@ -574,7 +575,7 @@ export function AccountMethodCard({
       </div>
 
       {/* Faldón Blanco Inferior (Normal) */}
-      <div className="u-mc-white-slip">
+      <div className="u-mc-white-slip select-none">
         <div className="u-slip-meta-row">
           <div className="u-slip-col">
             <span className="u-slip-lbl">EXPIRA</span>
@@ -593,9 +594,9 @@ export function AccountMethodCard({
       </div>
 
       {/* Overlay de Acciones en Hover */}
-      <div className="u-mc-hover-actions">
+      <div className="u-mc-hover-actions select-none">
         <div className="u-hover-verified">
-          <span className="u-verified-tag">TITULAR VERIFICADO</span>
+          <span className="u-verified-tag">TITULAR</span>
           <span className="u-verified-name">{card.holderName}</span>
         </div>
 
@@ -773,14 +774,14 @@ export function Wallet3D({
                       </div>
                     </div>
 
-                    {/* Fila Media: Número y Titular verificado */}
-                    <div className="w1-card-mid">
-                      <span className="w1-masked-num">
+                    {/* Fila Media: Número y Titular */}
+                    <div className="w1-card-mid select-none">
+                      <span className="w1-masked-num select-none">
                         •••• &nbsp;•••• &nbsp;•••• &nbsp;
                         <strong>{card.last4}</strong>
                       </span>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-300 font-semibold mt-1">
-                        <span className="text-emerald-400 font-bold">✓</span>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-300 font-semibold mt-1 select-none">
+                        <span className="text-[8px] uppercase tracking-wider text-slate-400 font-medium">TITULAR</span>
                         <span className="truncate">{card.holderName}</span>
                       </div>
                     </div>
@@ -1137,6 +1138,8 @@ export function UnifiedWalletStyles() {
         justify-content: space-between;
         box-sizing: border-box;
         transition: transform 0.28s ease, box-shadow 0.28s ease;
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .u-MethodCard:hover {
@@ -1511,6 +1514,8 @@ export function UnifiedWalletStyles() {
           box-shadow 0.3s ease;
         will-change: top, transform;
         overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .w1-card.is-light-card {

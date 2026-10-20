@@ -649,8 +649,8 @@ export function LuminaCardFolderItem({
       </div>
 
       {/* Cuerpo central: Número de tarjeta (Sin subtítulos ni tiers) */}
-      <div className="relative z-10 flex flex-col justify-center my-auto py-2">
-        <p className="font-mono text-sm sm:text-base tracking-[0.24em] font-semibold text-white drop-shadow-sm select-all">
+      <div className="relative z-10 flex flex-col justify-center my-auto py-2 select-none">
+        <p className="font-mono text-sm sm:text-base tracking-[0.24em] font-semibold text-white drop-shadow-sm select-none">
           <DigitSwap
             value={detailsVisible ? `•••• •••• •••• ${lastFour}` : `•••• •••• •••• ${lastFour}`}
             animationKey={detailsVisible ? "revealed" : "masked"}
@@ -658,14 +658,14 @@ export function LuminaCardFolderItem({
         </p>
       </div>
 
-      {/* Pie de la tarjeta: Titular verificado a la izquierda | Botón de Hacer principal y Eliminar a la derecha */}
-      <div className="relative z-10 flex items-center justify-between pt-2.5 border-t border-white/15 text-[10px] gap-2">
+      {/* Pie de la tarjeta: Titular a la izquierda | Botón de Hacer principal y Eliminar a la derecha */}
+      <div className="relative z-10 flex items-center justify-between pt-2.5 border-t border-white/15 text-[10px] gap-2 select-none">
         <div className="min-w-0 flex-1 truncate pr-2">
           <div className="flex items-center gap-1 text-[8.5px] uppercase font-semibold tracking-wider text-slate-300">
             <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-            <span>Titular Verificado</span>
+            <span>TITULAR</span>
           </div>
-          <span className="font-bold truncate block text-xs sm:text-[13px] text-white tracking-wide mt-0.5">
+          <span className="font-bold truncate block text-xs sm:text-[13px] text-white tracking-wide mt-0.5 select-none">
             {holder}
           </span>
         </div>
