@@ -20,6 +20,7 @@ import {
   DEMO_UNIFIED_CARDS,
   mapPaymentCardToUserSavedCard,
   resolveCardNetwork,
+  detectCardBrandDetails,
   NetworkBrandLogo,
 } from "./UnifiedWalletSystem";
 import { 
@@ -67,7 +68,6 @@ import {
   Mastercard as MastercardMono,
   DinersClub as DinersClubMono,
   Discover as DiscoverMono,
-  AmericanExpress as AmericanExpressMono,
 } from "@thesvg/react";
 
 // Official Card & Payment Gateway Logos (Authentic Vector Brandmarks from theSVG.org + PayPhone Official)
@@ -234,7 +234,8 @@ export function CartDrawer() {
  cards,
  setAddress, 
  addAddress,
- addOrder 
+ addOrder,
+ addCard
  } = useUserStore();
 
  const { products } = useCatalogStore();
@@ -270,6 +271,7 @@ export function CartDrawer() {
   // PayPhone Embedded Form Interactive State (Official In-Page Checkout Presentation)
   const [selectedPayMethod, setSelectedPayMethod] = useState<"card" | "app">("card");
   const [selectedSavedCardId, setSelectedSavedCardId] = useState<string>("new");
+  const [shouldSaveNewCard, setShouldSaveNewCard] = useState<boolean>(true);
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
@@ -396,36 +398,33 @@ export function CartDrawer() {
     }
   };
 
-  // Detect card brand for live button display (Visa, Mastercard, Amex, Diners, Discover)
+  // Detect card brand for live button display (Visa, Mastercard, Diners, Discover)
   const detectedCardBrand = useMemo(() => {
     if (selectedSavedCardId !== "new") {
       const foundWalletCard = userWallet3DCards?.find((c) => c.id === selectedSavedCardId);
       if (foundWalletCard?.network) {
+        if (foundWalletCard.network === "diners-club") return "diners";
         if (foundWalletCard.network === "mastercard") return "mastercard";
         if (foundWalletCard.network === "visa") return "visa";
         if (foundWalletCard.network === "american-express") return "amex";
-        if (foundWalletCard.network === "diners-club") return "diners";
         if (foundWalletCard.network === "discover") return "discover";
       }
       const found = cards?.find((c) => c.id === selectedSavedCardId);
       if (found?.type) {
         const t = found.type.toLowerCase();
+        if (t.includes("diner")) return "diners";
         if (t.includes("master")) return "mastercard";
         if (t.includes("visa")) return "visa";
         if (t.includes("amex") || t.includes("american")) return "amex";
-        if (t.includes("diner")) return "diners";
         if (t.includes("discover")) return "discover";
       }
     }
-    const digits = cardNumber.replace(/\D/g, "");
-    if (digits.startsWith("4")) return "visa";
-    if (
-      digits.startsWith("51") || digits.startsWith("52") || digits.startsWith("53") ||
-      digits.startsWith("54") || digits.startsWith("55") || digits.startsWith("2")
-    ) return "mastercard";
-    if (digits.startsWith("34") || digits.startsWith("37")) return "amex";
-    if (digits.startsWith("30") || digits.startsWith("36") || digits.startsWith("38")) return "diners";
-    if (digits.startsWith("6011") || digits.startsWith("65")) return "discover";
+    const details = detectCardBrandDetails(cardNumber);
+    if (details.network === "diners-club") return "diners";
+    if (details.network === "mastercard") return "mastercard";
+    if (details.network === "visa") return "visa";
+    if (details.network === "discover") return "discover";
+    if (details.isAmexUnsupported) return "amex";
     return "visa";
   }, [selectedSavedCardId, userWallet3DCards, cards, cardNumber]);
 
@@ -438,7 +437,10 @@ export function CartDrawer() {
     }
 
     // Card payment:
-    // 1. CVV is strictly valid with either 3 or 4 digits (accommodating Visa, MC, Diners 3-digit and Amex 4-digit)
+    const cardBrand = detectCardBrandDetails(cardNumber);
+    if (cardBrand.isAmexUnsupported) return false;
+
+    // 1. CVV is strictly valid with either 3 or 4 digits
     const cleanCvv = cardCvv.replace(/\D/g, "");
     const isCvvValid = cleanCvv.length === 3 || cleanCvv.length === 4;
     if (!isCvvValid) return false;
@@ -450,9 +452,11 @@ export function CartDrawer() {
 
     // 3. Manual or auto-filled card entry
     const cleanNum = cardNumber.replace(/\D/g, "");
+    const isDiners = cardBrand.network === "diners-club";
+    const minDigits = isDiners ? 14 : 16;
     const isNumValid = cardNumber.includes("••••")
       ? cardNumber.replace(/\s/g, "").length >= 12
-      : (cleanNum.length >= 14 && cleanNum.length <= 19);
+      : (cleanNum.length >= minDigits && cleanNum.length <= 19);
 
     const cleanExp = cardExpiry.trim();
     const isExpValid = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
@@ -512,17 +516,25 @@ export function CartDrawer() {
       }
     }
     if (selectedPayMethod === "card") {
+      const brand = detectCardBrandDetails(cardNumber);
+      if (brand.isAmexUnsupported) {
+        return "American Express no es aceptada. PayPhone solo procesa Visa, Mastercard, Diners Club y Discover";
+      }
       const cleanCvv = cardCvv.replace(/\D/g, "");
       if (cleanCvv.length < 3 || cleanCvv.length > 4) {
         return "Ingresa el código CVV (3 o 4 dígitos) de tu tarjeta para autorizar el cobro";
       }
       if (selectedSavedCardId === "new") {
         const cleanNum = cardNumber.replace(/\D/g, "");
+        const isDiners = brand.network === "diners-club";
+        const minDigits = isDiners ? 14 : 16;
         const hasValidNum = cardNumber.includes("••••")
           ? cardNumber.replace(/\s/g, "").length >= 12
-          : (cleanNum.length >= 14 && cleanNum.length <= 19);
+          : (cleanNum.length >= minDigits && cleanNum.length <= 19);
         if (!hasValidNum) {
-          return "Ingresa los 16 dígitos de tu tarjeta de crédito o débito";
+          return isDiners
+            ? "Ingresa los 14 dígitos de tu tarjeta Diners Club"
+            : "Ingresa los 16 dígitos de tu tarjeta de crédito o débito";
         }
         const cleanExp = cardExpiry.trim();
         const isExpOk = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
@@ -1094,6 +1106,26 @@ export function CartDrawer() {
           setIsProcessing(false);
 
           if (confirmRes.ok && confirmData.success && confirmData.order) {
+            // Auto-save card to wallet if user selected "new" and left checkbox enabled
+            if (selectedPayMethod === "card" && selectedSavedCardId === "new" && shouldSaveNewCard) {
+              const cleanDigits = cardNumber.replace(/\D/g, "");
+              const brand = detectCardBrandDetails(cardNumber);
+              if (cleanDigits.length >= 14 && !brand.isAmexUnsupported) {
+                try {
+                  addCard({
+                    type: brand.network || "visa",
+                    number: cardNumber,
+                    holder: cardHolder || customerName,
+                    exp: cardExpiry || "12/28",
+                    design: "dark",
+                    isDefault: cards.length === 0,
+                  });
+                } catch (e) {
+                  console.warn("[CartDrawer] Auto-save card error:", e);
+                }
+              }
+            }
+
             addOrder(confirmData.order);
             setLastPlacedOrder(confirmData.order);
             setLastPlacedPaymentType(selectedPayMethod);
@@ -1160,6 +1192,13 @@ export function CartDrawer() {
 
     // 2. Control de Campos del Método de Pago
     if (selectedPayMethod === "card") {
+      const brand = detectCardBrandDetails(cardNumber);
+      if (brand.isAmexUnsupported) {
+        setPayphoneError("No aceptamos tarjetas American Express. PayPhone en Ecuador solo procesa Visa, Mastercard, Discover y Diners Club.");
+        const payElem = document.getElementById("cart-payment-fields");
+        if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
       const cleanCvv = cardCvv.replace(/\D/g, "");
       if (cleanCvv.length < 3 || cleanCvv.length > 4) {
         setPayphoneError("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos) de tu tarjeta para autorizar el cobro.");
@@ -1169,11 +1208,17 @@ export function CartDrawer() {
       }
       if (selectedSavedCardId === "new") {
         const cleanNum = cardNumber.replace(/\D/g, "");
+        const isDiners = brand.network === "diners-club";
+        const minDigits = isDiners ? 14 : 16;
         const hasValidNum = cardNumber.includes("••••")
           ? cardNumber.replace(/\s/g, "").length >= 12
-          : (cleanNum.length >= 14 && cleanNum.length <= 19);
+          : (cleanNum.length >= minDigits && cleanNum.length <= 19);
         if (!hasValidNum) {
-          setPayphoneError("Por favor ingresa los 16 dígitos de tu tarjeta de crédito o débito.");
+          setPayphoneError(
+            isDiners
+              ? "Por favor ingresa los 14 dígitos de tu tarjeta Diners Club."
+              : "Por favor ingresa los 16 dígitos de tu tarjeta de crédito o débito."
+          );
           const payElem = document.getElementById("cart-payment-fields");
           if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
           return;
@@ -2632,7 +2677,7 @@ export function CartDrawer() {
         <button
           type="button"
           onClick={() => setSelectedPayMethod("card")}
-          className={`h-12 sm:h-[52px] px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer w-full grid grid-cols-6 items-center justify-items-center ${
+          className={`h-12 sm:h-[52px] px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer w-full grid grid-cols-5 items-center justify-items-center ${
             selectedPayMethod === "card"
               ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-sm"
               : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
@@ -2647,19 +2692,16 @@ export function CartDrawer() {
             </svg>
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <VisaLogo className="h-[19px] sm:h-[21px] w-auto max-w-full object-contain" fill="#1A1F71" />
+            <VisaLogo className="h-[23px] sm:h-[25px] w-auto max-w-full object-contain" fill="#1A1F71" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <MastercardLogo className="h-[17px] sm:h-[18px] w-auto max-w-full object-contain" />
+            <MastercardLogo className="h-[20px] sm:h-[21px] w-auto max-w-full object-contain" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
             <DinersClubLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
           </div>
-          <div className="w-full h-6 flex items-center justify-center px-0.5">
-            <DiscoverLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
-          </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
-            <AmexLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
+            <DiscoverLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
           </div>
         </button>
 
@@ -2727,19 +2769,56 @@ export function CartDrawer() {
                   value={cardNumber}
                   onChange={(e) => {
                     setSelectedSavedCardId("new");
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 16);
-                    const formatted = val.match(/.{1,4}/g)?.join(" ") || val;
+                    const rawVal = e.target.value.replace(/\D/g, "");
+                    const isAmex = rawVal.startsWith("34") || rawVal.startsWith("37");
+                    const isDiners = rawVal.startsWith("30") || rawVal.startsWith("36") || rawVal.startsWith("38") || rawVal.startsWith("39") || (rawVal.length === 1 && rawVal === "3");
+                    const maxLen = isDiners ? 14 : isAmex ? 15 : 16;
+                    const trimmed = rawVal.slice(0, maxLen);
+                    let formatted = trimmed;
+                    if (isDiners && trimmed.length > 4) {
+                      if (trimmed.length > 10) {
+                        formatted = `${trimmed.slice(0, 4)} ${trimmed.slice(4, 10)} ${trimmed.slice(10)}`;
+                      } else {
+                        formatted = `${trimmed.slice(0, 4)} ${trimmed.slice(4)}`;
+                      }
+                    } else {
+                      formatted = trimmed.match(/.{1,4}/g)?.join(" ") || trimmed;
+                    }
                     setCardNumber(formatted);
                   }}
                   placeholder="0000 0000 0000 0000"
                   className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder:text-gray-400 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.2em] font-bold uppercase tabular-nums"
                 />
               </div>
-              <div className="shrink-0 flex items-center">
+              <div className="shrink-0 flex items-center justify-center">
                 {cardNumber.replace(/\s/g, "").length >= 1 ? (
-                  <div className="flex items-center justify-center">
-                    <NetworkBrandLogo network={resolveCardNetwork(undefined, cardNumber)} compact monochrome="black" />
-                  </div>
+                  (() => {
+                    const brandDetails = detectCardBrandDetails(cardNumber);
+                    if (brandDetails.isAmexUnsupported) {
+                      return (
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25">
+                          AMEX No Soportada
+                        </span>
+                      );
+                    }
+                    if (brandDetails.network === "visa") {
+                      return <VisaMono variant="mono" className="h-5 w-auto text-gray-950 dark:text-white shrink-0" />;
+                    }
+                    if (brandDetails.network === "mastercard") {
+                      return <MastercardMono variant="mono" className="h-6 w-6 text-gray-950 dark:text-white shrink-0" />;
+                    }
+                    if (brandDetails.network === "diners-club") {
+                      return <DinersClubMono variant="mono" className="h-6 w-6 text-gray-950 dark:text-white shrink-0" />;
+                    }
+                    if (brandDetails.network === "discover") {
+                      return <DiscoverMono variant="mono" className="h-6 w-6 text-gray-950 dark:text-white shrink-0" />;
+                    }
+                    return (
+                      <span className="text-[10px] font-mono uppercase text-gray-400 tracking-wider">
+                        Crédito / Débito
+                      </span>
+                    );
+                  })()
                 ) : (
                   <span className="text-[10px] font-mono uppercase text-gray-400 tracking-wider">
                     Crédito / Débito
@@ -2796,6 +2875,41 @@ export function CartDrawer() {
             </div>
           </div>
         </div>
+
+        {/* AMEX Incompatibility Alert */}
+        {detectCardBrandDetails(cardNumber).isAmexUnsupported && (
+          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2.5 animate-in fade-in">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="leading-relaxed">
+              <span className="font-bold">American Express no soportada:</span> Nuestra pasarela PayPhone en Ecuador no admite transacciones con tarjetas AMEX. Por favor utiliza una tarjeta <strong>Visa, Mastercard, Discover o Diners Club</strong>.
+            </div>
+          </div>
+        )}
+
+        {/* Option to Save New Card to Wallet */}
+        {selectedSavedCardId === "new" && (
+          <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 flex items-center justify-between gap-3 transition-all">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none flex-1">
+              <input
+                type="checkbox"
+                checked={shouldSaveNewCard}
+                onChange={(e) => setShouldSaveNewCard(e.target.checked)}
+                className="w-4 h-4 rounded text-[#FF5900] focus:ring-[#FF5900]/30 border-gray-300 dark:border-white/20 dark:bg-stone-900 cursor-pointer accent-[#FF5900]"
+              />
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                  Guardar esta tarjeta en mi billetera
+                </span>
+                <span className="text-[10.5px] text-gray-500 dark:text-gray-400">
+                  Para pagos rápidos y seguros en futuras compras
+                </span>
+              </div>
+            </label>
+            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider shrink-0 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+              Billetera 3D
+            </span>
+          </div>
+        )}
       </div>
     ) : (
       <div className="pt-2 space-y-3">
@@ -3079,9 +3193,6 @@ export function CartDrawer() {
                 )}
                 {detectedCardBrand === "mastercard" && (
                   <MastercardMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />
-                )}
-                {detectedCardBrand === "amex" && (
-                  <AmericanExpressMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />
                 )}
                 {detectedCardBrand === "diners" && (
                   <DinersClubMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />

@@ -39,7 +39,17 @@ function AuthCallbackContent() {
         // 1. Check if Google OAuth returned an error directly in URL
         const oauthError = searchParams.get("error");
         if (oauthError) {
-          router.replace("/auth/login?error=underage");
+          // If user cancelled midway or denied access, return cleanly to login without underage error
+          if (
+            oauthError === "access_denied" ||
+            oauthError === "cancelled" ||
+            oauthError.includes("denied") ||
+            oauthError.includes("cancel")
+          ) {
+            router.replace("/auth/login");
+            return;
+          }
+          router.replace("/auth/login?error=google_auth_failed");
           return;
         }
 
@@ -63,7 +73,8 @@ function AuthCallbackContent() {
         if (isCancelled) return;
 
         if (!activeSession) {
-          router.replace("/auth/login?error=underage");
+          // Missing session caused by user cancelling or aborting flow -> clean login redirect
+          router.replace("/auth/login");
           return;
         }
 
@@ -72,8 +83,8 @@ function AuthCallbackContent() {
         const accessToken = activeSession.access_token;
 
         if (!providerToken) {
-          await supabase.auth.signOut();
-          router.replace("/auth/login?error=underage");
+          // If session exists but provider token is absent, proceed to destination
+          router.replace(nextTarget);
           return;
         }
 
@@ -137,7 +148,7 @@ function AuthCallbackContent() {
         console.error("[auth/callback] Unexpected verification error:", err);
         if (!isCancelled) {
           await supabase.auth.signOut();
-          router.replace("/auth/login?error=underage");
+          router.replace("/auth/login");
         }
       }
     }

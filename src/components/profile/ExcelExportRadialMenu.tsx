@@ -583,9 +583,15 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
         ordersList = useUserStore.getState().orders;
       }
 
+      // Filter strictly orders with status "Procesando" / "Processing"
+      const processingOrders = ordersList.filter((ord) => {
+        const s = (ord.status || "").toLowerCase().trim();
+        return s === "procesando" || s === "processing";
+      });
+
       const rows: Record<string, string | number>[] = [];
 
-      ordersList.forEach((ord) => {
+      processingOrders.forEach((ord) => {
         const customerName = (ord.customerName || ord.recipient || ord.shippingAddress?.recipient || `Cliente ${brand.shortName}`).trim();
         const nameParts = customerName.split(/\s+/).filter(Boolean);
         let nombres = "Cliente";
@@ -952,7 +958,7 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
               </span>
             </div>
             <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
-              Formato oficial para subir órdenes masivas en Dropi Ecuador (Cantones/Provincias y Ciudad en Departamento).
+              Formato oficial para subir órdenes masivas en Dropi Ecuador (exporta exclusivamente pedidos en estado &quot;Procesando&quot;).
             </p>
           </div>
         </button>

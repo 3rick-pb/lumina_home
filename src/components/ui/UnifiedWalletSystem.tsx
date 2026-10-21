@@ -139,39 +139,91 @@ export const CARD_NETWORK_THEMES: Record<CardNetwork, NetworkThemeConfig> = {
   },
 };
 
+export interface CardBrandDetection {
+  network: CardNetwork | null;
+  isAmexUnsupported: boolean;
+  brandName: string;
+}
+
 /**
- * Helper para detectar la red automáticamente si tu base de datos guarda strings como "Mastercard", "AMEX", etc.
+ * Detector ultra-preciso de marca por BIN de tarjeta
+ * - VISA: estrictamente comienza con 4
+ * - DINERS CLUB: 300-305, 3095, 36, 38, 39 (o 3 cuando aún no es 34/37)
+ * - MASTERCARD: 51-55, 22-27 (o 2 / 5)
+ * - DISCOVER: 6011, 65, 64, 62
+ * - AMERICAN EXPRESS: 34 o 37 (NO SOPORTADA por PayPhone)
+ */
+export function detectCardBrandDetails(cardNumber?: string): CardBrandDetection {
+  if (!cardNumber) {
+    return { network: null, isAmexUnsupported: false, brandName: "" };
+  }
+  const digits = cardNumber.replace(/\D/g, "");
+  if (!digits) {
+    return { network: null, isAmexUnsupported: false, brandName: "" };
+  }
+
+  // 1. Visa: estrictamente empieza con 4
+  if (digits.startsWith("4")) {
+    return { network: "visa", isAmexUnsupported: false, brandName: "Visa" };
+  }
+
+  // 2. American Express: empieza con 34 o 37 -> NO SOPORTADA
+  if (digits.startsWith("34") || digits.startsWith("37")) {
+    return { network: "american-express", isAmexUnsupported: true, brandName: "American Express" };
+  }
+
+  // 3. Diners Club: 30, 36, 38, 39 (o inicio con 3 excluyendo 34/37)
+  if (
+    digits.startsWith("30") ||
+    digits.startsWith("36") ||
+    digits.startsWith("38") ||
+    digits.startsWith("39") ||
+    (digits.length === 1 && digits === "3")
+  ) {
+    return { network: "diners-club", isAmexUnsupported: false, brandName: "Diners Club" };
+  }
+
+  // 4. Mastercard: 51-55, 2221-2720, o 2/5
+  if (
+    digits.startsWith("51") ||
+    digits.startsWith("52") ||
+    digits.startsWith("53") ||
+    digits.startsWith("54") ||
+    digits.startsWith("55") ||
+    digits.startsWith("2") ||
+    (digits.length === 1 && digits === "5")
+  ) {
+    return { network: "mastercard", isAmexUnsupported: false, brandName: "Mastercard" };
+  }
+
+  // 5. Discover: 6011, 65, 64, 62, o 6
+  if (
+    digits.startsWith("6011") ||
+    digits.startsWith("65") ||
+    digits.startsWith("64") ||
+    digits.startsWith("62") ||
+    (digits.length === 1 && digits === "6")
+  ) {
+    return { network: "discover", isAmexUnsupported: false, brandName: "Discover" };
+  }
+
+  return { network: null, isAmexUnsupported: false, brandName: "" };
+}
+
+/**
+ * Helper para detectar la red automáticamente si tu base de datos guarda strings como "Mastercard", "Diners Club", etc.
  */
 export function resolveCardNetwork(input?: string, cardNumber?: string): CardNetwork {
   const raw = (input || "").toLowerCase().trim();
-  if (raw.includes("master")) return "mastercard";
-  if (raw.includes("amex") || raw.includes("american"))
-    return "american-express";
   if (raw.includes("diner")) return "diners-club";
+  if (raw.includes("master")) return "mastercard";
   if (raw.includes("disc")) return "discover";
+  if (raw.includes("visa")) return "visa";
+  if (raw.includes("amex") || raw.includes("american")) return "american-express";
 
   if (cardNumber) {
-    const digits = cardNumber.replace(/\D/g, "");
-    if (
-      digits.startsWith("51") ||
-      digits.startsWith("52") ||
-      digits.startsWith("53") ||
-      digits.startsWith("54") ||
-      digits.startsWith("55") ||
-      digits.startsWith("2")
-    )
-      return "mastercard";
-    if (digits.startsWith("34") || digits.startsWith("37"))
-      return "american-express";
-    if (
-      digits.startsWith("30") ||
-      digits.startsWith("36") ||
-      digits.startsWith("38")
-    )
-      return "diners-club";
-    if (digits.startsWith("6011") || digits.startsWith("65"))
-      return "discover";
-    if (digits.startsWith("4")) return "visa";
+    const details = detectCardBrandDetails(cardNumber);
+    if (details.network) return details.network;
   }
 
   return "visa";
@@ -223,7 +275,7 @@ export function mapPaymentCardToUserSavedCard(
 }
 
 /**
- * Tarjetas de demostración con las 5 redes (Visa, Mastercard, American Express, Diners Club y Discover)
+ * Tarjetas de demostración oficiales (Visa, Mastercard, Diners Club y Discover - AMEX eliminada por incompatibilidad con PayPhone)
  */
 export const DEMO_UNIFIED_CARDS: UserSavedCard[] = [
   {
@@ -259,18 +311,6 @@ export const DEMO_UNIFIED_CARDS: UserSavedCard[] = [
     expiry: "12/28",
     cvv: "604",
     balanceInt: "8,920",
-    balanceDec: ".00",
-    isDefault: false,
-  },
-  {
-    id: "card-amex-9012",
-    network: "american-express",
-    holderName: "Erick Arteaga",
-    last4: "9012",
-    fullNumber: "3782 822463 19012",
-    expiry: "09/29",
-    cvv: "4912",
-    balanceInt: "12,450",
     balanceDec: ".00",
     isDefault: false,
   },

@@ -14,12 +14,14 @@ import {
   Sparkles,
   Wallet,
   Wifi,
+  AlertCircle,
 } from "lucide-react";
 import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
 import {
   SilverEmvChip,
   NetworkBrandLogo,
   resolveCardNetwork,
+  detectCardBrandDetails,
   CARD_DOTS_TEXTURE_STYLE,
   CARD_NETWORK_THEMES,
   CardNetwork,
@@ -43,7 +45,8 @@ export interface AddCardAnimatedModalProps {
  */
 function detectCardBrandLive(digitsOnly: string): CardNetwork {
   if (!digitsOnly || digitsOnly.length === 0) return "mastercard";
-  return resolveCardNetwork(undefined, digitsOnly);
+  const details = detectCardBrandDetails(digitsOnly);
+  return details.network || resolveCardNetwork(undefined, digitsOnly);
 }
 
 function BrandNetworkVector({
@@ -105,12 +108,41 @@ export function AddCardAnimatedModal({
 
   // Real-time card network detection based on digits typed
   const rawDigits = cardNumber.replace(/\D/g, "");
-  const detectedNetwork: CardNetwork = detectCardBrandLive(rawDigits);
+  const brandDetails = detectCardBrandDetails(rawDigits);
+  const isAmex = brandDetails.isAmexUnsupported || rawDigits.startsWith("34") || rawDigits.startsWith("37");
+  const isDiners = brandDetails.network === "diners-club" || rawDigits.startsWith("30") || rawDigits.startsWith("36") || rawDigits.startsWith("38") || rawDigits.startsWith("39") || (rawDigits.length === 1 && rawDigits === "3");
+  const detectedNetwork: CardNetwork = brandDetails.network || (isAmex ? "american-express" : isDiners ? "diners-club" : "mastercard");
   const theme = CARD_NETWORK_THEMES[detectedNetwork] || CARD_NETWORK_THEMES.mastercard;
 
   const handleCardNumberChange = (rawVal: string) => {
-    const digitsOnly = rawVal.replace(/\D/g, "").slice(0, 16);
-    const formatted = digitsOnly.replace(/(\d{4})/g, "$1 ").trim();
+    const digitsOnly = rawVal.replace(/\D/g, "");
+    const isAmexLocal = digitsOnly.startsWith("34") || digitsOnly.startsWith("37");
+    const isDinersLocal = digitsOnly.startsWith("30") || digitsOnly.startsWith("36") || digitsOnly.startsWith("38") || digitsOnly.startsWith("39") || (digitsOnly.length === 1 && digitsOnly === "3");
+    
+    // Amex is 15 digits, Diners is 14 digits, others 16
+    const maxLen = isDinersLocal ? 14 : isAmexLocal ? 15 : 16;
+    const trimmed = digitsOnly.slice(0, maxLen);
+
+    let formatted = trimmed;
+    if (isDinersLocal && trimmed.length > 4) {
+      // 4-6-4 Diners Club layout
+      if (trimmed.length > 10) {
+        formatted = `${trimmed.slice(0, 4)} ${trimmed.slice(4, 10)} ${trimmed.slice(10)}`;
+      } else {
+        formatted = `${trimmed.slice(0, 4)} ${trimmed.slice(4)}`;
+      }
+    } else if (isAmexLocal && trimmed.length > 4) {
+      // 4-6-5 Amex layout
+      if (trimmed.length > 10) {
+        formatted = `${trimmed.slice(0, 4)} ${trimmed.slice(4, 10)} ${trimmed.slice(10)}`;
+      } else {
+        formatted = `${trimmed.slice(0, 4)} ${trimmed.slice(4)}`;
+      }
+    } else {
+      // 4-4-4-4 Standard layout
+      formatted = trimmed.replace(/(\d{4})/g, "$1 ").trim();
+    }
+
     setCardNumber(formatted);
   };
 
@@ -208,8 +240,18 @@ export function AddCardAnimatedModal({
     e.preventDefault();
     setErrorMessage(null);
 
-    if (rawDigits.length < 15) {
-      setErrorMessage("Por favor ingresa los 16 dígitos del número de tu tarjeta.");
+    if (isAmex) {
+      setErrorMessage("No aceptamos tarjetas American Express. PayPhone solo procesa Visa, Mastercard, Discover y Diners Club.");
+      return;
+    }
+
+    const minDigits = isDiners ? 14 : 16;
+    if (rawDigits.length < minDigits) {
+      setErrorMessage(
+        isDiners 
+          ? "Por favor ingresa los 14 dígitos del número de tu tarjeta Diners Club." 
+          : "Por favor ingresa los 16 dígitos del número de tu tarjeta."
+      );
       return;
     }
     if (cardExp.length < 5) {
@@ -225,11 +267,17 @@ export function AddCardAnimatedModal({
     executeSaveCard();
   };
 
-  // Format 4 groups of 4 characters for the live 3D card display
-  const formattedGroups = [0, 1, 2, 3].map((groupIdx) => {
-    const slice = rawDigits.slice(groupIdx * 4, groupIdx * 4 + 4);
-    return slice.padEnd(4, "•");
-  });
+  // Format groups for the live 3D card display (4-6-4 for Diners, 4-4-4-4 for standard)
+  const formattedGroups = isDiners
+    ? [
+        rawDigits.slice(0, 4).padEnd(4, "•"),
+        rawDigits.slice(4, 10).padEnd(6, "•"),
+        rawDigits.slice(10, 14).padEnd(4, "•"),
+      ]
+    : [0, 1, 2, 3].map((groupIdx) => {
+        const slice = rawDigits.slice(groupIdx * 4, groupIdx * 4 + 4);
+        return slice.padEnd(4, "•");
+      });
 
   return (
     <BeUICenterMorphModal
@@ -519,6 +567,14 @@ export function AddCardAnimatedModal({
                           </AnimatePresence>
                         </div>
                       </div>
+                      {isAmex && (
+                        <div className="mt-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                          <div className="leading-relaxed">
+                            <span className="font-bold">American Express no soportada:</span> PayPhone no procesa tarjetas AMEX en Ecuador. Por favor usa una tarjeta <strong>Visa, Mastercard, Discover o Diners Club</strong>.
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Input 2: Cardholder Name */}
@@ -636,10 +692,24 @@ export function AddCardAnimatedModal({
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full h-12 rounded-2xl bg-gray-950 hover:bg-black dark:bg-amber-400 dark:hover:bg-amber-300 text-white dark:text-stone-950 text-xs sm:text-sm font-bold tracking-wide transition-all shadow-lg shadow-gray-950/15 hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                        disabled={isAmex}
+                        className={`w-full h-12 rounded-2xl text-xs sm:text-sm font-bold tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 ${
+                          isAmex
+                            ? "bg-gray-200 dark:bg-stone-800 text-gray-400 dark:text-stone-500 cursor-not-allowed border border-gray-300 dark:border-stone-700"
+                            : "bg-gray-950 hover:bg-black dark:bg-amber-400 dark:hover:bg-amber-300 text-white dark:text-stone-950 shadow-gray-950/15 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                        }`}
                       >
-                        <Sparkles className="w-4 h-4" />
-                        <span>Guardar nueva Tarjeta</span>
+                        {isAmex ? (
+                          <>
+                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                            <span>AMEX No Admitida por PayPhone</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            <span>Guardar nueva Tarjeta</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>
