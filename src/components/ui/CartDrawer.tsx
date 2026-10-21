@@ -1907,10 +1907,7 @@ export function CartDrawer() {
             data-lpignore="true"
             data-1p-ignore="true"
             data-form-type="other"
-            style={{
-              WebkitTextSecurity: couponInput ? "disc" : "none",
-            } as React.CSSProperties}
-            className="w-full bg-transparent text-xs font-mono font-medium tracking-wider outline-none text-gray-900 dark:text-gray-100 placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder-gray-400"
+            className="w-full bg-transparent text-xs font-mono font-bold uppercase tracking-wider outline-none text-gray-900 dark:text-gray-100 placeholder:normal-case placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-xs placeholder-gray-400"
           />
         </div>
         <button 

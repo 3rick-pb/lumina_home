@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch, ChevronDown } from "lucide-react";
+import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch, ChevronDown, Users } from "lucide-react";
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { supabase } from "@/lib/supabase";
@@ -86,6 +86,7 @@ const TRUST_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>
   Percent,
   Lock,
   PackageSearch,
+  Users,
 };
 
 const mobileBadgeVariants = {
@@ -124,14 +125,14 @@ const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
     subtitle: "Paso a paso en tiempo real",
   },
   {
-    icon: RotateCcw,
-    title: "Devoluciones 10 días",
-    subtitle: "Sin complicaciones",
+    icon: ShieldCheck,
+    title: "Garantía & Comunidad",
+    subtitle: "Cobertura total por fallas",
   },
   {
-    icon: Percent,
-    title: "Financiación 0%",
-    subtitle: "Hasta 12 cuotas",
+    icon: Users,
+    title: "+10,000 Clientes Felices",
+    subtitle: "Canal de confianza",
   },
   {
     icon: Lock,
@@ -156,28 +157,13 @@ export default function Home() {
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
 
-  // Derive the 2 mobile pages of trust badges
+  // Derive the mobile pages of trust badges
   const mobileBadgePages = useMemo(() => {
-    const envios = trustBadges.find(b => b.title.toLowerCase().includes("env")) || trustBadges[0];
-    const tracking = trustBadges.find(b => 
-      b.title.toLowerCase().includes("paquete") || 
-      b.title.toLowerCase().includes("sigue") || 
-      b.title.toLowerCase().includes("rastr")
-    ) || trustBadges[1];
-    const devolucion = trustBadges.find(b => 
-      b.title.toLowerCase().includes("devoluc") || 
-      b.title.toLowerCase().includes("retur")
-    ) || trustBadges[2];
-    const pagos = trustBadges.find(b => 
-      b.title.toLowerCase().includes("pago") || 
-      b.title.toLowerCase().includes("segur") ||
-      b.title.toLowerCase().includes("ssl")
-    ) || trustBadges[4] || trustBadges[3];
-
-    const page1 = [envios, tracking].filter(Boolean);
-    const page2 = [devolucion, pagos].filter(Boolean);
-
-    return [page1, page2];
+    const pages: TrustBadgeItem[][] = [];
+    for (let i = 0; i < trustBadges.length; i += 2) {
+      pages.push(trustBadges.slice(i, i + 2));
+    }
+    return pages.length > 0 ? pages : [DEFAULT_TRUST_BADGES.slice(0, 2)];
   }, [trustBadges]);
 
   const [[mobileBadgePage, mobileBadgeDirection], setMobileBadgePage] = useState<[number, number]>([0, 0]);
@@ -256,10 +242,6 @@ export default function Home() {
               continue;
             }
 
-            if (lowerId === 'warranty' || lowerTitle.includes('garant')) {
-              continue;
-            }
-
             let title = item.title;
             let subtitle = item.subtitle || "";
             let iconComponent = TRUST_ICON_MAP[item.icon_name] || ShieldCheck;
@@ -272,14 +254,14 @@ export default function Home() {
               title = "Sigue tu paquete";
               subtitle = "Paso a paso en tiempo real";
               iconComponent = PackageSearch;
-            } else if (lowerId.includes('return') || lowerTitle.includes('devoluc')) {
-              title = "Devoluciones 10 días";
-              subtitle = subtitle || "Sin complicaciones";
-              iconComponent = RotateCcw;
-            } else if (lowerId.includes('financ') || lowerTitle.includes('cuota')) {
-              title = "Financiación 0%";
-              subtitle = subtitle || "Hasta 12 cuotas";
-              iconComponent = Percent;
+            } else if (lowerId.includes('return') || lowerId.includes('warranty') || lowerTitle.includes('devoluc') || lowerTitle.includes('garant') || lowerTitle.includes('comunidad')) {
+              title = "Garantía & Comunidad";
+              subtitle = "Cobertura total por fallas";
+              iconComponent = ShieldCheck;
+            } else if (lowerId.includes('financ') || lowerId.includes('client') || lowerTitle.includes('cuota') || lowerTitle.includes('client') || lowerTitle.includes('feliz') || lowerTitle.includes('confianza')) {
+              title = "+10,000 Clientes Felices";
+              subtitle = "Canal de confianza";
+              iconComponent = Users;
             } else if (lowerId.includes('pay') || lowerId.includes('sec') || lowerTitle.includes('pago') || lowerTitle.includes('segur') || lowerTitle.includes('ssl')) {
               title = "Pagos seguros";
               subtitle = subtitle || "100% cifrado SSL";
@@ -490,27 +472,30 @@ export default function Home() {
                   }}
                   className="w-full grid grid-cols-2 items-center"
                 >
-                  {(mobileBadgePages[mobileBadgePage] || []).map((badge, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-center gap-2.5 sm:gap-3.5 px-2 relative select-none"
-                    >
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 shadow-2xs">
-                        <badge.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                  {(mobileBadgePages[mobileBadgePage] || []).map((badge, idx) => {
+                    const isSingle = (mobileBadgePages[mobileBadgePage]?.length || 0) === 1;
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-center justify-center gap-2.5 sm:gap-3.5 px-2 relative select-none ${isSingle ? "col-span-2" : ""}`}
+                      >
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 shadow-2xs">
+                          <badge.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
+                            {badge.title}
+                          </p>
+                          <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight mt-0.5 truncate">
+                            {badge.subtitle}
+                          </p>
+                        </div>
+                        {idx === 0 && !isSingle && (
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 sm:h-9 w-px bg-gray-200/80 dark:bg-white/10" />
+                        )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
-                          {badge.title}
-                        </p>
-                        <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight mt-0.5 truncate">
-                          {badge.subtitle}
-                        </p>
-                      </div>
-                      {idx === 0 && (
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 sm:h-9 w-px bg-gray-200/80 dark:bg-white/10" />
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </motion.div>
               </AnimatePresence>
             </div>

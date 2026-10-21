@@ -49,8 +49,8 @@ INSERT INTO public.store_trust_badges (id, title, subtitle, icon_name, is_active
 VALUES
   ('shipping', 'Envíos nacionales', 'A todo el país', 'Truck', true, 1),
   ('tracking', 'Sigue tu paquete', 'Paso a paso en tiempo real', 'PackageSearch', true, 2),
-  ('returns', 'Devoluciones 10 días', 'Sin complicaciones', 'RotateCcw', true, 3),
-  ('financing', 'Financiación 0%', 'Hasta 12 cuotas', 'Percent', true, 4),
+  ('returns', 'Garantía & Comunidad', 'Cobertura total por fallas', 'ShieldCheck', true, 3),
+  ('financing', '+10,000 Clientes Felices', 'Canal de confianza', 'Users', true, 4),
   ('security', 'Pagos seguros', '100% cifrado SSL', 'Lock', true, 5)
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
