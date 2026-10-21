@@ -149,7 +149,7 @@ export async function POST(request: Request) {
       show_in_navbar: typeof body.showInNavbar === 'boolean' ? body.showInNavbar : false,
       background_shape: body.backgroundShape === 'circle' ? 'circle' : 'squircle',
       animation_mode: body.animationMode || 'always',
-      custom_seed: body.customSeed?.trim() ? body.customSeed.trim() : targetUserId,
+      custom_seed: (body.customSeed?.trim() && body.customSeed.trim() !== targetUserId) ? body.customSeed.trim() : null,
       updated_at: new Date().toISOString(),
     };
 

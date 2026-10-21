@@ -49,7 +49,7 @@ export function setupAvatarRealtimeListener(userId: string) {
             showAvatarInNavbar: typeof row.show_in_navbar === 'boolean' ? row.show_in_navbar : useAvatarSettingsStore.getState().showAvatarInNavbar,
             backgroundShape: row.background_shape === 'circle' ? 'circle' : 'squircle',
             animationMode: row.animation_mode || useAvatarSettingsStore.getState().animationMode,
-            customSeed: row.custom_seed ?? useAvatarSettingsStore.getState().customSeed,
+            customSeed: (row.custom_seed && row.custom_seed !== userId) ? row.custom_seed : null,
             lastSavedAt: row.updated_at || null,
             tableReady: true,
           });
@@ -136,7 +136,7 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
               showAvatarInNavbar: typeof data.show_in_navbar === 'boolean' ? data.show_in_navbar : get().showAvatarInNavbar,
               backgroundShape: data.background_shape === 'circle' ? 'circle' : 'squircle',
               animationMode: data.animation_mode || get().animationMode,
-              customSeed: data.custom_seed ?? userId,
+              customSeed: (data.custom_seed && data.custom_seed !== userId) ? data.custom_seed : null,
               tableReady: true,
               lastSavedAt: data.updated_at || null,
               isSyncing: false,
@@ -146,11 +146,10 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
 
           // 2. If row does not exist in Supabase yet, create canonical initial row
           if (!error && !data) {
-            const canonicalSeed = userId;
             try {
               await supabase.from('user_avatar_settings').upsert({
                 user_id: userId,
-                custom_seed: canonicalSeed,
+                custom_seed: null,
                 background_shape: 'squircle',
                 animation_mode: 'always',
                 show_in_navbar: false,
@@ -159,7 +158,7 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
             } catch {}
 
             set({
-              customSeed: canonicalSeed,
+              customSeed: null,
               backgroundShape: 'squircle',
               animationMode: 'always',
               showAvatarInNavbar: false,
@@ -186,7 +185,7 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
               showAvatarInNavbar: typeof json.settings.showInNavbar === 'boolean' ? json.settings.showInNavbar : get().showAvatarInNavbar,
               backgroundShape: json.settings.backgroundShape || get().backgroundShape,
               animationMode: json.settings.animationMode || get().animationMode,
-              customSeed: json.settings.customSeed ?? userId,
+              customSeed: (json.settings.customSeed && json.settings.customSeed !== userId) ? json.settings.customSeed : null,
               tableReady: json.tableReady ?? true,
               lastSavedAt: json.settings.updatedAt || null,
               isSyncing: false,
@@ -207,7 +206,7 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
         if (!userId) return false;
         set({ isSyncing: true, errorMessage: null });
         const current = get();
-        const effectiveSeed = current.customSeed || userId;
+        const seedToSave = (current.customSeed && current.customSeed !== userId) ? current.customSeed : null;
 
         // 1. Direct Supabase Upsert (Instant database write)
         try {
@@ -219,13 +218,13 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
               show_in_navbar: current.showAvatarInNavbar,
               background_shape: current.backgroundShape,
               animation_mode: current.animationMode,
-              custom_seed: effectiveSeed,
+              custom_seed: seedToSave,
               updated_at: new Date().toISOString(),
             }, { onConflict: 'user_id' });
 
           if (!directErr) {
             set({
-              customSeed: effectiveSeed,
+              customSeed: seedToSave,
               tableReady: true,
               lastSavedAt: new Date().toISOString(),
               isSyncing: false,
@@ -253,7 +252,7 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
               showInNavbar: current.showAvatarInNavbar,
               backgroundShape: current.backgroundShape,
               animationMode: current.animationMode,
-              customSeed: effectiveSeed,
+              customSeed: seedToSave,
             }),
           });
           const json = await res.json();

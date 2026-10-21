@@ -25,7 +25,9 @@ import {
   AlertTriangle,
   Users,
   X,
-  RefreshCw
+  RefreshCw,
+  RotateCcw,
+  Unlink
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import InteractiveAddressMap from "@/components/ui/InteractiveAddressMap";
@@ -88,6 +90,12 @@ export function SettingsTab({
   const [newPass, setNewPass] = useState("");
   const [isCreatureCooling, setIsCreatureCooling] = useState(false);
   const handleCreatureCooldownEnd = useCallback(() => setIsCreatureCooling(false), []);
+  const [creatureFeedback, setCreatureFeedback] = useState<string | null>(null);
+  const hasCustomVariation = Boolean(
+    customSeed &&
+    customSeed !== user?.id &&
+    customSeed !== user?.email
+  );
   const [invitedAdmins, setInvitedAdmins] = useState<string[]>([]);
   const [subAdminProfiles, setSubAdminProfiles] = useState<Record<string, { displayName?: string; email: string }>>({});
   const [primaryAdminEmail, setPrimaryAdminEmail] = useState<string>("admin@lumina.com");
@@ -260,6 +268,33 @@ export function SettingsTab({
     } catch (err: unknown) {
       console.error("[SettingsTab] linkIdentity error:", err);
       setGoogleConnectFeedback({ msg: "Error al iniciar conexión con Google.", type: "error" });
+      setIsConnectingGoogle(false);
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    setIsConnectingGoogle(true);
+    setGoogleConnectFeedback(null);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const gIdentity = authData?.user?.identities?.find((i) => i.provider === "google");
+      if (gIdentity) {
+        const { error } = await supabase.auth.unlinkIdentity(gIdentity);
+        if (error) {
+          console.warn("[SettingsTab] unlinkIdentity warning:", error);
+        }
+      }
+      if (user?.id) {
+        await supabase.from("profiles").update({ google_connected: false }).eq("id", user.id);
+      }
+      setIsGoogleConnected(false);
+      setGoogleEmail(null);
+      setGoogleConnectFeedback({ msg: "Cuenta de Google desconectada exitosamente.", type: "success" });
+      setTimeout(() => setGoogleConnectFeedback(null), 4000);
+    } catch (err: unknown) {
+      console.error("[SettingsTab] disconnectGoogle error:", err);
+      setGoogleConnectFeedback({ msg: "No se pudo desconectar la cuenta de Google.", type: "error" });
+    } finally {
       setIsConnectingGoogle(false);
     }
   };
@@ -1026,9 +1061,17 @@ export function SettingsTab({
           {/* Variación / Personalización de Criatura */}
           <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                Variante y Semilla de Criatura
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                  Variante y Semilla de Criatura
+                </p>
+                {creatureFeedback && (
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in duration-200">
+                    <Check className="w-3 h-3" />
+                    {creatureFeedback}
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
                 Genera variaciones de tu personaje o vuelve a la semilla nativa original.
               </p>
@@ -1043,25 +1086,36 @@ export function SettingsTab({
                 onClick={() => {
                   if (isCreatureCooling) return;
                   setIsCreatureCooling(true);
-                  const rand = `${user?.id || 'lumina'}-${Math.random().toString(36).substring(2, 7)}`;
+                  const rand = `lumina-${user?.id || 'creature'}-${Math.random().toString(36).substring(2, 7)}`;
                   setCustomSeed(rand, user?.id, user?.email);
+                  setCreatureFeedback("¡Nueva criatura generada!");
+                  setTimeout(() => setCreatureFeedback(null), 3000);
                 }}
-                className="h-8 px-3 rounded-xl transition-all cursor-pointer font-bold text-xs"
+                className="h-8.5 px-3.5 rounded-xl transition-all cursor-pointer font-bold text-xs shadow-xs hover:shadow-sm"
                 title="Generar nueva variación de criatura"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span>Nueva Criatura</span>
               </MaskButton>
-              {customSeed && (
-                <button
-                  type="button"
-                  onClick={() => setCustomSeed(null, user?.id, user?.email)}
-                  className="px-2.5 py-1.5 text-xs font-medium rounded-xl text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
-                  title="Restablecer a la criatura nativa original de la cuenta"
-                >
-                  Restablecer
-                </button>
-              )}
+              <button
+                type="button"
+                disabled={!hasCustomVariation}
+                onClick={() => {
+                  if (!hasCustomVariation) return;
+                  setCustomSeed(null, user?.id, user?.email);
+                  setCreatureFeedback("Criatura original restaurada");
+                  setTimeout(() => setCreatureFeedback(null), 3500);
+                }}
+                className={`h-8.5 px-3 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 shadow-xs ${
+                  hasCustomVariation
+                    ? "border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 cursor-pointer active:scale-95"
+                    : "border-transparent bg-black/[0.03] dark:bg-white/[0.04] text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed"
+                }`}
+                title={hasCustomVariation ? "Restablecer a la criatura nativa original de la cuenta" : "Ya tienes activa la criatura original de tu cuenta"}
+              >
+                <RotateCcw className={`w-3.5 h-3.5 shrink-0 ${hasCustomVariation ? "text-amber-500" : "text-gray-400"}`} />
+                <span>{hasCustomVariation ? "Restablecer" : "Original"}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1106,11 +1160,11 @@ export function SettingsTab({
             {newPass.length > 0 && <StrongPasswordMeter password={newPass} />}
           </div>
 
-          {/* Conexión con Google y Cuentas Vinculadas */}
+          {/* Conexión con Google */}
           <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 pl-1">
-                Conexión con Google & Acceso Rápido
+                Conexión con Google
               </label>
               {isGoogleConnected ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold border border-emerald-500/20">
@@ -1134,21 +1188,36 @@ export function SettingsTab({
                     <span className="font-bold text-gray-950 dark:text-white text-xs sm:text-sm">
                       Google Account
                     </span>
-                    {isGoogleConnected && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        <ShieldCheck className="w-3 h-3" /> Mayoría de edad (+18) verificada
-                      </span>
-                    )}
                   </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                     {isGoogleConnected
                       ? `Vinculado a ${googleEmail || user.email}. Puedes acceder con 1 clic sin contraseñas.`
-                      : "Conecta tu cuenta de Google para iniciar sesión con un solo clic y validar tu mayoría de edad (+18)."}
+                      : "Conecta tu cuenta de Google para iniciar sesión con un solo clic."}
                   </p>
                 </div>
               </div>
 
-              {!isGoogleConnected && (
+              {isGoogleConnected ? (
+                <button
+                  type="button"
+                  onClick={handleDisconnectGoogle}
+                  disabled={isConnectingGoogle}
+                  className="sm:shrink-0 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.99] shadow-xs"
+                  title="Desconectar cuenta de Google vinculada"
+                >
+                  {isConnectingGoogle ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Desconectando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Unlink className="w-3.5 h-3.5 shrink-0" />
+                      <span>Desconectar Cuenta de Google</span>
+                    </>
+                  )}
+                </button>
+              ) : (
                 <button
                   type="button"
                   onClick={handleConnectGoogle}
@@ -1213,7 +1282,13 @@ export function SettingsTab({
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
                       <div className="flex items-center gap-3">
-                        <BlobatarAvatar name={user?.name || primaryAdminEmail} role="ADMIN" size={44} showGlow />
+                        <BlobatarAvatar
+                          name={customSeed || user?.id || user?.email || user?.name || primaryAdminEmail}
+                          role="ADMIN"
+                          size={44}
+                          showGlow
+                          background={backgroundShape || "squircle"}
+                        />
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="text-xs font-bold text-white tracking-wide uppercase">
@@ -1232,7 +1307,7 @@ export function SettingsTab({
                       <button
                         type="button"
                         onClick={handleOpenTransferModal}
-                        className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-semibold text-white border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:border-amber-400/40 hover:text-amber-300 self-start sm:self-auto"
+                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-semibold text-white border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:border-amber-400/40 hover:text-amber-300 self-start sm:self-auto"
                       >
                         <ArrowRightLeft className="w-3.5 h-3.5 text-amber-400" />
                         <span>Transferir Titularidad</span>
@@ -1246,10 +1321,10 @@ export function SettingsTab({
                   </div>
 
                   {/* Sub Administradores */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold shrink-0">
                           <ShieldCheck className="w-4 h-4" />
                         </div>
                         <div>
@@ -1263,7 +1338,7 @@ export function SettingsTab({
                       </div>
 
                       {/* Discrete Capacity Indicator */}
-                      <div className="flex items-center gap-1.5 self-start sm:self-auto bg-gray-200/70 dark:bg-white/5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/5">
+                      <div className="flex items-center gap-1.5 self-start sm:self-auto bg-gray-200/70 dark:bg-white/5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/5 shrink-0">
                         <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mr-1">
                           {invitedAdmins.length} de 3 cupos
                         </span>
@@ -1291,7 +1366,7 @@ export function SettingsTab({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2.5">
                         <div className="relative flex-1">
                           <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
                           <input
@@ -1313,7 +1388,7 @@ export function SettingsTab({
                           type="button"
                           onClick={() => handleAddAdminInvite()}
                           disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
-                          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center justify-center gap-1.5"
                         >
                           {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                           <span>Agregar Sub Admin</span>

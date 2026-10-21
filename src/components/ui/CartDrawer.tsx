@@ -1415,7 +1415,7 @@ export function CartDrawer() {
   )}
 
   {items.length === 0 ? (
-  <div className="relative overflow-hidden flex-1 w-full my-1 sm:my-2.5 sm:mt-1 rounded-2xl sm:rounded-[2.5rem] p-4 py-6 sm:p-8 lg:p-10 min-h-[220px] sm:min-h-[520px] md:min-h-[560px] border-2 border-black/15 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
+  <div className="relative overflow-hidden w-full my-2 mb-20 sm:mb-2.5 sm:my-2.5 sm:mt-1 rounded-2xl sm:rounded-[2.5rem] p-5 py-8 sm:p-8 lg:p-10 min-h-[340px] sm:min-h-[520px] md:min-h-[560px] border-2 border-black/15 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
     {/* 3D Radial Champagne Aura */}
     <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.08] to-amber-400/[0.06] blur-3xl pointer-events-none" />
     <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-black/[0.04] dark:via-white/15 to-transparent pointer-events-none" />
@@ -1430,24 +1430,24 @@ export function CartDrawer() {
     </div>
 
     {/* 2IXO Circular Action Feature Discs */}
-    <div className="hidden sm:grid grid-cols-3 gap-6 max-w-sm mx-auto mb-6">
+    <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-xs sm:max-w-sm mx-auto mb-4 sm:mb-6">
       <div className="flex flex-col items-center group">
-        <div className="w-12 h-12 shrink-0 aspect-square min-w-[48px] min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Package className="w-5 h-5 text-gray-700 dark:text-gray-200 shrink-0" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 aspect-square min-w-[40px] min-h-[40px] sm:min-w-[48px] sm:min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Logística</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-1.5 sm:mt-2 text-center whitespace-nowrap">Logística</span>
       </div>
       <div className="flex flex-col items-center group">
-        <div className="w-12 h-12 shrink-0 aspect-square min-w-[48px] min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Truck className="w-5 h-5 text-gray-700 dark:text-gray-200 shrink-0" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 aspect-square min-w-[40px] min-h-[40px] sm:min-w-[48px] sm:min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Despacho</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-1.5 sm:mt-2 text-center whitespace-nowrap">Despacho</span>
       </div>
       <div className="flex flex-col items-center group">
-        <div className="w-12 h-12 shrink-0 aspect-square min-w-[48px] min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Navigation className="w-5 h-5 text-gray-700 dark:text-gray-200 shrink-0" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 aspect-square min-w-[40px] min-h-[40px] sm:min-w-[48px] sm:min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Navigation className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Envío</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-1.5 sm:mt-2 text-center whitespace-nowrap">Envío</span>
       </div>
     </div>
 
@@ -1906,8 +1906,7 @@ export function CartDrawer() {
             spellCheck={false}
             data-lpignore="true"
             data-1p-ignore="true"
-            data-form-type="other"
-            className="w-full bg-transparent text-xs font-mono font-bold uppercase tracking-wider outline-none text-gray-900 dark:text-gray-100 placeholder:normal-case placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-xs placeholder-gray-400"
+            className="w-full bg-transparent text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.22em] outline-none text-gray-900 dark:text-gray-100 placeholder:normal-case placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-xs placeholder-gray-400"
           />
         </div>
         <button 
@@ -2738,7 +2737,7 @@ export function CartDrawer() {
               </div>
               <div className="shrink-0 flex items-center">
                 {cardNumber.replace(/\s/g, "").length >= 1 ? (
-                  <div className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center">
+                  <div className="flex items-center justify-center">
                     <NetworkBrandLogo network={resolveCardNetwork(undefined, cardNumber)} compact monochrome="black" />
                   </div>
                 ) : (
@@ -3076,7 +3075,7 @@ export function CartDrawer() {
             ) : (
               <div className="inline-flex items-center shrink-0">
                 {detectedCardBrand === "visa" && (
-                  <VisaMono variant="mono" className="h-8 w-13 sm:h-8.5 sm:w-15 object-contain text-black fill-black shrink-0" />
+                  <VisaMono variant="mono" className="h-10 w-16 sm:h-11 sm:w-18 object-contain text-black fill-black shrink-0" />
                 )}
                 {detectedCardBrand === "mastercard" && (
                   <MastercardMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />

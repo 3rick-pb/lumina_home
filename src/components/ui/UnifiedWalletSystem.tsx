@@ -500,7 +500,7 @@ export function NetworkBrandLogo({
       data-svg-src={theme.theSvgCdnUrl}
     >
       <svg
-        height={logoHeight}
+        height={isMonoBlack ? 15 : logoHeight}
         viewBox="0 8.2 24 7.6"
         fill={fill}
         role="img"

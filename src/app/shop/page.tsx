@@ -109,8 +109,12 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           style={{ willChange: "transform, opacity" }}
           className="mb-8 sm:mb-12 transform-gpu scroll-mt-36"
         >
-          <h1 className="text-2xl sm:text-4xl font-display italic font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-            {canonicalCategoryName ? `Colección: ${canonicalCategoryName}` : "Todos los Productos"}
+          <h1 className="text-2xl sm:text-4xl font-sans font-medium text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
+            {canonicalCategoryName ? (
+              <>Colección <span className="font-display italic text-accent-700 dark:text-[#8c9276]">{canonicalCategoryName}</span></>
+            ) : (
+              <>Todos los <span className="font-display italic text-accent-700 dark:text-[#8c9276]">Productos</span></>
+            )}
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-2xl">
             Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal. 
@@ -118,29 +122,53 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           </p>
         </motion.div>
 
+        {/* Barra de Filtros / Nichos: Mismo diseño editorial con tonos bosque y animación de la página principal */}
         <motion.div 
           id="shop-categories"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           style={{ willChange: "transform, opacity" }}
-          className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 overflow-x-auto pb-2 hide-scrollbar transform-gpu scroll-mt-36"
+          className="relative w-full mb-8 sm:mb-10 transform-gpu scroll-mt-36"
         >
-          <Link href="/shop" className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${!categoryFilter ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}>
-            Todos
-          </Link>
-          {categories.map((cat) => {
-            const isSelected = categoryFilter ? normalizeText(categoryFilter) === normalizeText(cat) : false;
-            return (
-              <Link 
-                key={cat} 
-                href={`/shop?category=${encodeURIComponent(cat.toLowerCase())}`}
-                className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${isSelected ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}
-              >
-                {cat}
-              </Link>
-            );
-          })}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap py-1.5 px-1 w-full">
+            <Link 
+              href="/shop" 
+              className={`relative px-4 sm:px-5 py-2 rounded-full whitespace-nowrap cursor-pointer shrink-0 select-none transition-all duration-150 active:scale-95 ${
+                !categoryFilter 
+                  ? 'bg-[#242c1c] dark:bg-[#e5ecdb] text-[#f5f8f0] dark:text-[#182012] shadow-sm ring-1 ring-black/10 dark:ring-white/20' 
+                  : 'bg-[#f3f0e8]/80 dark:bg-[#1f251c]/70 text-[#48533d] dark:text-[#c4cec0] hover:bg-[#eae5da] dark:hover:bg-[#283024] hover:text-gray-950 dark:hover:text-white border border-black/[0.06] dark:border-white/[0.08]'
+              }`}
+            >
+              <span className="flex items-center gap-1.5 text-xs sm:text-sm font-display tracking-wide font-medium">
+                Todos
+                {!categoryFilter && (
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-[#526437] shrink-0" />
+                )}
+              </span>
+            </Link>
+            {categories.map((cat) => {
+              const isSelected = categoryFilter ? normalizeText(categoryFilter) === normalizeText(cat) : false;
+              return (
+                <Link 
+                  key={cat} 
+                  href={`/shop?category=${encodeURIComponent(cat.toLowerCase())}`}
+                  className={`relative px-4 sm:px-5 py-2 rounded-full whitespace-nowrap cursor-pointer shrink-0 select-none transition-all duration-150 active:scale-95 ${
+                    isSelected 
+                      ? 'bg-[#242c1c] dark:bg-[#e5ecdb] text-[#f5f8f0] dark:text-[#182012] shadow-sm ring-1 ring-black/10 dark:ring-white/20' 
+                      : 'bg-[#f3f0e8]/80 dark:bg-[#1f251c]/70 text-[#48533d] dark:text-[#c4cec0] hover:bg-[#eae5da] dark:hover:bg-[#283024] hover:text-gray-950 dark:hover:text-white border border-black/[0.06] dark:border-white/[0.08]'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 text-xs sm:text-sm font-display tracking-wide font-medium">
+                    {cat}
+                    {isSelected && (
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-[#526437] shrink-0" />
+                    )}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </motion.div>
 
         <div id="shop-products" className="scroll-mt-36">
