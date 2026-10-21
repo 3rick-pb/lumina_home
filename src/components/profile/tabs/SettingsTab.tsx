@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Settings, 
@@ -87,6 +87,7 @@ export function SettingsTab({
   const [editName, setEditName] = useState("");
   const [newPass, setNewPass] = useState("");
   const [isCreatureCooling, setIsCreatureCooling] = useState(false);
+  const handleCreatureCooldownEnd = useCallback(() => setIsCreatureCooling(false), []);
   const [invitedAdmins, setInvitedAdmins] = useState<string[]>([]);
   const [subAdminProfiles, setSubAdminProfiles] = useState<Record<string, { displayName?: string; email: string }>>({});
   const [primaryAdminEmail, setPrimaryAdminEmail] = useState<string>("admin@lumina.com");
@@ -1038,7 +1039,7 @@ export function SettingsTab({
                 size="sm"
                 isCooling={isCreatureCooling}
                 cooldownDuration={3000}
-                onCooldownEnd={() => setIsCreatureCooling(false)}
+                onCooldownEnd={handleCreatureCooldownEnd}
                 onClick={() => {
                   if (isCreatureCooling) return;
                   setIsCreatureCooling(true);

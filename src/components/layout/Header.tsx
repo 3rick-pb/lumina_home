@@ -12,7 +12,7 @@ import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
-import { LiquidGlass, getDisplacementFilter } from "@/components/ui/LiquidGlass";
+import { LiquidGlass, getDisplacementFilter, getCapsuleInverseBezelMap } from "@/components/ui/LiquidGlass";
 import { LiquidScrubberNav } from "@/components/ui/LiquidScrubberNav";
 import dynamic from 'next/dynamic';
 const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod => ({ default: mod.CartDrawer })), {
@@ -49,9 +49,10 @@ export function Header() {
   const [isMounted, setIsMounted] = useState(false);
 
   const headerRef = useRef<HTMLDivElement>(null);
-  const [headerDims, setHeaderDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [headerDims, setHeaderDims] = useState<{ width: number; height: number }>({ width: 720, height: 56 });
   const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState(true);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const [capsuleBezelMapUrl, setCapsuleBezelMapUrl] = useState<string>("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -62,6 +63,13 @@ export function Header() {
       const ua = navigator.userAgent.toLowerCase();
       const isChromium = /chrome|chromium|edg/.test(ua) && !/iphone|ipad|ipod|firefox|fxios|crios/.test(ua);
       setHasSvgFilterSupport(isChromium);
+
+      // Precompute capsule bezel map immediately so Liquid Glass is instant from frame 0
+      try {
+        setCapsuleBezelMapUrl(getCapsuleInverseBezelMap());
+      } catch (err) {
+        console.warn("Could not generate capsule inverse bezel map:", err);
+      }
 
       return () => window.removeEventListener("resize", checkMobile);
     }
@@ -82,19 +90,7 @@ export function Header() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
-
-  const headerFilterUrl = useMemo(() => {
-    if (!hasSvgFilterSupport || headerDims.width === 0 || headerDims.height === 0) return null;
-    return getDisplacementFilter({
-      width: headerDims.width,
-      height: headerDims.height,
-      radius: 9999,
-      depth: 4,
-      strength: 24,
-      chromaticAberration: 1.5,
-    });
-  }, [hasSvgFilterSupport, headerDims.width, headerDims.height]);
+  }, [pathname, isAuthenticated]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -247,6 +243,40 @@ export function Header() {
   return (
     <>
       <CartDrawer />
+      {/* Real in-DOM SVG Displacement Filter: 100% immune to Chromium SPA client-navigation cache loss */}
+      <svg className="fixed w-0 h-0 pointer-events-none" aria-hidden="true">
+        <defs>
+          <filter
+            id="srdavo-header-bar-liquid-glass"
+            x="0"
+            y="0"
+            width={headerDims.width || 800}
+            height={headerDims.height || 56}
+            filterUnits="userSpaceOnUse"
+            primitiveUnits="userSpaceOnUse"
+            colorInterpolationFilters="sRGB"
+          >
+            {capsuleBezelMapUrl && (
+              <feImage
+                href={capsuleBezelMapUrl}
+                x="0"
+                y="0"
+                width={headerDims.width || 800}
+                height={headerDims.height || 56}
+                preserveAspectRatio="none"
+                result="displacementMap"
+              />
+            )}
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="displacementMap"
+              scale="24"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+        </defs>
+      </svg>
       <header 
         className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none transform-gpu"
         style={{ transform: "translateZ(0)" }}
@@ -255,17 +285,17 @@ export function Header() {
           ref={headerRef}
           className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full relative transform-gpu max-w-full overflow-visible select-none"
         >
-          {/* Capa de Cristal Líquido Real de la Barra Superior (#srdavo-header-bar-glass) */}
+          {/* Capa de Cristal Líquido Real de la Barra Superior (#srdavo-header-bar-liquid-glass) */}
           <div
             className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0"
             style={{
               clipPath: "inset(0 round 9999px)",
               WebkitClipPath: "inset(0 round 9999px)",
-              backdropFilter: hasSvgFilterSupport && headerFilterUrl
-                ? `blur(0.8px) url('${headerFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+              backdropFilter: hasSvgFilterSupport && capsuleBezelMapUrl
+                ? "blur(0.8px) url('#srdavo-header-bar-liquid-glass') blur(1.5px) brightness(1.08) saturate(1.45)"
                 : "blur(18px) saturate(190%) brightness(1.10)",
-              WebkitBackdropFilter: hasSvgFilterSupport && headerFilterUrl
-                ? `blur(0.8px) url('${headerFilterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
+              WebkitBackdropFilter: hasSvgFilterSupport && capsuleBezelMapUrl
+                ? "blur(0.8px) url('#srdavo-header-bar-liquid-glass') blur(1.5px) brightness(1.08) saturate(1.45)"
                 : "blur(18px) saturate(190%) brightness(1.10)",
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.46) 0%, rgba(240,240,248,0.20) 100%)",
@@ -342,7 +372,7 @@ export function Header() {
                   onChange={(e) => setSearchVal(e.target.value)}
                   placeholder={isMobileScreen ? "Búscame..." : "Buscar en catálogo..."}
                   className={cn(
-                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none bg-white/50 dark:bg-[#18181b]/50 backdrop-blur-md border border-white/75 dark:border-white/20 focus:bg-white/90 dark:focus:bg-[#18181b]/90 focus:border-white/90 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.8),0_4px_16px_rgba(0,0,0,0.05)]",
+                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none bg-white/75 dark:bg-[#18181b]/75 border border-white/75 dark:border-white/20 focus:bg-white/95 dark:focus:bg-[#18181b]/95 focus:border-white/90 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.8),0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 
                       ? "w-32 sm:w-64 pr-8 opacity-100" 
                       : "w-9 sm:w-10 pr-0 opacity-0 group-hover:w-32 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-32 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"

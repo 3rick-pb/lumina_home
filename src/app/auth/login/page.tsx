@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
+import React, { useState, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -28,6 +28,8 @@ import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { Google } from "@thesvg/react";
 
+const SCRAMBLE_CHARSET = "ABCDEF0123456789$#%&*?";
+
 function LoginFormContent() {
   const brand = useBrand();
   const searchParams = useSearchParams();
@@ -38,6 +40,61 @@ function LoginFormContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [scrambledPassword, setScrambledPassword] = useState<string | null>(null);
+  const pwdTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Scramble reveal effect identical to credit card unmasking (CardFolder / register)
+   */
+  const runScrambleReveal = (
+    realValue: string,
+    toShow: boolean,
+    setDisplay: (val: string | null) => void,
+    timerRef: React.MutableRefObject<NodeJS.Timeout | null>
+  ) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (!realValue) {
+      setDisplay(null);
+      return;
+    }
+
+    const length = realValue.length;
+    const targetChars = toShow ? Array.from(realValue) : Array.from({ length }, () => "•");
+    const totalSteps = 12;
+    const intervalMs = 24;
+    let step = 0;
+
+    setDisplay(
+      targetChars.map(() => SCRAMBLE_CHARSET[Math.floor(Math.random() * SCRAMBLE_CHARSET.length)]).join("")
+    );
+
+    timerRef.current = setInterval(() => {
+      step += 1;
+      if (step >= totalSteps) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = null;
+        setDisplay(null);
+      } else {
+        const progress = step / totalSteps;
+        const resolvedCount = Math.floor(progress * length);
+        const frame = targetChars
+          .map((ch, idx) => {
+            if (idx < resolvedCount) return ch;
+            const randIdx = Math.floor(Math.random() * SCRAMBLE_CHARSET.length);
+            return SCRAMBLE_CHARSET[randIdx];
+          })
+          .join("");
+        setDisplay(frame);
+      }
+    }, intervalMs);
+  };
+
+  const handleToggleLoginPassword = () => {
+    const next = !showLoginPassword;
+    setShowLoginPassword(next);
+    runScrambleReveal(password, next, setScrambledPassword, pwdTimerRef);
+  };
+
   const [errorMsg, setErrorMsg] = useState("");
   const [successNotice, setSuccessNotice] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -272,17 +329,24 @@ function LoginFormContent() {
                 <input 
                   id="password"
                   name="password"
-                  type={showLoginPassword ? "text" : "password"} 
+                  type={showLoginPassword || scrambledPassword !== null ? "text" : "password"} 
                   autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-11 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
+                  value={scrambledPassword !== null ? scrambledPassword : password}
+                  onChange={(e) => {
+                    if (scrambledPassword !== null) {
+                      if (pwdTimerRef.current) clearInterval(pwdTimerRef.current);
+                      setScrambledPassword(null);
+                    }
+                    setPassword(e.target.value);
+                  }}
+                  readOnly={scrambledPassword !== null}
+                  className="w-full pl-11 pr-11 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm font-mono tracking-wide"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowLoginPassword((prev) => !prev)}
+                  onClick={handleToggleLoginPassword}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
                   tabIndex={-1}
                   title={showLoginPassword ? "Ocultar contraseña" : "Ver contraseña"}

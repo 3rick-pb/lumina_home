@@ -438,26 +438,28 @@ export function CartDrawer() {
     }
 
     // Card payment:
-    // 1. CVV is strictly required (3 or 4 digits)
+    // 1. CVV is strictly valid with either 3 or 4 digits (accommodating Visa, MC, Diners 3-digit and Amex 4-digit)
     const cleanCvv = cardCvv.replace(/\D/g, "");
-    const isCvvValid = cleanCvv.length >= 3 && cleanCvv.length <= 4;
+    const isCvvValid = cleanCvv.length === 3 || cleanCvv.length === 4;
     if (!isCvvValid) return false;
 
-    // 2. If using a saved card from 3D wallet or stored cards
+    // 2. If using a saved card from 3D wallet or stored cards, valid CVV activates the payment button immediately
     if (selectedSavedCardId && selectedSavedCardId !== "new") {
-      const cardExists = (cards && cards.some(c => c.id === selectedSavedCardId)) ||
-                         (userWallet3DCards && userWallet3DCards.some(c => c.id === selectedSavedCardId));
-      return Boolean(cardExists && isCvvValid);
+      return isCvvValid;
     }
 
-    // 3. Manual card entry
+    // 3. Manual or auto-filled card entry
     const cleanNum = cardNumber.replace(/\D/g, "");
-    const isNumValid = cleanNum.length >= 14 && cleanNum.length <= 16;
-    const isExpValid = /^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim());
-    const isHolderValid = cardHolder.trim().length >= 3;
+    const isNumValid = cardNumber.includes("••••")
+      ? cardNumber.replace(/\s/g, "").length >= 12
+      : (cleanNum.length >= 14 && cleanNum.length <= 19);
+
+    const cleanExp = cardExpiry.trim();
+    const isExpValid = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
+    const isHolderValid = cardHolder.trim().length >= 2 || Boolean(user?.name);
 
     return isNumValid && isExpValid && isCvvValid && isHolderValid;
-  }, [selectedPayMethod, payphoneAppPhone, cardCvv, selectedSavedCardId, cards, userWallet3DCards, cardNumber, cardExpiry, cardHolder]);
+  }, [selectedPayMethod, payphoneAppPhone, cardCvv, selectedSavedCardId, cardNumber, cardExpiry, cardHolder, user?.name]);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -511,18 +513,23 @@ export function CartDrawer() {
     }
     if (selectedPayMethod === "card") {
       const cleanCvv = cardCvv.replace(/\D/g, "");
-      if (cleanCvv.length < 3) {
-        return "Ingresa el código CVV (3 dígitos) de tu tarjeta para autorizar el cobro";
+      if (cleanCvv.length < 3 || cleanCvv.length > 4) {
+        return "Ingresa el código CVV (3 o 4 dígitos) de tu tarjeta para autorizar el cobro";
       }
       if (selectedSavedCardId === "new") {
         const cleanNum = cardNumber.replace(/\D/g, "");
-        if (cleanNum.length < 14) {
+        const hasValidNum = cardNumber.includes("••••")
+          ? cardNumber.replace(/\s/g, "").length >= 12
+          : (cleanNum.length >= 14 && cleanNum.length <= 19);
+        if (!hasValidNum) {
           return "Ingresa los 16 dígitos de tu tarjeta de crédito o débito";
         }
-        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim())) {
+        const cleanExp = cardExpiry.trim();
+        const isExpOk = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
+        if (!isExpOk) {
           return "Ingresa la fecha de expiración en formato MM/AA (Ej: 12/28)";
         }
-        if (cardHolder.trim().length < 3) {
+        if (cardHolder.trim().length < 2 && !user?.name) {
           return "Ingresa el nombre del titular como figura en tu tarjeta";
         }
       }
@@ -1154,27 +1161,32 @@ export function CartDrawer() {
     // 2. Control de Campos del Método de Pago
     if (selectedPayMethod === "card") {
       const cleanCvv = cardCvv.replace(/\D/g, "");
-      if (cleanCvv.length < 3) {
-        setPayphoneError("Por favor ingresa el código de seguridad CVV (3 dígitos) de tu tarjeta para autorizar el cobro.");
+      if (cleanCvv.length < 3 || cleanCvv.length > 4) {
+        setPayphoneError("Por favor ingresa el código de seguridad CVV (3 o 4 dígitos) de tu tarjeta para autorizar el cobro.");
         const payElem = document.getElementById("cart-payment-fields");
         if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
         return;
       }
       if (selectedSavedCardId === "new") {
         const cleanNum = cardNumber.replace(/\D/g, "");
-        if (cleanNum.length < 14) {
+        const hasValidNum = cardNumber.includes("••••")
+          ? cardNumber.replace(/\s/g, "").length >= 12
+          : (cleanNum.length >= 14 && cleanNum.length <= 19);
+        if (!hasValidNum) {
           setPayphoneError("Por favor ingresa los 16 dígitos de tu tarjeta de crédito o débito.");
           const payElem = document.getElementById("cart-payment-fields");
           if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
           return;
         }
-        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim())) {
+        const cleanExp = cardExpiry.trim();
+        const isExpOk = /^\d{1,2}\/(\d{2}|\d{4})$/.test(cleanExp) || cleanExp.replace(/\D/g, "").length === 4;
+        if (!isExpOk) {
           setPayphoneError("Por favor ingresa la fecha de expiración en formato MM/AA (Ej: 12/28).");
           const payElem = document.getElementById("cart-payment-fields");
           if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
           return;
         }
-        if (cardHolder.trim().length < 3) {
+        if (cardHolder.trim().length < 2 && !user?.name) {
           setPayphoneError("Por favor ingresa el nombre del titular como figura en tu tarjeta.");
           const payElem = document.getElementById("cart-payment-fields");
           if (payElem) payElem.scrollIntoView({ behavior: "smooth" });
@@ -1880,35 +1892,26 @@ export function CartDrawer() {
         <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
         <div className="relative flex-1 flex items-center">
           <input 
-            type={revealCouponInput ? "text" : "password"} 
+            type="text" 
+            name="discount_code"
             value={couponInput}
             onChange={e => {
               setCouponInput(e.target.value.toUpperCase());
               if (couponFeedback) setCouponFeedback(null);
             }}
             placeholder="Código de descuento"
-            autoComplete="new-password"
+            autoComplete="off"
             autoCorrect="off"
             autoCapitalize="characters"
             spellCheck={false}
             data-lpignore="true"
-            className="w-full bg-transparent text-xs font-mono font-medium outline-none text-gray-900 dark:text-gray-100 placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder-gray-400 pr-7"
+            data-1p-ignore="true"
+            data-form-type="other"
+            style={{
+              WebkitTextSecurity: couponInput ? "disc" : "none",
+            } as React.CSSProperties}
+            className="w-full bg-transparent text-xs font-mono font-medium tracking-wider outline-none text-gray-900 dark:text-gray-100 placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder-gray-400"
           />
-          {couponInput.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setRevealCouponInput(!revealCouponInput)}
-              className="absolute right-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 cursor-pointer"
-              title={revealCouponInput ? "Ocultar código" : "Mostrar código"}
-              aria-label="Alternar visibilidad del código"
-            >
-              {revealCouponInput ? (
-                <EyeOff className="w-3.5 h-3.5" />
-              ) : (
-                <Eye className="w-3.5 h-3.5" />
-              )}
-            </button>
-          )}
         </div>
         <button 
           type="submit"
@@ -2738,8 +2741,8 @@ export function CartDrawer() {
               </div>
               <div className="shrink-0 flex items-center">
                 {cardNumber.replace(/\s/g, "").length >= 1 ? (
-                  <div className="px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 flex items-center">
-                    <NetworkBrandLogo network={resolveCardNetwork(undefined, cardNumber)} compact />
+                  <div className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center">
+                    <NetworkBrandLogo network={resolveCardNetwork(undefined, cardNumber)} compact monochrome="black" />
                   </div>
                 ) : (
                   <span className="text-[10px] font-mono uppercase text-gray-400 tracking-wider">
@@ -2885,11 +2888,17 @@ export function CartDrawer() {
         <div 
           ref={summaryScrollRef}
           onWheel={(e) => {
-            if (cartScrollRef.current) {
-              cartScrollRef.current.scrollTop += e.deltaY;
+            if (summaryScrollRef.current && cartScrollRef.current) {
+              const el = summaryScrollRef.current;
+              const isScrollable = el.scrollHeight > el.clientHeight;
+              const atTop = el.scrollTop <= 0 && e.deltaY < 0;
+              const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2 && e.deltaY > 0;
+              if (!isScrollable || atTop || atBottom) {
+                cartScrollRef.current.scrollTop += e.deltaY;
+              }
             }
           }}
-          className="max-h-48 overflow-y-auto space-y-2.5 pr-2.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+          className="max-h-48 overflow-y-auto space-y-2.5 pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((item) => (
             <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
@@ -2917,7 +2926,7 @@ export function CartDrawer() {
             </div>
           ))}
         </div>
-        <MacOSScrollbar containerRef={summaryScrollRef} insetTop={2} insetBottom={2} />
+        <MacOSScrollbar containerRef={summaryScrollRef} insetTop={0} insetBottom={0} insetRight={-6} />
       </div>
     </div>
 
@@ -3070,19 +3079,19 @@ export function CartDrawer() {
             ) : (
               <div className="inline-flex items-center shrink-0">
                 {detectedCardBrand === "visa" && (
-                  <VisaMono variant="mono" className="h-6 w-6 text-black fill-black" />
+                  <VisaMono variant="mono" className="h-8 w-13 sm:h-8.5 sm:w-15 object-contain text-black fill-black shrink-0" />
                 )}
                 {detectedCardBrand === "mastercard" && (
-                  <MastercardMono variant="mono" className="h-6 w-6 text-black fill-black" />
+                  <MastercardMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />
                 )}
                 {detectedCardBrand === "amex" && (
-                  <AmericanExpressMono variant="mono" className="h-6 w-6 text-black fill-black" />
+                  <AmericanExpressMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />
                 )}
                 {detectedCardBrand === "diners" && (
-                  <DinersClubMono variant="mono" className="h-6 w-6 text-black fill-black" />
+                  <DinersClubMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />
                 )}
                 {detectedCardBrand === "discover" && (
-                  <DiscoverMono variant="mono" className="h-6 w-6 text-black fill-black" />
+                  <DiscoverMono variant="mono" className="h-7 w-10 object-contain text-black fill-black shrink-0" />
                 )}
               </div>
             )}

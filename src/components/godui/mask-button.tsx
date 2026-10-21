@@ -68,17 +68,40 @@ export const MaskButton = React.forwardRef<HTMLButtonElement, MaskButtonProps>(
 
     const activeCooling = isCooling || localCooling;
 
-    // Handle cooldown timer
+    const onCooldownEndRef = React.useRef(onCooldownEnd);
     React.useEffect(() => {
-      if (activeCooling) {
+      onCooldownEndRef.current = onCooldownEnd;
+    }, [onCooldownEnd]);
+
+    // Preload mask assets immediately on mount
+    React.useEffect(() => {
+      const asset = MASK_ASSETS[mask] || MASK_ASSETS.nature;
+      if (typeof window !== "undefined" && asset) {
+        const img = new window.Image();
+        img.src = asset;
+      }
+    }, [mask]);
+
+    const isRunningRef = React.useRef(false);
+
+    // Handle cooldown timer: strictly runs once per cooldown trigger, immune to parent re-renders
+    React.useEffect(() => {
+      if (activeCooling && !isRunningRef.current) {
+        isRunningRef.current = true;
         setAnimationKey((prev) => prev + 1);
         const timer = setTimeout(() => {
+          isRunningRef.current = false;
           setLocalCooling(false);
-          onCooldownEnd?.();
+          onCooldownEndRef.current?.();
         }, cooldownDuration);
-        return () => clearTimeout(timer);
+        return () => {
+          clearTimeout(timer);
+          isRunningRef.current = false;
+        };
+      } else if (!activeCooling) {
+        isRunningRef.current = false;
       }
-    }, [activeCooling, cooldownDuration, onCooldownEnd]);
+    }, [activeCooling, cooldownDuration]);
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (activeCooling || disabled) {
@@ -132,6 +155,7 @@ export const MaskButton = React.forwardRef<HTMLButtonElement, MaskButtonProps>(
             ...(activeCooling
               ? {
                   animation: `mask-button-out ${cooldownDuration}ms steps(${cfg.steps}) forwards`,
+                  willChange: "mask-position, -webkit-mask-position",
                 }
               : {
                   maskPosition: "0% 0",
