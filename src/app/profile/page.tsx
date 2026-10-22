@@ -121,6 +121,7 @@ const OrderDetailModal = dynamic(() => import("@/components/profile/modals/Order
 const AddCardAnimatedModal = dynamic(() => import("@/components/profile/AddCardAnimatedModal").then(m => m.AddCardAnimatedModal), {
   ssr: false,
 });
+import { ThinkingOrb } from "thinking-orbs";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 import { useBrand } from "@/core";
@@ -645,8 +646,10 @@ export default function ProfilePage() {
  return (
  <div className="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-[#18181b]">
  <div className="flex flex-col items-center gap-3">
- <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
- <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Cargando panel de usuario...</p>
+ <ThinkingOrb state="working" size={64} />
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wide">
+            Cargando perfil administrativo...
+          </p>
  </div>
  </div>
  );
@@ -1467,7 +1470,7 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2.5 md:gap-4 lg:gap-6 min-h-[52px] w-full max-w-full">
+  <header className="relative z-40 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl px-4 sm:px-6 md:px-7 py-3 sm:py-3.5 md:py-4 rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex items-center justify-between gap-3 md:gap-5 lg:gap-6 min-h-[64px] sm:min-h-[72px] md:min-h-[80px] w-full max-w-full">
   
   {/* --- 1. VISTA MÓVIL (Celulares y pantallas pequeñas): Disperso 1:1 a la captura de pantalla --- */}
   <div className="flex md:hidden items-center justify-between w-full gap-2 min-w-0">
@@ -1484,7 +1487,7 @@ const handleConfirmDeleteNiche = async () => {
           width={1058}
           height={272}
           priority
-          className="h-6 w-auto object-contain dark:invert"
+          className="h-7 sm:h-8 w-auto object-contain dark:invert"
         />
       </Link>
     </div>
@@ -1529,7 +1532,7 @@ const handleConfirmDeleteNiche = async () => {
         width={1058}
         height={272}
         priority
-        className="h-6 sm:h-6.5 w-auto object-contain dark:invert"
+        className="h-8 sm:h-9 md:h-10 w-auto object-contain dark:invert"
       />
     </Link>
   </div>

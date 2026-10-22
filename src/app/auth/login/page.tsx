@@ -27,6 +27,7 @@ import { LuminaLoginWordmark } from "@/components/ui/LuminaLoginWordmark";
 import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { Google } from "@thesvg/react";
+import { ThinkingOrb } from "thinking-orbs";
 
 const SCRAMBLE_CHARSET = "ABCDEF0123456789$#%&*?";
 
@@ -375,7 +376,7 @@ function LoginFormContent() {
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2.5">
-                  <BeUILoaderMetaballs size={32} className="text-white" />
+                  <ThinkingOrb state="working" size={20} color="#ffffff" />
                   <span className="font-semibold tracking-wide">Iniciando sesión...</span>
                 </div>
               ) : (
@@ -401,7 +402,7 @@ function LoginFormContent() {
             >
               {isGoogleLoading ? (
                 <div className="flex items-center justify-center gap-2.5">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#1f1f1f] dark:text-gray-200" />
+                  <ThinkingOrb state="working" size={20} />
                   <span className="font-medium text-sm text-[#1f1f1f] dark:text-gray-200">Conectando con Google...</span>
                 </div>
               ) : (

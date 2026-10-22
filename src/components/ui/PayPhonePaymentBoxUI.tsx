@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { buildPayPhoneBreakdown } from "@/lib/payphone";
-import { Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+import { Loader2, AlertCircle, ShieldCheck, Lock } from "lucide-react";
+import { ThinkingOrb } from "thinking-orbs";
 
 interface PayPhonePaymentBoxUIProps {
   totalUsd: number;
@@ -169,8 +170,8 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
     <div className="w-full flex flex-col items-center justify-center relative p-2 font-sans">
       {/* Indicador de carga mientras el CDN de PayPhone responde */}
       {loading && !errorMessage && (
-        <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
-          <Loader2 className="w-8 h-8 animate-spin text-[#FF5900]" />
+        <div className="flex flex-col items-center justify-center gap-4 py-12 text-gray-500 dark:text-gray-400">
+          <ThinkingOrb state="working" size={32} color="#FF5900" />
           <div className="text-center space-y-1">
             <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
               Conectando con pasarela PayPhone...

@@ -24,6 +24,7 @@ import { LuminaLoginWordmark } from "@/components/ui/LuminaLoginWordmark";
 import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { Google } from "@thesvg/react";
+import { ThinkingOrb } from "thinking-orbs";
 import { WheelPicker, type WheelPickerOption } from "@/components/motion/wheel-picker";
 
 // Charset idéntico a CardFolder.tsx para el efecto de revelación progresiva
@@ -574,7 +575,10 @@ export default function RegisterPage() {
               className="w-full mt-2 h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-medium text-sm flex items-center justify-center gap-2.5 transition-all shadow-md hover:shadow-lg shadow-gray-900/15 active:scale-[0.99] cursor-pointer disabled:opacity-60"
             >
               {isLoading ? (
-                <span>Creando cuenta...</span>
+                <div className="flex items-center justify-center gap-2.5">
+                  <ThinkingOrb state="working" size={20} color="#ffffff" />
+                  <span>Creando cuenta...</span>
+                </div>
               ) : (
                 <>
                   <span>Crear Cuenta en {brand.shortName}</span>
@@ -598,7 +602,7 @@ export default function RegisterPage() {
             >
               {isGoogleLoading ? (
                 <div className="flex items-center justify-center gap-2.5">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#1f1f1f] dark:text-gray-200" />
+                  <ThinkingOrb state="working" size={20} />
                   <span className="font-medium text-sm text-[#1f1f1f] dark:text-gray-200">Conectando con Google...</span>
                 </div>
               ) : (

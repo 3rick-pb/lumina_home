@@ -45,6 +45,10 @@ type DashProps = {
   sectionKind: SectionKind
   side: Side
   isSidebarHovered?: boolean
+  isDirectlyHovered?: boolean
+  anyDashHovered?: boolean
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
 }
 
 export type ProximitySidebarProps = {
@@ -131,6 +135,10 @@ const Dash = ({
   sectionKind,
   side,
   isSidebarHovered = false,
+  isDirectlyHovered = false,
+  anyDashHovered = false,
+  onMouseEnter,
+  onMouseLeave,
 }: DashProps) => {
   const ref = useRef<HTMLButtonElement>(null)
   const preset = DASH_PRESETS[sectionKind]
@@ -202,6 +210,10 @@ const Dash = ({
     mass: 0.6,
   })
 
+  const isTooltipVisible = isSidebarHovered && (
+    anyDashHovered ? isDirectlyHovered : active
+  );
+
   return (
     <motion.button
       ref={ref}
@@ -210,6 +222,8 @@ const Dash = ({
       aria-label={`Ir a ${section.label}`}
       title={section.label}
       style={{ x: translateX }}
+      onPointerEnter={onMouseEnter}
+      onPointerLeave={onMouseLeave}
       className={cn(
         "group relative flex h-5 w-[110px] items-center border-0 bg-transparent p-0 outline-none cursor-pointer select-none",
         side === "right" ? "justify-end" : "justify-start"
@@ -219,13 +233,13 @@ const Dash = ({
       {/* Floating tooltip preview: strictly only visible when user hovers or interacts with the sidebar */}
       <span
         className={cn(
-          "pointer-events-none absolute text-[12px] font-sans font-medium px-3.5 py-1.5 rounded-full backdrop-blur-2xl whitespace-nowrap transition-all duration-200 select-none z-50 flex items-center gap-2",
-          side === "right" ? "right-[124px]" : "left-[124px]",
-          !isSidebarHovered
+          "pointer-events-none absolute text-[11.5px] font-sans font-medium px-3 py-1 rounded-full backdrop-blur-2xl whitespace-nowrap transition-all duration-150 select-none z-50 flex items-center gap-1.5 shadow-md",
+          side === "right" ? "right-[118px] sm:right-[124px]" : "left-[118px] sm:left-[124px]",
+          !isTooltipVisible
             ? "opacity-0 pointer-events-none scale-95 translate-x-2"
             : active
               ? "opacity-100 scale-100 translate-x-0 bg-gradient-to-r from-[#2c3321]/95 via-[#3d472e]/95 to-[#4d5939]/95 text-white border border-[#8c9276]/50 shadow-[0_8px_24px_rgba(0,0,0,0.28),inset_0_1px_1px_rgba(255,255,255,0.4),0_0_14px_rgba(140,146,118,0.3)] tracking-tight"
-              : "opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 bg-white/90 dark:bg-[#18181b]/90 text-zinc-900 dark:text-zinc-100 border border-white/80 dark:border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.1)] translate-x-1 group-hover:translate-x-0 tracking-tight"
+              : "opacity-100 scale-100 translate-x-0 bg-white/95 dark:bg-[#18181b]/95 text-zinc-900 dark:text-zinc-100 border border-white/80 dark:border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.1)] tracking-tight"
         )}
       >
         {active && (
@@ -261,6 +275,7 @@ const ProximitySidebar = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const mouseY = useMotionValue(Infinity)
   const rawWaveY = useMotionValue(Infinity)
+  const [hoveredDashId, setHoveredDashId] = useState<string | null>(null)
 
   // Spring-cushioned wave that flows naturally as you scroll up and down ("el sidebar debe seguirme")
   const springWaveY = useSpring(rawWaveY, {
@@ -596,7 +611,7 @@ const ProximitySidebar = ({
           "mx-4 flex flex-col",
           side === "right" ? "items-end" : "items-start"
         )}
-        style={{ gap: 10 }}
+        style={{ gap: 14 }}
         onPointerMove={(event) => {
           pointerInside.current = true
           setIsSidebarHovered(true)
@@ -605,6 +620,7 @@ const ProximitySidebar = ({
         onPointerLeave={() => {
           pointerInside.current = false
           setIsSidebarHovered(false)
+          setHoveredDashId(null)
           mouseY.set(Infinity)
         }}
       >
@@ -620,6 +636,10 @@ const ProximitySidebar = ({
             sectionKind={detectedKinds[section.id] ?? getSectionKind(section)}
             side={side}
             isSidebarHovered={isSidebarHovered}
+            isDirectlyHovered={hoveredDashId === section.id}
+            anyDashHovered={hoveredDashId !== null}
+            onMouseEnter={() => setHoveredDashId(section.id)}
+            onMouseLeave={() => setHoveredDashId((curr) => curr === section.id ? null : curr)}
           />
         ))}
       </div>
