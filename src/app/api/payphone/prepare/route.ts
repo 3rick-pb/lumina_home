@@ -1,256 +1,66 @@
-import { NextResponse } from 'next/server';
-import { preparePayPhonePayment, validateEcuadorianId, sanitizeString } from '@/lib/payphone';
-import { getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
-import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
-import { brandConfig } from '@/config';
+import { NextResponse } from "next/server";
+import { buildPayPhoneBreakdown, isRealPayPhoneToken } from "@/lib/payphone";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-// Valid coupons configuration (Zero-Trust server validation)
-const VALID_COUPONS: Record<string, { discountPercent: number; isFreeShipping: boolean }> = {
-  'LUMINA10': { discountPercent: 10, isFreeShipping: false },
-  'VIP20': { discountPercent: 20, isFreeShipping: false },
-  'BIENVENIDO': { discountPercent: 15, isFreeShipping: false },
-  'ENVIOGRATIS': { discountPercent: 0, isFreeShipping: true }
-};
-
-interface PrepareRequestBody {
-  orderId?: string;
-  items: Array<{
-    productId: string;
-    quantity: number;
-    price?: number;
-    isBundle?: boolean;
-    bundleCustomPrice?: number;
-    color?: string;
-    size?: string;
-    product?: {
-      id: string;
-      title: string;
-      price: number;
-      imageUrl: string;
-    };
-  }>;
-  shippingAddress: {
-    recipient?: string;
-    idNumber?: string;
-    phone?: string;
-    email?: string;
-    street: string;
-    city: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-  };
-  couponCode?: string;
-  hasPriorityShipping?: boolean;
-  clientClaimedTotal?: number;
-}
-
-/**
- * POST /api/payphone/prepare
- * Secure endpoint to initiate a PayPhone Ecuador payment session.
- * Enforces Zero-Trust server-side price recalculation, Ecuadorian ID validation,
- * input sanitization, and returns payload tailored for active mode (Cajita vs Redirección).
- */
-export async function POST(request: Request) {
-  // 0. Rate limiting check (12 requests / 60 seconds per IP)
-  const rateLimit = checkRateLimit(request, {
-    keyPrefix: 'payphone_prepare',
-    maxRequests: 12,
-    windowMs: 60 * 1000
-  });
-  if (!rateLimit.isAllowed) {
-    return createRateLimitResponse(
-      'Has excedido el límite de solicitudes para iniciar pagos. Por favor espera un minuto antes de reintentar.',
-      rateLimit.resetTimeMs
-    );
-  }
-
+export async function POST(req: Request) {
   try {
-    const authUser = await getAuthenticatedUser(request).catch(() => null);
-    const body = (await request.json().catch(() => ({}))) as PrepareRequestBody;
+    const body = await req.json().catch(() => ({}));
+    const totalUsd = body.totalUsd ?? body.clientClaimedTotal ?? body.total;
+    const reference = body.reference || (body.orderId ? `Pedido #${body.orderId} - Lumina Home` : "Orden Lumina Home");
 
-    const { items, shippingAddress, couponCode, clientClaimedTotal } = body;
+    const token =
+      process.env.PAYPHONE_TOKEN || process.env.NEXT_PUBLIC_PAYPHONE_TOKEN;
+    const storeId =
+      process.env.PAYPHONE_STORE_ID || process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID;
 
-    // 1. Basic validation
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ success: false, error: 'El carrito de compras no contiene artículos.' }, { status: 400 });
+    if (!isRealPayPhoneToken(token) || !storeId || storeId.includes("XXXX")) {
+      return NextResponse.json(
+        { error: "Configura PAYPHONE_TOKEN y PAYPHONE_STORE_ID reales en .ENV", success: false },
+        { status: 503 }
+      );
     }
 
-    if (!shippingAddress || !shippingAddress.street || !shippingAddress.city) {
-      return NextResponse.json({ success: false, error: 'La dirección de envío y ciudad son requeridas.' }, { status: 400 });
-    }
+    const breakdown = buildPayPhoneBreakdown(Number(totalUsd), true);
+    const origin = new URL(req.url).origin;
 
-    // 2. CYBERSECURITY: Ecuadorian Identification Document Validation (Cédula/RUC)
-    const rawDoc = String(shippingAddress.idNumber || '').trim();
-    if (rawDoc) {
-      const idCheck = validateEcuadorianId(rawDoc);
-      if (!idCheck.isValid) {
-        return NextResponse.json({
-          success: false,
-          error: idCheck.error || 'La identificación proporcionada no es una Cédula o RUC ecuatoriano válido.'
-        }, { status: 400 });
+    const response = await fetch(
+      "https://pay.payphonetodoesposible.com/api/button/Prepare",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...breakdown,
+          storeId,
+          reference: reference || "Orden Lumina Home",
+          responseUrl: `${origin}/?payphone_return=1`,
+          cancellationUrl: `${origin}/`,
+        }),
+        cache: "no-store",
       }
-    }
+    );
 
-    // 3. CYBERSECURITY: Zero-Trust Server Recalculation of Prices from Supabase
-    const supabase = getScopedSupabaseClient(request);
-    const productIds = items.map(i => i.productId).filter(Boolean);
-    const { data: dbProducts } = await supabase
-      .from('products')
-      .select('id, price, title')
-      .in('id', productIds);
-
-    const dbProductMap = new Map<string, { id: string; price: number; title: string }>();
-    if (dbProducts) {
-      for (const p of dbProducts) {
-        dbProductMap.set(p.id, p);
-      }
-    }
-
-    let calculatedSubtotal = 0;
-    for (const item of items) {
-      const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
-      let unitPrice = 0;
-
-      if (item.isBundle && item.bundleCustomPrice !== undefined && item.bundleCustomPrice > 0) {
-        unitPrice = Number(item.bundleCustomPrice);
-      } else {
-        const dbProduct = dbProductMap.get(item.productId);
-        if (dbProduct) {
-          unitPrice = Number(dbProduct.price);
-        } else if (item.price && Number(item.price) > 0) {
-          unitPrice = Number(item.price);
-        } else if (item.product?.price) {
-          unitPrice = Number(item.product.price);
-        }
-      }
-
-      calculatedSubtotal += unitPrice * qty;
-    }
-
-    if (calculatedSubtotal <= 0) {
-      return NextResponse.json({ success: false, error: 'Monto subtotal calculado inválido.' }, { status: 400 });
-    }
-
-    // Server-side coupon verification (Query Supabase coupons table first, with fallback)
-    let discountAmount = 0;
-    let isFreeShipping = false;
-    if (couponCode) {
-      const cleanCoupon = couponCode.trim().toUpperCase();
-      let couponDiscountPercent = 0;
-      let couponFreeShipping = false;
-      let foundCoupon = false;
-
-      try {
-        const { data: dbCoupon } = await supabase
-          .from('coupons')
-          .select('discount_percent, is_free_shipping, min_order_amount, is_active')
-          .eq('code', cleanCoupon)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (dbCoupon) {
-          if (!dbCoupon.min_order_amount || calculatedSubtotal >= Number(dbCoupon.min_order_amount)) {
-            couponDiscountPercent = Number(dbCoupon.discount_percent) || 0;
-            couponFreeShipping = Boolean(dbCoupon.is_free_shipping);
-            foundCoupon = true;
-          }
-        }
-      } catch (e) {
-        console.warn("Could not query coupons in prepare payment route:", e);
-      }
-
-      if (!foundCoupon && VALID_COUPONS[cleanCoupon]) {
-        couponDiscountPercent = VALID_COUPONS[cleanCoupon].discountPercent;
-        couponFreeShipping = VALID_COUPONS[cleanCoupon].isFreeShipping;
-        foundCoupon = true;
-      }
-
-      if (foundCoupon) {
-        if (couponDiscountPercent > 0) {
-          discountAmount = (calculatedSubtotal * couponDiscountPercent) / 100;
-        }
-        if (couponFreeShipping) {
-          isFreeShipping = true;
-        }
-      }
-    }
-
-    // Shipping calculation: Free over $100 or with coupon, otherwise $4.99
-    let shippingCost = 0;
-    if (calculatedSubtotal > 0 && !isFreeShipping && calculatedSubtotal < 100) {
-      shippingCost = 4.99;
-    }
-
-    // Priority Shipping Upsell (+USD 2.15)
-    const priorityShippingCost = body.hasPriorityShipping ? 2.15 : 0;
-
-    const verifiedTotal = Math.max(0, Number((calculatedSubtotal - discountAmount + shippingCost + priorityShippingCost).toFixed(2)));
-
-    // Anti-Tampering: Check if client manipulated total
-    if (clientClaimedTotal !== undefined) {
-      const diff = Math.abs(clientClaimedTotal - verifiedTotal);
-      if (diff > 0.05) {
-        console.warn(`[PayPhone SECURITY ALERT] Client claimed total: $${clientClaimedTotal}, Server calculated: $${verifiedTotal}`);
-        return NextResponse.json({
-          success: false,
-          error: 'Alerta de Seguridad: Se detectó una inconsistencia entre los precios del carrito y los registros oficiales de la tienda. El total ha sido recalculado.'
-        }, { status: 400 });
-      }
-    }
-
-    // 4. Sanitize strings against injection
-    const orderId = sanitizeString(body.orderId || `INV_${Math.floor(100000 + Math.random() * 900000)}`, 40);
-    const cleanEmail = sanitizeString(shippingAddress.email || authUser?.email || 'cliente@lumina.com', 80);
-    const cleanPhone = sanitizeString(shippingAddress.phone || '0999999999', 20);
-    const cleanRecipient = sanitizeString(shippingAddress.recipient || authUser?.email?.split('@')[0] || 'Cliente Lumina', 60);
-
-    // 5. PayPhone Prepare Execution (handles active mode: 'box' vs 'redirect')
-    const prepareResult = await preparePayPhonePayment({
-      orderId,
-      amount: verifiedTotal,
-      amountWithoutTax: verifiedTotal, // Standard USD Ecuadorian breakdown
-      amountWithTax: 0,
-      tax: 0,
-      customerEmail: cleanEmail,
-      customerPhone: cleanPhone,
-      documentId: rawDoc || '9999999999',
-      customReference: `Pedido #${orderId} ${brandConfig.name} - ${cleanRecipient}`
-    });
-
-    if (!prepareResult.success) {
-      return NextResponse.json({
-        success: false,
-        error: prepareResult.error || 'No se pudo preparar la sesión de cobro con PayPhone.'
-      }, { status: 500 });
+    const data = await response.json();
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: data?.message || "Error al preparar pago", details: data, success: false },
+        { status: response.status }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      mode: prepareResult.mode,
-      orderId,
-      paymentId: prepareResult.paymentId,
-      payUrl: prepareResult.payUrl,
-      clientTransactionId: prepareResult.clientTransactionId,
-      isSimulated: prepareResult.isSimulated,
-      verifiedTotal,
-      amountInCents: prepareResult.amountInCents,
-      amountWithoutTaxInCents: prepareResult.amountWithoutTaxInCents,
-      amountWithTaxInCents: prepareResult.amountWithTaxInCents,
-      taxInCents: prepareResult.taxInCents,
-      currency: prepareResult.currency,
-      storeId: prepareResult.storeId,
-      token: prepareResult.token,
-      reference: prepareResult.reference,
-      email: cleanEmail,
-      phoneNumber: cleanPhone,
-      documentId: rawDoc || undefined
+      paymentId: data.paymentId,
+      payWithPayPhone: data.payWithPayPhone,
+      payWithCard: data.payWithCard,
+      payUrl: data.payWithCard || data.payWithPayPhone,
+      clientTransactionId: breakdown.clientTransactionId,
     });
-  } catch (error) {
-    console.error('[API /api/payphone/prepare] Unhandled exception:', error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Error interno en Prepare", message: error?.message, success: false },
+      { status: 500 }
+    );
   }
 }

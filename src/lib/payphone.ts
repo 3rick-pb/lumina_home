@@ -656,3 +656,37 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
     };
   }
 }
+
+/**
+ * Checks if a PayPhone token is genuine and configured (not a placeholder).
+ */
+export function isRealPayPhoneToken(token?: string | null): boolean {
+  if (!token) return false;
+  const t = token.trim();
+  if (t.length < 15) return false;
+  if (t.includes('XXXX') || t.includes('TU_TOKEN') || t.includes('YOUR_TOKEN') || t.includes('placeholder')) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Builds the official PayPhone amount breakdown in integer cents.
+ */
+export function buildPayPhoneBreakdown(totalUsd: number, isTaxFree = true) {
+  const cleanTotal = Math.max(0, Number(totalUsd) || 0);
+  const amountInCents = Math.round(cleanTotal * 100);
+  const clientTransactionId = `LM_${Date.now()}_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+  return {
+    amount: amountInCents,
+    amountWithoutTax: isTaxFree ? amountInCents : 0,
+    amountWithTax: isTaxFree ? 0 : amountInCents,
+    tax: 0,
+    service: 0,
+    tip: 0,
+    currency: 'USD',
+    clientTransactionId,
+  };
+}
+

@@ -998,6 +998,8 @@ export function CartDrawer() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          totalUsd: finalTotal,
+          reference: `Orden Lumina Home #${orderId}`,
           orderId,
           items: items.map(i => ({
             productId: i.productId,
@@ -1167,9 +1169,9 @@ export function CartDrawer() {
         } else {
           setPayphoneError("El componente seguro de PayPhone se está cargando. Por favor reintenta en un momento.");
         }
-      } else if (data.payUrl) {
+      } else if (data.payUrl || data.payWithCard || data.payWithPayPhone) {
         // Live PayPhone redirection
-        window.location.href = data.payUrl;
+        window.location.href = data.payWithCard || data.payWithPayPhone || data.payUrl;
       }
     } catch {
       setIsProcessing(false);
