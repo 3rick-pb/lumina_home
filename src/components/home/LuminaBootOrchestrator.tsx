@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
 
 interface LuminaBootOrchestratorProps {
@@ -9,14 +9,30 @@ interface LuminaBootOrchestratorProps {
   children: React.ReactNode;
 }
 
+// Bandera de módulo: el splash de arranque solo se reproduce una vez por sesión de navegación.
+// Se resetea al cerrar sesión (via userStore), garantizando que el próximo login lo vea de nuevo.
+// sessionStorage key "lumina_booted" es limpiada por userStore en logout para resetear el estado.
+let hasBootedThisSession = false;
+
+function isAlreadyBooted(): boolean {
+  if (hasBootedThisSession) return true;
+  try {
+    return typeof sessionStorage !== "undefined" && sessionStorage.getItem("lumina_booted") === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function LuminaBootOrchestrator({
   activeHeroImageUrl,
   onReadyToAnimateText,
   children,
 }: LuminaBootOrchestratorProps) {
-  // La pantalla de carga canónica de Lumina prepara, posiciona y decodifica la imagen
-  // del Hero en GPU antes de desvanecerse suavemente (1000ms) para garantizar 0 glitches.
-  const [phase, setPhase] = useState<"loading" | "fading" | "done">("loading");
+  // Si ya booteó esta sesión (navegación interna), empieza directo en "done" para no reproducir
+  // la pantalla de carga de nuevo al regresar a / desde /shop, /profile, etc.
+  const [phase, setPhase] = useState<"loading" | "fading" | "done">(
+    isAlreadyBooted() ? "done" : "loading"
+  );
 
   const onReadyRef = useRef(onReadyToAnimateText);
   useEffect(() => {
@@ -24,6 +40,12 @@ export function LuminaBootOrchestrator({
   }, [onReadyToAnimateText]);
 
   useEffect(() => {
+    // Si ya está en "done" (navegación interna de vuelta al home), invocar callback inmediatamente
+    if (phase === "done") {
+      onReadyRef.current();
+      return;
+    }
+
     if (!activeHeroImageUrl) return;
 
     let isMounted = true;
@@ -76,7 +98,11 @@ export function LuminaBootOrchestrator({
 
       // Desmontar el splash una vez terminada la transición suave de 1000ms
       setTimeout(() => {
-        if (isMounted) setPhase("done");
+        if (isMounted) {
+          hasBootedThisSession = true;
+          try { sessionStorage.setItem("lumina_booted", "true"); } catch {}
+          setPhase("done");
+        }
       }, 1000);
     });
 

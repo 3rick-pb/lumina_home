@@ -34,7 +34,15 @@ function AuthCallbackContent() {
     );
 
     const doRedirect = (url: string) => {
-      router.replace(url);
+      // MUST use window.location.replace for OAuth callbacks.
+      // Next.js router.replace() does NOT work reliably when returning from an
+      // external OAuth provider (Google), because the page is not yet hydrated
+      // as a proper Next.js SPA segment — it's a full external navigation return.
+      if (typeof window !== "undefined") {
+        window.location.replace(url);
+      } else {
+        router.replace(url);
+      }
     };
 
     // Watchdog de seguridad (máximo 4s) para garantizar que jamás se quede congelado en la pantalla de carga
