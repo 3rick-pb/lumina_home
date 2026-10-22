@@ -29,27 +29,42 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     let isCancelled = false;
+    const nextTarget = sanitizeRedirectPath(
+      searchParams.get("next") || searchParams.get("redirectTo") || "/"
+    );
+
+    const doRedirect = (url: string) => {
+      if (typeof window !== "undefined") {
+        window.location.replace(url);
+      } else {
+        router.replace(url);
+      }
+    };
+
+    // Watchdog de seguridad (máximo 4s) para garantizar que jamás se quede congelado en la pantalla de carga
+    const safetyWatchdog = setTimeout(() => {
+      if (!isCancelled) {
+        console.warn("[auth/callback] Safety watchdog triggered, navigating to target");
+        doRedirect(nextTarget);
+      }
+    }, 4000);
 
     async function handleAuthVerification() {
       try {
-        const nextTarget = sanitizeRedirectPath(
-          searchParams.get("next") || searchParams.get("redirectTo") || "/"
-        );
-
         // 1. Check if Google OAuth returned an error directly in URL
         const oauthError = searchParams.get("error");
         if (oauthError) {
-          // If user cancelled midway or denied access, return cleanly to login without underage error
+          clearTimeout(safetyWatchdog);
           if (
             oauthError === "access_denied" ||
             oauthError === "cancelled" ||
             oauthError.includes("denied") ||
             oauthError.includes("cancel")
           ) {
-            router.replace("/auth/login");
+            doRedirect("/auth/login");
             return;
           }
-          router.replace("/auth/login?error=google_auth_failed");
+          doRedirect("/auth/login?error=google_auth_failed");
           return;
         }
 
@@ -73,8 +88,8 @@ function AuthCallbackContent() {
         if (isCancelled) return;
 
         if (!activeSession) {
-          // Missing session caused by user cancelling or aborting flow -> clean login redirect
-          router.replace("/auth/login");
+          clearTimeout(safetyWatchdog);
+          doRedirect("/auth/login");
           return;
         }
 
@@ -83,8 +98,8 @@ function AuthCallbackContent() {
         const accessToken = activeSession.access_token;
 
         if (!providerToken) {
-          // If session exists but provider token is absent, proceed to destination
-          router.replace(nextTarget);
+          clearTimeout(safetyWatchdog);
+          doRedirect(nextTarget);
           return;
         }
 
@@ -100,6 +115,7 @@ function AuthCallbackContent() {
 
         const verifyData = await verifyRes.json();
         if (isCancelled) return;
+        clearTimeout(safetyWatchdog);
 
         // UNDERAGE OR MISSING BIRTH YEAR -> Sign out immediately and redirect to login
         if (
@@ -111,26 +127,38 @@ function AuthCallbackContent() {
           try {
             sessionStorage.removeItem("lumina_guest_mode");
           } catch {}
-          router.replace("/auth/login?error=underage");
+          doRedirect("/auth/login?error=underage");
           return;
         }
 
         // LEGAL AGE (+18) -> Pass directly to destination without delays, modals or visible notices
         const isLinkedFlow = searchParams.get("linked") === "true";
         const isMerged = Boolean(verifyData.isMerged);
+        const emailKey = (verifyData.mergedEmail || activeSession.user?.email || "").toLowerCase().trim();
 
-        const alreadyNotified = typeof window !== "undefined" && Boolean(
-          verifyData.mergedEmail &&
-          localStorage.getItem(`lumina_merged_notified_${verifyData.mergedEmail.toLowerCase().trim()}`) === "true"
+        const alreadyNotified = Boolean(
+          typeof window !== "undefined" &&
+          (localStorage.getItem("lumina_merged_notified_all") === "true" ||
+            (emailKey && localStorage.getItem(`lumina_merged_notified_${emailKey}`) === "true"))
         );
 
         let finalRedirect = nextTarget;
         if (isMerged && !alreadyNotified) {
+          // Marcar de inmediato en localStorage para que NUNCA vuelva a salir en futuros logeos
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("lumina_merged_notified_all", "true");
+              if (emailKey) {
+                localStorage.setItem(`lumina_merged_notified_${emailKey}`, "true");
+              }
+            } catch {}
+          }
+
           try {
             sessionStorage.setItem(
               "lumina_merged_account_notification",
               JSON.stringify({
-                email: verifyData.mergedEmail,
+                email: emailKey,
                 name: verifyData.user?.name,
                 timestamp: Date.now(),
               })
@@ -143,12 +171,13 @@ function AuthCallbackContent() {
           finalRedirect = `${finalRedirect}${separator}google_linked=success`;
         }
 
-        router.replace(finalRedirect);
+        doRedirect(finalRedirect);
       } catch (err) {
         console.error("[auth/callback] Unexpected verification error:", err);
+        clearTimeout(safetyWatchdog);
         if (!isCancelled) {
           await supabase.auth.signOut();
-          router.replace("/auth/login");
+          doRedirect("/auth/login");
         }
       }
     }
@@ -157,6 +186,7 @@ function AuthCallbackContent() {
 
     return () => {
       isCancelled = true;
+      clearTimeout(safetyWatchdog);
     };
   }, [router, searchParams]);
 

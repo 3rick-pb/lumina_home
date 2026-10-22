@@ -237,10 +237,7 @@ function LoginFormContent() {
     }
 
     setIsLoading(true);
-    const [{ error }] = await Promise.all([
-      login(cleanEmail, password),
-      new Promise((resolve) => setTimeout(resolve, 850)),
-    ]);
+    const { error } = await login(cleanEmail, password);
     if (error) {
       setIsLoading(false);
       setErrorMsg(error === "Invalid login credentials" ? "Credenciales incorrectas. Verifica tu correo y contraseña." : error);

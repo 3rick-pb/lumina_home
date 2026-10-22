@@ -164,7 +164,7 @@ interface GooglePersonData {
     // Check if user_profiles or profiles already had a record for this email
     const { data: existingUserProfile } = await supabase
       .from("user_profiles")
-      .select("user_id, display_name, email, role, created_at, google_connected")
+      .select("user_id, display_name, email, role, created_at, google_connected, account_merged")
       .eq("email", cleanEmail)
       .maybeSingle();
 
@@ -190,8 +190,14 @@ interface GooglePersonData {
       (existingUserProfile && !existingUserProfile.google_connected && existingUserProfile.created_at)
     );
 
-    // Only notify the user on the very first unification event, NOT on every login
-    const alreadyMergedInPast = Boolean(existingProfile?.account_merged);
+    // Only notify the user on the very first unification event, NOT on future logins
+    const userMeta = (user.user_metadata || {}) as Record<string, unknown>;
+    const alreadyMergedInPast = Boolean(
+      existingProfile?.account_merged ||
+      existingUserProfile?.account_merged ||
+      userMeta?.account_merged ||
+      userMeta?.merged_notified
+    );
     const isNewMergeEvent = isMergedAccount && !alreadyMergedInPast;
 
     // If an existing profile belonged to an older user_id, migrate related data
@@ -271,6 +277,8 @@ interface GooglePersonData {
           full_name: fullName,
           name: fullName,
           avatar_url: avatarUrl,
+          account_merged: isMergedAccount,
+          merged_notified: true,
         },
       });
     } catch (e) {
