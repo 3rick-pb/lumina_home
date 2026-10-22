@@ -21,12 +21,13 @@ export function LuminaBootOrchestrator({
 
     let isMounted = true;
 
-    // 1. Tiempo mínimo estético (800ms) para que el loader clásico se aprecie de corrido
+    // 1. Tiempo mínimo estético reducido (300ms) — suficiente para que el orb aparezca sin bloquear navegación post-login
     const minAestheticTime = new Promise<void>((resolve) =>
-      setTimeout(resolve, 800)
+      setTimeout(resolve, 300)
     );
 
     // 2. Descarga y decodificación real en GPU de la imagen del Hero de la hora actual
+    // Si la imagen ya está cacheada (post-login), decode() resuelve en <10ms
     const decodeHeroImage = new Promise<void>((resolve) => {
       const img = new window.Image();
       img.decoding = "async";
@@ -51,9 +52,9 @@ export function LuminaBootOrchestrator({
       }
     });
 
-    // 3. Límite máximo de seguridad (2200ms) para nunca bloquear conexiones lentas
+    // 3. Límite máximo de seguridad (1200ms) para nunca bloquear conexiones lentas
     const safetyTimeout = new Promise<void>((resolve) =>
-      setTimeout(resolve, 2200)
+      setTimeout(resolve, 1200)
     );
 
     Promise.race([

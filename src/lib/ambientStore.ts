@@ -9,7 +9,8 @@ export interface AmbientTheme {
 }
 
 export const LUMINA_DEFAULT_BROWSER_COLOR = "#8c9276";
-export const LUMINA_WEB_BG_LIGHT = "#FAF1E8";
+// Color melón bajito visible en barra del navegador (más saturado que el fondo #FAF1E8 para que no parezca blanco)
+export const LUMINA_WEB_BG_LIGHT = "#E8D5B8";
 
 /**
  * Cambia el color de la barra del navegador en dispositivos en modo CLARO.

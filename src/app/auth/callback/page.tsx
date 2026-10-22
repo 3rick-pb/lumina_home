@@ -3,7 +3,7 @@
 import React, { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { BeUILoaderMetaballs } from "@/components/ui/BeUIControls";
+import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
 
 /**
  * Validates that redirect paths are strictly safe relative internal routes
@@ -160,21 +160,13 @@ function AuthCallbackContent() {
     };
   }, [router, searchParams]);
 
-  return (
-    <div className="min-h-screen bg-[#faf8f5] dark:bg-[#121214] flex items-center justify-center p-4">
-      <BeUILoaderMetaballs size={36} className="text-[#8c9276]" />
-    </div>
-  );
+  return <BrandLoadingScreen isFixed={true} />;
 }
 
 export default function AuthCallbackPage() {
   return (
     <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#faf8f5] dark:bg-[#121214] flex items-center justify-center">
-          <BeUILoaderMetaballs size={36} className="text-[#8c9276]" />
-        </div>
-      }
+      fallback={<BrandLoadingScreen isFixed={true} />}
     >
       <AuthCallbackContent />
     </Suspense>

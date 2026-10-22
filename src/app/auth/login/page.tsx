@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useBrand } from "@/core";
 import { BeUILoaderMetaballs, BeUICenterMorphModal } from "@/components/ui/BeUIControls";
+import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
 import { LuminaLoginWordmark } from "@/components/ui/LuminaLoginWordmark";
 import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 import { supabase } from "@/lib/supabase";
@@ -584,13 +585,7 @@ function LoginFormContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#faf8f5] dark:bg-[#121214] flex items-center justify-center">
-          <BeUILoaderMetaballs size={36} className="text-[#8c9276]" />
-        </div>
-      }
-    >
+    <Suspense fallback={<BrandLoadingScreen isFixed={true} />}>
       <LoginFormContent />
     </Suspense>
   );
