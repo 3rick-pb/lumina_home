@@ -2790,7 +2790,7 @@ export function CartDrawer() {
                   className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-950 dark:text-white placeholder:text-gray-400 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.2em] font-bold uppercase tabular-nums"
                 />
               </div>
-              <div className="shrink-0 flex items-center justify-center">
+              <div className="shrink-0 flex items-center justify-center min-h-[28px]">
                 {cardNumber.replace(/\s/g, "").length >= 1 ? (
                   (() => {
                     const brandDetails = detectCardBrandDetails(cardNumber);
@@ -2802,16 +2802,16 @@ export function CartDrawer() {
                       );
                     }
                     if (brandDetails.network === "visa") {
-                      return <VisaMono variant="mono" className="h-5 w-auto text-gray-950 dark:text-white shrink-0" />;
+                      return <VisaMono variant="mono" viewBox="0 8 24 8" className="h-5 sm:h-5.5 w-auto text-gray-950 dark:text-white shrink-0" />;
                     }
                     if (brandDetails.network === "mastercard") {
-                      return <MastercardMono variant="mono" className="h-6 w-6 text-gray-950 dark:text-white shrink-0" />;
+                      return <MastercardMono variant="mono" viewBox="0 4.5 24 15" className="h-7 sm:h-8 w-auto text-gray-950 dark:text-white shrink-0" />;
                     }
                     if (brandDetails.network === "diners-club") {
-                      return <DinersClubMono variant="mono" className="h-6 w-6 text-gray-950 dark:text-white shrink-0" />;
+                      return <DinersClubMono variant="mono" viewBox="0 1.5 24 21" className="h-7 sm:h-8 w-auto text-gray-950 dark:text-white shrink-0" />;
                     }
                     if (brandDetails.network === "discover") {
-                      return <DiscoverMono variant="mono" className="h-6 w-6 text-gray-950 dark:text-white shrink-0" />;
+                      return <DiscoverMono variant="mono" viewBox="0 9.5 24 5" className="h-4.5 sm:h-5 w-auto text-gray-950 dark:text-white shrink-0" />;
                     }
                     return (
                       <span className="text-[10px] font-mono uppercase text-gray-400 tracking-wider">
@@ -3182,23 +3182,42 @@ export function CartDrawer() {
             <span className="font-semibold text-sm">Procesando...</span>
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-2">
-            <span>Pagar con</span>
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="leading-none">Pagar con</span>
             {selectedPayMethod === "app" ? (
               <PayPhoneIcon className="w-6 h-6 rounded-md shadow-xs shrink-0" />
             ) : (
               <div className="inline-flex items-center shrink-0">
                 {detectedCardBrand === "visa" && (
-                  <VisaMono variant="mono" className="h-10 w-16 sm:h-11 sm:w-18 object-contain text-black fill-black shrink-0" />
+                  <VisaMono
+                    variant="mono"
+                    viewBox="0 8 24 8"
+                    className="h-[14px] sm:h-[15px] w-auto object-contain text-black fill-black shrink-0"
+                  />
                 )}
                 {detectedCardBrand === "mastercard" && (
-                  <MastercardMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />
+                  <MastercardMono
+                    variant="mono"
+                    viewBox="0 4.5 24 15"
+                    className="h-[18px] sm:h-[19px] w-auto object-contain text-black fill-black shrink-0"
+                  />
                 )}
                 {detectedCardBrand === "diners" && (
-                  <DinersClubMono variant="mono" className="h-7 w-7 object-contain text-black fill-black shrink-0" />
+                  <DinersClubMono
+                    variant="mono"
+                    viewBox="0 1.5 24 21"
+                    className="h-[18px] sm:h-[19px] w-auto object-contain text-black fill-black shrink-0"
+                  />
                 )}
                 {detectedCardBrand === "discover" && (
-                  <DiscoverMono variant="mono" className="h-7 w-10 object-contain text-black fill-black shrink-0" />
+                  <DiscoverMono
+                    variant="mono"
+                    viewBox="0 9.5 24 5"
+                    className="h-[12.5px] sm:h-[13.5px] w-auto object-contain text-black fill-black shrink-0"
+                  />
+                )}
+                {detectedCardBrand === "amex" && (
+                  <span>Tarjeta</span>
                 )}
               </div>
             )}
