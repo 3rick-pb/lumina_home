@@ -2672,7 +2672,6 @@ export function CartDrawer() {
 
       <PayPhonePaymentBoxUI
         totalUsd={finalTotal}
-        onPaymentSuccess={handlePaymentSuccessFromBox}
       />
     </div>
 
