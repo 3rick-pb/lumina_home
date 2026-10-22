@@ -2,7 +2,15 @@
 
 import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useAmbientStore, CATEGORY_THEMES } from "@/lib/ambientStore";
+import {
+  useAmbientStore,
+  CATEGORY_THEMES,
+  syncBrowserThemeColor,
+  LUMINA_DEFAULT_BROWSER_COLOR,
+  LUMINA_DEFAULT_BROWSER_DARK,
+  LUMINA_WEB_BG_LIGHT,
+  LUMINA_WEB_BG_DARK,
+} from "@/lib/ambientStore";
 
 export function AmbientBackground() {
   const pathname = usePathname();
@@ -15,6 +23,64 @@ export function AmbientBackground() {
       setTheme(CATEGORY_THEMES.auth);
     }
   }, [pathname, isAuthPage, setTheme]);
+
+  // Sincronización del color del navegador (<meta name="theme-color">)
+  // Cuando se está en la página de inicio (hero), el navegador tiene el verde oliva (#8c9276).
+  // Cuando se entra a "Todos los productos" (/shop o al ver todos los nichos), el color del navegador
+  // toma el color de fondo exacto de la web (#FAF1E8 en light / #151413 en dark) en lugar del verde.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isProductView) return; // En vista de producto, setProductAmbient controla el color
+
+    const isShopPage = pathname === "/shop" || pathname?.startsWith("/shop");
+
+    const updateColor = () => {
+      if (isAuthPage) {
+        syncBrowserThemeColor(LUMINA_DEFAULT_BROWSER_COLOR, LUMINA_DEFAULT_BROWSER_DARK);
+        return;
+      }
+
+      if (isShopPage) {
+        // En la sección "Todos los productos" (/shop), el color del navegador toma
+        // el color del fondo de la web y no se queda con el verde del inicio.
+        syncBrowserThemeColor(LUMINA_WEB_BG_LIGHT, LUMINA_WEB_BG_DARK);
+        return;
+      }
+
+      if (pathname === "/") {
+        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        if (scrollY >= 400) {
+          syncBrowserThemeColor(LUMINA_WEB_BG_LIGHT, LUMINA_WEB_BG_DARK);
+        } else {
+          syncBrowserThemeColor(LUMINA_DEFAULT_BROWSER_COLOR, LUMINA_DEFAULT_BROWSER_DARK);
+        }
+        return;
+      }
+
+      syncBrowserThemeColor(LUMINA_WEB_BG_LIGHT, LUMINA_WEB_BG_DARK);
+    };
+
+    updateColor();
+
+    let scrollListener: (() => void) | null = null;
+    if (pathname === "/") {
+      scrollListener = () => updateColor();
+      window.addEventListener("scroll", scrollListener, { passive: true });
+    }
+
+    const observer = new MutationObserver(() => {
+      updateColor();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => {
+      if (scrollListener) window.removeEventListener("scroll", scrollListener);
+      observer.disconnect();
+    };
+  }, [pathname, isProductView, isAuthPage]);
 
   // Auth pages screensaver
   if (isAuthPage) {

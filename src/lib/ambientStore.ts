@@ -9,25 +9,45 @@ export interface AmbientTheme {
 }
 
 export const LUMINA_DEFAULT_BROWSER_COLOR = "#8c9276";
+export const LUMINA_DEFAULT_BROWSER_DARK = "#232b24";
+export const LUMINA_WEB_BG_LIGHT = "#FAF1E8";
+export const LUMINA_WEB_BG_DARK = "#151413";
 
-export function syncBrowserThemeColor(color: string) {
+export function syncBrowserThemeColor(lightColor: string, darkColor?: string) {
   if (typeof document === "undefined") return;
   try {
+    const isDark =
+      document.documentElement.classList.contains("dark") ||
+      (!document.documentElement.classList.contains("light") &&
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    const effectiveDarkColor = darkColor || (isDark ? lightColor : LUMINA_WEB_BG_DARK);
+    const effectiveLightColor = lightColor;
+    const effectiveColor = isDark ? effectiveDarkColor : effectiveLightColor;
+
     const metaTags = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
     if (metaTags.length === 0) {
       const meta = document.createElement("meta");
       meta.name = "theme-color";
-      meta.content = color;
+      meta.content = effectiveColor;
       document.head.appendChild(meta);
     } else {
       metaTags.forEach((meta) => {
-        meta.setAttribute("content", color);
+        const media = meta.getAttribute("media");
+        if (media && media.includes("prefers-color-scheme: dark")) {
+          meta.setAttribute("content", effectiveDarkColor);
+        } else if (media && media.includes("prefers-color-scheme: light")) {
+          meta.setAttribute("content", effectiveLightColor);
+        } else {
+          meta.setAttribute("content", effectiveColor);
+        }
       });
     }
 
     const msMeta = document.querySelector<HTMLMetaElement>('meta[name="msapplication-navbutton-color"]');
     if (msMeta) {
-      msMeta.setAttribute("content", color);
+      msMeta.setAttribute("content", effectiveColor);
     }
   } catch {}
 }
@@ -247,8 +267,6 @@ export const useAmbientStore = create<AmbientState>((set) => ({
   },
   resetProductAmbient: () => {
     set(() => {
-      // When leaving product view, reset browser color back to Lumina Olive #8c9276 and theme to default
-      syncBrowserThemeColor(LUMINA_DEFAULT_BROWSER_COLOR);
       return { theme: CATEGORY_THEMES.default, isProductView: false };
     });
   },

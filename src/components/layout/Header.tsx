@@ -22,7 +22,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { normalizeSearchText } from "@/lib/utils";
 import { getSavedNicheSlots, fetchNicheSlotsFromCloud, getNicheIconByName, type NicheSlotConfig, DEFAULT_NICHE_SLOTS } from "@/lib/nicheIcons";
 import { useBrand } from "@/core/hooks/useBrand";
-import { syncBrowserThemeColor } from "@/lib/ambientStore";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -54,29 +53,6 @@ export function Header() {
   const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState(true);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [capsuleBezelMapUrl, setCapsuleBezelMapUrl] = useState<string>("");
-  const [isScrolledIntoCatalog, setIsScrolledIntoCatalog] = useState(false);
-  const isShopPage = pathname === "/shop" || pathname?.startsWith("/shop");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handleScroll = () => {
-      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      setIsScrolledIntoCatalog(scrollY > 520);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const isProductsSection = Boolean(isShopPage || (pathname === "/" && isScrolledIntoCatalog));
-
-  // Sincronizar el color del navegador (<meta name="theme-color">) con el fondo de la sección para experiencia inmersiva
-  useEffect(() => {
-    if (isProductsSection) {
-      const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-      syncBrowserThemeColor(isDark ? "#151413" : "#FAF1E8");
-    }
-  }, [isProductsSection]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -311,10 +287,7 @@ export function Header() {
         >
           {/* Capa de Cristal Líquido Real de la Barra Superior (#srdavo-header-bar-liquid-glass) */}
           <div
-            className={cn(
-              "absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0 transition-colors duration-400",
-              isProductsSection && "dark:!bg-[#151413]/90 dark:!border-white/10 dark:!shadow-[0_12px_36px_rgba(0,0,0,0.5)]"
-            )}
+            className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0"
             style={{
               clipPath: "inset(0 round 9999px)",
               WebkitClipPath: "inset(0 round 9999px)",
@@ -332,10 +305,7 @@ export function Header() {
                 inset 0 0 16px 0px rgba(255, 255, 255, 0.12),
                 0 12px 40px rgba(0, 0, 0, 0.08)
               `,
-              border: isProductsSection
-                ? "1px solid rgba(235, 222, 208, 0.85)"
-                : "1px solid rgba(255, 255, 255, 0.72)",
-              transition: "background 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease, box-shadow 0.4s ease",
+              border: "1px solid rgba(255, 255, 255, 0.72)",
             }}
           >
             {/* Reflejo especular superior característico de srdavo/liquid-glass */}
