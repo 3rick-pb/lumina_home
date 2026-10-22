@@ -918,8 +918,7 @@ export function SettingsTab({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in items-start">
       {/* Account & Credentials (7 cols) */}
       <motion.div 
-        initial={{ opacity: 0, x: -24, y: 24 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="lg:col-span-7 bg-white/90 dark:bg-[#202022]/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden"
       >
@@ -1488,8 +1487,7 @@ export function SettingsTab({
 
       {/* Shipping Address Manager (5 cols) */}
       <motion.div 
-        initial={{ opacity: 0, x: -24, y: 24 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
         className="lg:col-span-5 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col space-y-4 h-fit"
       >

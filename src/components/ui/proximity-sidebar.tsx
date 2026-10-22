@@ -47,6 +47,9 @@ type DashProps = {
   isSidebarHovered?: boolean
   isDirectlyHovered?: boolean
   anyDashHovered?: boolean
+  currentIndex?: number
+  activeIndex?: number
+  hoveredIndex?: number | null
   onMouseEnter?: () => void
   onMouseLeave?: () => void
 }
@@ -137,6 +140,9 @@ const Dash = ({
   isSidebarHovered = false,
   isDirectlyHovered = false,
   anyDashHovered = false,
+  currentIndex = 0,
+  activeIndex = 0,
+  hoveredIndex = null,
   onMouseEnter,
   onMouseLeave,
 }: DashProps) => {
@@ -210,9 +216,35 @@ const Dash = ({
     mass: 0.6,
   })
 
-  const isTooltipVisible = isSidebarHovered && (
-    anyDashHovered ? isDirectlyHovered : active
-  );
+  // Mostrar al mismo tiempo el nivel seleccionado (activo) y el que se está seleccionando (hover)
+  const isTooltipVisible = isSidebarHovered && (isDirectlyHovered || active);
+
+  // Separación anticolisión inteligente cuando ambos niveles adyacentes están visibles simultáneamente
+  const isSeparationNeeded =
+    isSidebarHovered &&
+    hoveredIndex !== null &&
+    hoveredIndex !== activeIndex &&
+    Math.abs(hoveredIndex - activeIndex) <= 1;
+
+  let verticalOffsetClass = "translate-y-0";
+  let horizontalStaggerClass = "";
+
+  if (isSeparationNeeded) {
+    if (currentIndex === Math.min(activeIndex, hoveredIndex)) {
+      // El elemento superior se desplaza sutilmente hacia arriba
+      verticalOffsetClass = "-translate-y-3 sm:-translate-y-3.5";
+    } else if (currentIndex === Math.max(activeIndex, hoveredIndex)) {
+      // El elemento inferior se desplaza sutilmente hacia abajo
+      verticalOffsetClass = "translate-y-3 sm:translate-y-3.5";
+    }
+
+    if (isDirectlyHovered) {
+      // El nivel bajo el cursor se desplaza lateralmente hacia afuera para escalonar la lectura
+      horizontalStaggerClass = side === "right" 
+        ? "-translate-x-3.5 sm:-translate-x-4.5" 
+        : "translate-x-3.5 sm:translate-x-4.5";
+    }
+  }
 
   return (
     <motion.button
@@ -230,16 +262,18 @@ const Dash = ({
       )}
       onClick={() => onSelect(section.id)}
     >
-      {/* Floating tooltip preview: strictly only visible when user hovers or interacts with the sidebar */}
+      {/* Floating tooltip preview: visible al pasar el cursor para nivel activo y hover simultáneos sin chocar */}
       <span
         className={cn(
-          "pointer-events-none absolute text-[11.5px] font-sans font-medium px-3 py-1 rounded-full backdrop-blur-2xl whitespace-nowrap transition-all duration-150 select-none z-50 flex items-center gap-1.5 shadow-md",
+          "pointer-events-none absolute text-[11.5px] font-sans font-medium px-3 py-1 rounded-full backdrop-blur-2xl whitespace-nowrap transition-all duration-200 select-none z-50 flex items-center gap-1.5 shadow-md",
           side === "right" ? "right-[118px] sm:right-[124px]" : "left-[118px] sm:left-[124px]",
+          verticalOffsetClass,
+          horizontalStaggerClass,
           !isTooltipVisible
             ? "opacity-0 pointer-events-none scale-95 translate-x-2"
             : active
-              ? "opacity-100 scale-100 translate-x-0 bg-gradient-to-r from-[#2c3321]/95 via-[#3d472e]/95 to-[#4d5939]/95 text-white border border-[#8c9276]/50 shadow-[0_8px_24px_rgba(0,0,0,0.28),inset_0_1px_1px_rgba(255,255,255,0.4),0_0_14px_rgba(140,146,118,0.3)] tracking-tight"
-              : "opacity-100 scale-100 translate-x-0 bg-white/95 dark:bg-[#18181b]/95 text-zinc-900 dark:text-zinc-100 border border-white/80 dark:border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.1)] tracking-tight"
+              ? "opacity-100 scale-100 bg-gradient-to-r from-[#2c3321]/95 via-[#3d472e]/95 to-[#4d5939]/95 text-white border border-[#8c9276]/50 shadow-[0_8px_24px_rgba(0,0,0,0.28),inset_0_1px_1px_rgba(255,255,255,0.4),0_0_14px_rgba(140,146,118,0.3)] tracking-tight"
+              : "opacity-100 scale-100 bg-white/95 dark:bg-[#18181b]/95 text-zinc-900 dark:text-zinc-100 border border-white/80 dark:border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.1)] tracking-tight"
         )}
       >
         {active && (
@@ -611,7 +645,7 @@ const ProximitySidebar = ({
           "mx-4 flex flex-col",
           side === "right" ? "items-end" : "items-start"
         )}
-        style={{ gap: 14 }}
+        style={{ gap: 18 }}
         onPointerMove={(event) => {
           pointerInside.current = true
           setIsSidebarHovered(true)
@@ -624,24 +658,31 @@ const ProximitySidebar = ({
           mouseY.set(Infinity)
         }}
       >
-        {sections.map((section) => (
-          <Dash
-            key={section.id}
-            active={section.id === activeId}
-            mouseY={mouseY}
-            waveY={springWaveY}
-            onSelect={selectSection}
-            registerDash={registerDash}
-            section={section}
-            sectionKind={detectedKinds[section.id] ?? getSectionKind(section)}
-            side={side}
-            isSidebarHovered={isSidebarHovered}
-            isDirectlyHovered={hoveredDashId === section.id}
-            anyDashHovered={hoveredDashId !== null}
-            onMouseEnter={() => setHoveredDashId(section.id)}
-            onMouseLeave={() => setHoveredDashId((curr) => curr === section.id ? null : curr)}
-          />
-        ))}
+        {sections.map((section, idx) => {
+          const activeIndex = sections.findIndex((s) => s.id === activeId);
+          const hoveredIndex = hoveredDashId ? sections.findIndex((s) => s.id === hoveredDashId) : null;
+          return (
+            <Dash
+              key={section.id}
+              active={section.id === activeId}
+              mouseY={mouseY}
+              waveY={springWaveY}
+              onSelect={selectSection}
+              registerDash={registerDash}
+              section={section}
+              sectionKind={detectedKinds[section.id] ?? getSectionKind(section)}
+              side={side}
+              isSidebarHovered={isSidebarHovered}
+              isDirectlyHovered={hoveredDashId === section.id}
+              anyDashHovered={hoveredDashId !== null}
+              currentIndex={idx}
+              activeIndex={activeIndex}
+              hoveredIndex={hoveredIndex}
+              onMouseEnter={() => setHoveredDashId(section.id)}
+              onMouseLeave={() => setHoveredDashId((curr) => curr === section.id ? null : curr)}
+            />
+          );
+        })}
       </div>
     </nav>
   )

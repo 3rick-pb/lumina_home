@@ -79,8 +79,7 @@ export function FavoritesTab() {
             return (
             <motion.div 
               key={prod.id} 
-              initial={{ opacity: 0, x: -16, y: 16 }}
-              animate={{ opacity: 1, x: 0, y: 0 }}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: Math.min(prodIdx * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
               className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-100 dark:border-white/5 p-4 shadow-sm dark:shadow-none hover:shadow-md dark:shadow-none transition-shadow flex flex-col justify-between"
             >

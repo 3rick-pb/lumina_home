@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
+import { BrandLoadingScreen } from '@/components/ui/BrandLoadingScreen';
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 // Dynamic code-split tabs without skeletons to prevent skeleton flash & transition clash
@@ -643,17 +644,8 @@ export default function ProfilePage() {
 
 
  if (!isMounted || isLoading || !user) {
- return (
- <div className="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-[#18181b]">
- <div className="flex flex-col items-center gap-3">
- <ThinkingOrb state="working" size={64} color="#000000" theme="light" />
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wide">
-            Cargando perfil administrativo...
-          </p>
- </div>
- </div>
- );
- }
+    return <BrandLoadingScreen isFixed={true} />;
+  }
 
   const isRootAdmin = Boolean(user.isRootAdmin || (user.email || '').toLowerCase().trim() === 'admin@lumina.com');
   const isSubAdmin = user.role === "SUBADMIN" || (user.role === "ADMIN" && !isRootAdmin);
@@ -1770,12 +1762,12 @@ const handleConfirmDeleteNiche = async () => {
         {/* TAB VIEWS CONTAINER WITH ULTRA-STABLE FLUID HORIZONTAL LEFT-TO-RIGHT GLIDE */}
         {/* ========================================================================= */}
         <div className="w-full flex-1 flex flex-col min-w-0 overflow-x-hidden relative">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={activeTab}
               initial={{
                 opacity: 0,
-                x: -18,
+                x: -10,
               }}
               animate={{
                 opacity: 1,
@@ -1783,15 +1775,15 @@ const handleConfirmDeleteNiche = async () => {
               }}
               exit={{
                 opacity: 0,
-                x: 18,
-                transition: { duration: 0.15, ease: "easeOut" },
+                x: 10,
+                transition: { duration: 0.14, ease: "easeOut" },
               }}
               transition={{
-                duration: 0.28,
-                ease: [0.22, 1, 0.36, 1],
+                duration: 0.22,
+                ease: [0.25, 0.1, 0.25, 1],
               }}
               style={{
-                willChange: "transform, opacity",
+                transform: "translateZ(0)",
               }}
               className="w-full flex-1 flex flex-col min-w-0"
             >
