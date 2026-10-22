@@ -14,9 +14,21 @@ export function LuminaBootOrchestrator({
   onReadyToAnimateText,
   children,
 }: LuminaBootOrchestratorProps) {
-  const [phase, setPhase] = useState<"loading" | "fading" | "done">("loading");
+  // El boot splash screen solo se reproduce una única vez por sesión de navegación (frío).
+  // Si el usuario ya inició sesión o está navegando internamente, no se repite desde 0.
+  const [phase, setPhase] = useState<"loading" | "fading" | "done">(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("lumina_booted") === "true") {
+      return "done";
+    }
+    return "loading";
+  });
 
   useEffect(() => {
+    if (phase === "done") {
+      onReadyToAnimateText();
+      return;
+    }
+
     if (!activeHeroImageUrl) return;
 
     let isMounted = true;
@@ -62,6 +74,10 @@ export function LuminaBootOrchestrator({
     ]).then(() => {
       if (!isMounted) return;
 
+      try {
+        sessionStorage.setItem("lumina_booted", "true");
+      } catch {}
+
       // Iniciar el desvanecimiento ultra suave de 1000ms
       setPhase("fading");
       // Disparar la animación caligráfica "Espacios diseñados para perdurar" justo al abrirse el telón
@@ -76,7 +92,7 @@ export function LuminaBootOrchestrator({
     return () => {
       isMounted = false;
     };
-  }, [activeHeroImageUrl, onReadyToAnimateText]);
+  }, [activeHeroImageUrl, onReadyToAnimateText, phase]);
 
   return (
     <div className="relative min-h-screen bg-transparent">

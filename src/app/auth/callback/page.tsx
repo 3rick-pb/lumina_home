@@ -117,12 +117,8 @@ function AuthCallbackContent() {
         if (isCancelled) return;
         clearTimeout(safetyWatchdog);
 
-        // UNDERAGE OR MISSING BIRTH YEAR -> Sign out immediately and redirect to login
-        if (
-          (verifyRes.status === 403 && (verifyData.code === "UNDERAGE" || verifyData.code === "MISSING_BIRTH_YEAR")) ||
-          !verifyRes.ok ||
-          !verifyData.success
-        ) {
+        // Solo revocar sesión si explícitamente se comprobó minoría de edad (< 18)
+        if (verifyRes.status === 403 && verifyData?.code === "UNDERAGE") {
           await supabase.auth.signOut();
           try {
             sessionStorage.removeItem("lumina_guest_mode");
@@ -131,10 +127,17 @@ function AuthCallbackContent() {
           return;
         }
 
+        // Marcar la sesión como ya booteada para que Home no reproduzca el splash de nuevo
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("lumina_booted", "true");
+          } catch {}
+        }
+
         // LEGAL AGE (+18) -> Pass directly to destination without delays, modals or visible notices
         const isLinkedFlow = searchParams.get("linked") === "true";
-        const isMerged = Boolean(verifyData.isMerged);
-        const emailKey = (verifyData.mergedEmail || activeSession.user?.email || "").toLowerCase().trim();
+        const isMerged = Boolean(verifyData?.isMerged);
+        const emailKey = (verifyData?.mergedEmail || activeSession.user?.email || "").toLowerCase().trim();
 
         const alreadyNotified = Boolean(
           typeof window !== "undefined" &&

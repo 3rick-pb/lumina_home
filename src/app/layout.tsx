@@ -15,7 +15,6 @@ import "lenis/dist/lenis.css";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import { FlyToCartContainer } from "@/components/ui/FlyToCartAnimation";
-import { UrlPreviewInhibitor } from "@/components/ui/UrlPreviewInhibitor";
 import { AccountMergedNotifier } from "@/components/auth/AccountMergedNotifier";
 
 import localFont from "next/font/local";
@@ -98,7 +97,6 @@ export default function RootLayout({
           </Suspense>
           <MacOSScrollbar />
           <FlyToCartContainer />
-          <UrlPreviewInhibitor />
           <Suspense fallback={null}>
             <AccountMergedNotifier />
           </Suspense>

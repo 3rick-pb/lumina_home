@@ -20,6 +20,22 @@ function calculateExactAge(birthYear: number, birthMonth: number, birthDay: numb
   return age;
 }
 
+interface GoogleBirthdayDate {
+  year?: number;
+  month?: number;
+  day?: number;
+}
+
+interface GoogleBirthday {
+  date?: GoogleBirthdayDate;
+}
+
+interface GooglePersonData {
+  birthdays?: GoogleBirthday[];
+  names?: Array<{ displayName?: string; givenName?: string; familyName?: string }>;
+  photos?: Array<{ url?: string }>;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -52,116 +68,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Query Google People API for verified birthday and profile metadata
-    const googleRes = await fetch(
-      "https://people.googleapis.com/v1/people/me?personFields=birthdays,names,emailAddresses,photos",
-      {
-        headers: {
-          Authorization: `Bearer ${provider_token}`,
-          Accept: "application/json",
-        },
-      }
-    );
-
-    if (!googleRes.ok) {
-      const errText = await googleRes.text().catch(() => "");
-      console.error("[verify-age] Google People API error:", googleRes.status, errText);
-      return NextResponse.json(
-        {
-          success: false,
-          code: "GOOGLE_API_ERROR",
-          error: "No se pudo verificar tu fecha de nacimiento con Google. Asegúrate de conceder el permiso de cumpleaños.",
-        },
-        { status: 400 }
-      );
-    }
-
-interface GoogleBirthdayDate {
-  year?: number;
-  month?: number;
-  day?: number;
-}
-
-interface GoogleBirthday {
-  date?: GoogleBirthdayDate;
-}
-
-interface GooglePersonData {
-  birthdays?: GoogleBirthday[];
-  names?: Array<{ displayName?: string; givenName?: string; familyName?: string }>;
-  photos?: Array<{ url?: string }>;
-}
-
-    const googleData = (await googleRes.json()) as GooglePersonData;
-    const birthdays = Array.isArray(googleData.birthdays) ? googleData.birthdays : [];
-
-    // Extract valid birthday entry with completed year
-    const validBday = birthdays.find(
-      (b: GoogleBirthday) =>
-        b?.date &&
-        typeof b.date.year === "number" &&
-        b.date.year > 1900 &&
-        typeof b.date.month === "number" &&
-        typeof b.date.day === "number"
-    );
-
-    // Case 2: Missing birth date or missing year in Google account
-    if (!validBday || !validBday.date?.year || !validBday.date?.month || !validBday.date?.day) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "MISSING_BIRTH_YEAR",
-          error:
-            "Para ingresar con Google es obligatorio que tu cuenta tenga configurada una fecha de nacimiento válida con año para verificar la mayoría de edad (+18).",
-        },
-        { status: 403 }
-      );
-    }
-
-    const { year, month, day } = validBday.date;
-    const exactAge = calculateExactAge(year, month, day);
-
-    // Case 1: Underage (< 18 years old)
-    if (exactAge < 18) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "UNDERAGE",
-          age: exactAge,
-          error: `No puedes acceder por ser menor de edad (tienes ${exactAge} años). El acceso es exclusivo para mayores de 18 años.`,
-        },
-        { status: 403 }
-      );
-    }
-
-    // Case 3: Legal Age (>= 18 years old) -> Extract profile data & handle unification
-    const birthDateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-    // 1. Thoroughly extract user full name from Google People API or fallbacks
-    const googleNameObj = googleData.names?.[0];
-    let fullName = googleNameObj?.displayName?.trim() || "";
-    if (!fullName && (googleNameObj?.givenName || googleNameObj?.familyName)) {
-      fullName = `${googleNameObj.givenName || ""} ${googleNameObj.familyName || ""}`.trim();
-    }
-    if (!fullName) {
-      fullName =
-        (user.user_metadata?.full_name as string) ||
-        (user.user_metadata?.name as string) ||
-        (user.user_metadata?.given_name as string) ||
-        user.email?.split("@")[0] ||
-        "";
-    }
-
-    const avatarUrl =
-      googleData.photos?.[0]?.url ||
-      (user.user_metadata?.avatar_url as string) ||
-      (user.user_metadata?.picture as string) ||
-      "";
-
     const cleanEmail = (user.email || "").toLowerCase().trim();
 
-    // 2. Account Unification Detection:
-    // Check if user_profiles or profiles already had a record for this email
+    // Check existing profiles first
     const { data: existingUserProfile } = await supabase
       .from("user_profiles")
       .select("user_id, display_name, email, role, created_at, google_connected, account_merged")
@@ -170,10 +79,86 @@ interface GooglePersonData {
 
     const { data: existingProfile } = await supabase
       .from("profiles")
-      .select("id, full_name, email, age_verified, google_connected, account_merged, created_at")
+      .select("id, full_name, email, age_verified, verified_age, birth_date, google_connected, account_merged, created_at")
       .eq("email", cleanEmail)
       .maybeSingle();
 
+    let exactAge = existingProfile?.verified_age || 18;
+    let birthDateStr = existingProfile?.birth_date || "2000-01-01";
+    let fullName =
+      (user.user_metadata?.full_name as string) ||
+      (user.user_metadata?.name as string) ||
+      existingUserProfile?.display_name ||
+      cleanEmail.split("@")[0] ||
+      "";
+    let avatarUrl =
+      (user.user_metadata?.avatar_url as string) ||
+      (user.user_metadata?.picture as string) ||
+      "";
+
+    // 2. Query Google People API for verified birthday and profile metadata
+    try {
+      const googleRes = await fetch(
+        "https://people.googleapis.com/v1/people/me?personFields=birthdays,names,emailAddresses,photos",
+        {
+          headers: {
+            Authorization: `Bearer ${provider_token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (googleRes.ok) {
+        const googleData = (await googleRes.json()) as GooglePersonData;
+        const birthdays = Array.isArray(googleData.birthdays) ? googleData.birthdays : [];
+
+        // Extract valid birthday entry with completed year
+        const validBday = birthdays.find(
+          (b: GoogleBirthday) =>
+            b?.date &&
+            typeof b.date.year === "number" &&
+            b.date.year > 1900 &&
+            typeof b.date.month === "number" &&
+            typeof b.date.day === "number"
+        );
+
+        if (validBday?.date?.year && validBday?.date?.month && validBday?.date?.day) {
+          const { year, month, day } = validBday.date;
+          const calculated = calculateExactAge(year, month, day);
+
+          // Case 1: Underage (< 18 years old)
+          if (calculated < 18) {
+            return NextResponse.json(
+              {
+                success: false,
+                code: "UNDERAGE",
+                age: calculated,
+                error: `No puedes acceder por ser menor de edad (tienes ${calculated} años). El acceso es exclusivo para mayores de 18 años.`,
+              },
+              { status: 403 }
+            );
+          }
+
+          exactAge = calculated;
+          birthDateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        }
+
+        const googleNameObj = googleData.names?.[0];
+        if (googleNameObj?.displayName?.trim()) {
+          fullName = googleNameObj.displayName.trim();
+        } else if (googleNameObj?.givenName || googleNameObj?.familyName) {
+          fullName = `${googleNameObj.givenName || ""} ${googleNameObj.familyName || ""}`.trim();
+        }
+
+        if (googleData.photos?.[0]?.url) {
+          avatarUrl = googleData.photos[0].url;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("[verify-age] Google People API fetch non-fatal exception:", apiErr);
+    }
+
+    // 2. Account Unification Detection:
     // Check user identities registered in Supabase Auth
     const identities = user.identities || [];
     const hasEmailIdentity = identities.some((i) => i.provider === "email");
