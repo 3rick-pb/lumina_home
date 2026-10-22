@@ -1120,6 +1120,8 @@ export const useUserStore = create<UserState>((set, get) => ({
           });
           setGuestModeStorage(false);
           clearGuestStorage();
+          // Limpiar la bandera de boot para que el hero se pre-decodifique en el proximo acceso
+          try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lumina_booted'); } catch {}
           await useCartStore.getState().initCartForUser(null);
           set({
             user: null,
@@ -1379,6 +1381,8 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     setGuestModeStorage(false);
     clearGuestStorage();
+    // Limpiar la bandera de boot para que el hero se pre-decodifique correctamente en el proximo acceso
+    try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lumina_booted'); } catch {}
 
     // 2. Perform all teardown and cleanup concurrently without blocking
     try {

@@ -34,11 +34,7 @@ function AuthCallbackContent() {
     );
 
     const doRedirect = (url: string) => {
-      if (typeof window !== "undefined") {
-        window.location.replace(url);
-      } else {
-        router.replace(url);
-      }
+      router.replace(url);
     };
 
     // Watchdog de seguridad (máximo 4s) para garantizar que jamás se quede congelado en la pantalla de carga
@@ -127,13 +123,6 @@ function AuthCallbackContent() {
           return;
         }
 
-        // Marcar la sesión como ya booteada para que Home no reproduzca el splash de nuevo
-        if (typeof window !== "undefined") {
-          try {
-            sessionStorage.setItem("lumina_booted", "true");
-          } catch {}
-        }
-
         // LEGAL AGE (+18) -> Pass directly to destination without delays, modals or visible notices
         const isLinkedFlow = searchParams.get("linked") === "true";
         const isMerged = Boolean(verifyData?.isMerged);
@@ -176,11 +165,17 @@ function AuthCallbackContent() {
 
         doRedirect(finalRedirect);
       } catch (err) {
-        console.error("[auth/callback] Unexpected verification error:", err);
+        console.error("[auth/callback] Non-fatal verification error:", err);
         clearTimeout(safetyWatchdog);
         if (!isCancelled) {
-          await supabase.auth.signOut();
-          doRedirect("/auth/login");
+          // Si hubo un error no fatal en la verificación pero el usuario tiene sesión válida de Google,
+          // jamás cerrar sesión a menos que explícitamente se confirme minoría de edad (< 18).
+          const { data } = await supabase.auth.getSession();
+          if (data?.session) {
+            doRedirect(nextTarget);
+          } else {
+            doRedirect("/auth/login?error=auth_failed");
+          }
         }
       }
     }

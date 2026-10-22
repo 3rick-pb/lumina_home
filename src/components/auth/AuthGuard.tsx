@@ -39,5 +39,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <BrandLoadingScreen isFixed={true} />;
   }
 
-  return <>{children}</>;
+  return (
+    <div key={pathname} className="contents">
+      {children}
+    </div>
+  );
 }

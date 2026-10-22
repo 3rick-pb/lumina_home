@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
 
 interface LuminaBootOrchestratorProps {
@@ -14,26 +14,21 @@ export function LuminaBootOrchestrator({
   onReadyToAnimateText,
   children,
 }: LuminaBootOrchestratorProps) {
-  // El boot splash screen solo se reproduce una única vez por sesión de navegación (frío).
-  // Si el usuario ya inició sesión o está navegando internamente, no se repite desde 0.
-  const [phase, setPhase] = useState<"loading" | "fading" | "done">(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("lumina_booted") === "true") {
-      return "done";
-    }
-    return "loading";
-  });
+  // La pantalla de carga canónica de Lumina prepara, posiciona y decodifica la imagen
+  // del Hero en GPU antes de desvanecerse suavemente (1000ms) para garantizar 0 glitches.
+  const [phase, setPhase] = useState<"loading" | "fading" | "done">("loading");
+
+  const onReadyRef = useRef(onReadyToAnimateText);
+  useEffect(() => {
+    onReadyRef.current = onReadyToAnimateText;
+  }, [onReadyToAnimateText]);
 
   useEffect(() => {
-    if (phase === "done") {
-      onReadyToAnimateText();
-      return;
-    }
-
     if (!activeHeroImageUrl) return;
 
     let isMounted = true;
 
-    // 1. Tiempo mínimo estético (800ms) para que el loader clásico se aprecie de corrido
+    // 1. Tiempo mínimo estético (800ms) para que el loader de ThinkingOrb se aprecie con elegancia
     const minAestheticTime = new Promise<void>((resolve) =>
       setTimeout(resolve, 800)
     );
@@ -74,14 +69,10 @@ export function LuminaBootOrchestrator({
     ]).then(() => {
       if (!isMounted) return;
 
-      try {
-        sessionStorage.setItem("lumina_booted", "true");
-      } catch {}
-
       // Iniciar el desvanecimiento ultra suave de 1000ms
       setPhase("fading");
       // Disparar la animación caligráfica "Espacios diseñados para perdurar" justo al abrirse el telón
-      onReadyToAnimateText();
+      onReadyRef.current();
 
       // Desmontar el splash una vez terminada la transición suave de 1000ms
       setTimeout(() => {
@@ -92,7 +83,7 @@ export function LuminaBootOrchestrator({
     return () => {
       isMounted = false;
     };
-  }, [activeHeroImageUrl, onReadyToAnimateText, phase]);
+  }, [activeHeroImageUrl]);
 
   return (
     <div className="relative min-h-screen bg-transparent">

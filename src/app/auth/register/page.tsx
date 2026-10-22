@@ -287,11 +287,6 @@ export default function RegisterPage() {
     if (error) {
       setErrorMsg(error);
     } else {
-      if (typeof window !== "undefined") {
-        try {
-          sessionStorage.setItem("lumina_booted", "true");
-        } catch {}
-      }
       if (typeof window !== "undefined" && sessionStorage.getItem("lumina_cart_reopen") === "true") {
         sessionStorage.removeItem("lumina_cart_reopen");
         router.push("/");

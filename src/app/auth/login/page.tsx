@@ -242,11 +242,6 @@ function LoginFormContent() {
       setIsLoading(false);
       setErrorMsg(error === "Invalid login credentials" ? "Credenciales incorrectas. Verifica tu correo y contraseña." : error);
     } else {
-      if (typeof window !== "undefined") {
-        try {
-          sessionStorage.setItem("lumina_booted", "true");
-        } catch {}
-      }
       if (typeof window !== "undefined" && sessionStorage.getItem("lumina_cart_reopen") === "true") {
         sessionStorage.removeItem("lumina_cart_reopen");
         router.push("/");
