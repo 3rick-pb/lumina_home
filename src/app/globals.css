@@ -29,6 +29,12 @@
   font-display: swap;
 }
 
+/* Escudo protector: bloquea que hojas de estilo externas reduzcan la escala de la web */
+html,
+:root {
+  font-size: 16px !important;
+}
+
 @layer base {
   :root {
     color-scheme: light;

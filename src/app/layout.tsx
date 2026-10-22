@@ -68,7 +68,6 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icon.svg" />
         {/* PayPhone Official Payment Box v2.0 Assets */}
-        <link id="payphone-box-css" rel="stylesheet" href="https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.css" />
         <script id="payphone-box-js" type="module" src="https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.js"></script>
         <meta name="referrer" content="origin-when-cross-origin" />
         {/* Detector síncrono de temporalidad del dispositivo del cliente (0ms, previene flash de noche) */}

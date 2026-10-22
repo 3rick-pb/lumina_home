@@ -331,10 +331,12 @@ function LiquidMetalButtonFallback({
   isMobile,
   isOpen,
   onClick,
+  hasFinePointer = false,
 }: {
   isMobile: boolean;
   isOpen: boolean;
   onClick: () => void;
+  hasFinePointer?: boolean;
 }) {
   const size = isMobile ? 44 : 48;
   return (
@@ -346,7 +348,7 @@ function LiquidMetalButtonFallback({
       }}
       className="relative z-50 shrink-0 flex items-center justify-center bg-[#18181b] shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
     >
-      <LiquidMetalSilverRing size={size} hasFinePointer={false} />
+      <LiquidMetalSilverRing size={size} hasFinePointer={hasFinePointer} />
       <button
         type="button"
         onClick={onClick}
@@ -1275,80 +1277,18 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
 
         {/* 3. MAIN TRIGGER BUTTON WITH AUTHENTIC LIQUID METAL SILVER EFFECT */}
         <div className="relative inline-flex items-center justify-center shrink-0">
-          {/* Ambient chromatic light spill - calibrated with vibrant red base in Light Mode, deep celestial aura in Dark Mode */}
+          {/* Ambient chromatic light spill - refined emerald & silver luxury aura */}
           <div 
             aria-hidden="true" 
-            className="pointer-events-none absolute -inset-2.5 rounded-full bg-gradient-to-tr from-red-500/70 via-rose-500/65 to-red-600/70 dark:from-cyan-500/35 dark:via-blue-500/30 dark:to-purple-500/35 blur-md sm:blur-lg opacity-90 dark:opacity-75 -z-10" 
-          />
-          <div 
-            aria-hidden="true" 
-            className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-tr from-red-500/55 via-rose-400/45 to-orange-500/50 dark:from-cyan-500/25 dark:via-blue-500/20 dark:to-purple-500/25 blur-xl opacity-80 dark:opacity-60 -z-10 animate-pulse" 
+            className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-tr from-emerald-500/25 via-teal-500/20 to-emerald-600/25 dark:from-emerald-400/30 dark:via-cyan-400/25 dark:to-teal-400/30 blur-md opacity-80 -z-10" 
           />
 
-          {canvasReady && (
-            <MetalBendController
-              targetRef={metalRef}
-              enabled={hasFinePointer}
-            />
-          )}
-
-          {mounted ? (
-            <MetalFxErrorBoundary
-              fallback={
-                <LiquidMetalButtonFallback
-                  isMobile={isMobile}
-                  isOpen={isOpen}
-                  onClick={handleToggleMenu}
-                />
-              }
-            >
-              <DynamicMetalFx
-                ref={metalRef}
-                preset="silver"
-                variant="circle"
-                theme="dark"
-                innerShadow
-                ringCssPx={isMobile ? 3.0 : 2.8}
-                shaderScale={1.3}
-                strength={1}
-                className="relative z-50 shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center"
-                style={{
-                  width: isMobile ? 44 : 48,
-                  height: isMobile ? 44 : 48,
-                  borderRadius: "9999px",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={handleToggleMenu}
-                  aria-label="Exportar datos a Excel"
-                  title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
-                  className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 active:scale-95 shrink-0 bg-transparent"
-                >
-                  <motion.div
-                    animate={{ 
-                      rotate: isOpen ? 90 : 0, 
-                      scale: isOpen ? 1.05 : 1 
-                    }}
-                    transition={{ type: "spring", stiffness: 380, damping: 20 }}
-                    className="relative z-10 flex items-center justify-center select-none"
-                  >
-                    {isOpen ? (
-                      <X className="w-5 h-5 text-rose-400 stroke-[2.4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-                    ) : (
-                      <MicrosoftExcel className="w-5 h-5 sm:w-5.5 sm:h-5.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)] transition-transform duration-200" />
-                    )}
-                  </motion.div>
-                </button>
-              </DynamicMetalFx>
-            </MetalFxErrorBoundary>
-          ) : (
-            <LiquidMetalButtonFallback
-              isMobile={isMobile}
-              isOpen={isOpen}
-              onClick={handleToggleMenu}
-            />
-          )}
+          <LiquidMetalButtonFallback
+            isMobile={isMobile}
+            isOpen={isOpen}
+            onClick={handleToggleMenu}
+            hasFinePointer={hasFinePointer}
+          />
         </div>
       </div>
 
