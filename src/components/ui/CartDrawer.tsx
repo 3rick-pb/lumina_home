@@ -1931,99 +1931,6 @@ export function CartDrawer() {
       </div>
     </div>
 
-    {/* Coupon Code Form with Symmetrical Pill Input */}
-    <div className="space-y-2">
-      <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1.5 pl-4 rounded-2xl bg-white dark:bg-white/5 border border-gray-300 dark:border-white/20 shadow-xs focus-within:border-black/50 dark:focus-within:border-white/40 transition-all">
-        <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-        <div className="relative flex-1 flex items-center">
-          <input 
-            type="text" 
-            name="discount_code"
-            value={couponInput}
-            onChange={e => {
-              setCouponInput(e.target.value.toUpperCase());
-              if (couponFeedback) setCouponFeedback(null);
-            }}
-            placeholder="Código de descuento"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="characters"
-            spellCheck={false}
-            data-lpignore="true"
-            data-1p-ignore="true"
-            className="w-full bg-transparent text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.22em] outline-none text-gray-900 dark:text-gray-100 placeholder:normal-case placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-xs placeholder-gray-400"
-          />
-        </div>
-        <button 
-          type="submit"
-          disabled={isApplyingCoupon || !couponInput.trim()}
-          className="px-4 py-2 rounded-xl font-sans font-bold text-xs text-white dark:text-gray-950 bg-gray-950 dark:bg-white hover:bg-black dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 min-w-[76px]"
-        >
-          {isApplyingCoupon ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Validando</span>
-            </>
-          ) : (
-            <span>Aplicar</span>
-          )}
-        </button>
-      </form>
-
-      {couponFeedback && (
-        <div className={clsx(
-          "flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl border animate-in fade-in slide-in-from-top-1 duration-200",
-          couponFeedback.success 
-            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300" 
-            : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400"
-        )}>
-          {couponFeedback.success ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          ) : (
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
-          )}
-          <span className="flex-1">{couponFeedback.msg}</span>
-        </div>
-      )}
-
-      {couponCode && (
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-500/10 text-gray-800 dark:text-gray-200 text-xs font-medium border border-emerald-500/20 backdrop-blur-xs">
-          <span className="flex items-center gap-2 min-w-0">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="truncate">
-              Cupón: <strong className="font-mono font-bold text-emerald-700 dark:text-emerald-300 tracking-wider">
-                {revealAppliedCoupon ? couponCode : maskCouponCode(couponCode)}
-              </strong>
-              {isFreeShippingCoupon ? " (Envío bonificado)" : ` (${discountPercent}% dto)`}
-            </span>
-          </span>
-          <div className="flex items-center gap-1 shrink-0 ml-2">
-            <button
-              type="button"
-              onClick={() => setRevealAppliedCoupon(!revealAppliedCoupon)}
-              className="p-1 rounded-md hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer"
-              title={revealAppliedCoupon ? "Ocultar código confidencial" : "Revelar código"}
-              aria-label="Alternar visualización de cupón"
-            >
-              {revealAppliedCoupon ? (
-                <EyeOff className="w-3.5 h-3.5" />
-              ) : (
-                <Eye className="w-3.5 h-3.5" />
-              )}
-            </button>
-            <button 
-              type="button"
-              onClick={removeCoupon} 
-              className="p-1 rounded-md hover:bg-rose-500/20 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
-              title="Eliminar cupón"
-              aria-label="Eliminar cupón"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
 
     {/* Breakdown Lines Symmetrical Table */}
     <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-white/15">
@@ -3093,7 +3000,101 @@ export function CartDrawer() {
       </button>
     </div>
 
-    {/* 3. High-Ticket Financial Ledger Summary */}
+    {/* 3. Coupon Code Input (Parte #2 de la bolsa) */}
+    <div className="space-y-2">
+      <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1.5 pl-4 rounded-2xl bg-white dark:bg-white/5 border border-gray-300 dark:border-white/20 shadow-xs focus-within:border-black/50 dark:focus-within:border-white/40 transition-all">
+        <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+        <div className="relative flex-1 flex items-center min-w-0">
+          <input 
+            type="text" 
+            name="discount_code"
+            value={couponInput}
+            onChange={e => {
+              setCouponInput(e.target.value.toUpperCase());
+              if (couponFeedback) setCouponFeedback(null);
+            }}
+            placeholder="Código de descuento"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            data-lpignore="true"
+            data-1p-ignore="true"
+            className="w-full bg-transparent text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.22em] outline-none text-gray-900 dark:text-gray-100 placeholder:normal-case placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-xs placeholder-gray-400"
+          />
+        </div>
+        <button 
+          type="submit"
+          disabled={isApplyingCoupon || !couponInput.trim()}
+          className="px-4 py-2 rounded-xl font-sans font-bold text-xs text-white dark:text-gray-950 bg-gray-950 dark:bg-white hover:bg-black dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 min-w-[76px]"
+        >
+          {isApplyingCoupon ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Validando</span>
+            </>
+          ) : (
+            <span>Aplicar</span>
+          )}
+        </button>
+      </form>
+
+      {couponFeedback && (
+        <div className={clsx(
+          "flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl border animate-in fade-in slide-in-from-top-1 duration-200",
+          couponFeedback.success 
+            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300" 
+            : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400"
+        )}>
+          {couponFeedback.success ? (
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+          )}
+          <span className="flex-1">{couponFeedback.msg}</span>
+        </div>
+      )}
+
+      {couponCode && (
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-500/10 text-gray-800 dark:text-gray-200 text-xs font-medium border border-emerald-500/20 backdrop-blur-xs">
+          <span className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="truncate">
+              Cupón: <strong className="font-mono font-bold text-emerald-700 dark:text-emerald-300 tracking-wider">
+                {revealAppliedCoupon ? couponCode : maskCouponCode(couponCode)}
+              </strong>
+              {isFreeShippingCoupon ? " (Envío bonificado)" : ` (${discountPercent}% dto)`}
+            </span>
+          </span>
+          <div className="flex items-center gap-1 shrink-0 ml-2">
+            <button
+              type="button"
+              onClick={() => setRevealAppliedCoupon(!revealAppliedCoupon)}
+              className="p-1 rounded-md hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer"
+              title={revealAppliedCoupon ? "Ocultar código confidencial" : "Revelar código"}
+              aria-label="Alternar visualización de cupón"
+            >
+              {revealAppliedCoupon ? (
+                <EyeOff className="w-3.5 h-3.5" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
+            </button>
+            <button 
+              type="button"
+              onClick={removeCoupon} 
+              className="p-1 rounded-md hover:bg-rose-500/20 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+              title="Eliminar cupón"
+              aria-label="Eliminar cupón"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* 4. High-Ticket Financial Ledger Summary */}
     <div className="p-4 sm:p-5 rounded-[1.75rem] bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2.5">
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <span>Subtotal de selección</span>
