@@ -64,147 +64,6 @@ import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { MacOSScrollbar } from "./MacOSScrollbar";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { getRefinedCoordinates, type RawGpsHardwareData } from "@/lib/locationUtils";
-import {
-  Visa as VisaMono,
-  Mastercard as MastercardMono,
-  DinersClub as DinersClubMono,
-  Discover as DiscoverMono,
-} from "@thesvg/react";
-
-// Official Card & Payment Gateway Logos (Authentic Vector Brandmarks from theSVG.org + PayPhone Official)
-function MastercardLogo({ className = "h-[17px]" }: { className?: string }) {
-  return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" role="img" xmlns="http://www.w3.org/2000/svg">
-      <title>Mastercard</title>
-      <path d="M11.343 18.031c.058.049.12.098.181.146-1.177.783-2.59 1.238-4.107 1.238C3.32 19.416 0 16.096 0 12c0-4.095 3.32-7.416 7.416-7.416 1.518 0 2.931.456 4.105 1.238-.06.051-.12.098-.165.15C9.6 7.489 8.595 9.688 8.595 12c0 2.311 1.001 4.51 2.748 6.031z" fill="#EB001B"/>
-      <path d="M16.584 4.584c-1.52 0-2.931.456-4.105 1.238.06.051.12.098.165.15C14.4 7.489 15.405 9.688 15.405 12c0 2.31-1.001 4.507-2.748 6.031-.058.049-.12.098-.181.146 1.177.783 2.588 1.238 4.107 1.238C20.68 19.416 24 16.096 24 12c0-4.094-3.32-7.416-7.416-7.416z" fill="#F79E1B"/>
-      <path d="M12 6.174c-.096.075-.189.15-.28.231C10.156 7.764 9.169 9.765 9.169 12c0 2.236.987 4.236 2.551 5.595.09.08.185.158.28.232.096-.074.189-.152.28-.232 1.563-1.359 2.551-3.359 2.551-5.595 0-2.235-.987-4.236-2.551-5.595-.09-.08-.184-.156-.28-.231z" fill="#FF5F00"/>
-    </svg>
-  );
-}
-
-function VisaLogo({ className = "h-[19px]", fill = "#1A1F71" }: { className?: string; fill?: string }) {
-  return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" fill={fill} role="img" xmlns="http://www.w3.org/2000/svg">
-      <title>Visa</title>
-      <path d="M9.112 8.262L5.97 15.758H3.92L2.374 9.775c-.094-.368-.175-.503-.461-.658C1.447 8.864.677 8.627 0 8.479l.046-.217h3.3a.904.904 0 01.894.764l.817 4.338 2.018-5.102zm8.033 5.049c.008-1.979-2.736-2.088-2.717-2.972.006-.269.262-.555.822-.628a3.66 3.66 0 011.913.336l.34-1.59a5.207 5.207 0 00-1.814-.333c-1.917 0-3.266 1.02-3.278 2.479-.012 1.079.963 1.68 1.698 2.04.756.367 1.01.603 1.006.931-.005.504-.602.725-1.16.734-.975.015-1.54-.263-1.992-.473l-.351 1.642c.453.208 1.289.39 2.156.398 2.037 0 3.37-1.006 3.377-2.564m5.061 2.447H24l-1.565-7.496h-1.656a.883.883 0 00-.826.55l-2.909 6.946h2.036l.405-1.12h2.488zm-2.163-2.656l1.02-2.815.588 2.815zm-8.16-4.84l-1.603 7.496H8.34l1.605-7.496z"/>
-    </svg>
-  );
-}
-
-function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <img
-      src="/images/payphone-badge.png"
-      alt="PayPhone"
-      className={`shrink-0 object-contain rounded-md shadow-2xs ${className}`}
-    />
-  );
-}
-
-function DinersClubLogo({ className = "h-4" }: { className?: string }) {
-  return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" fill="#004C97" role="img" xmlns="http://www.w3.org/2000/svg">
-      <title>Diners Club</title>
-      <path d="M16.506 11.982a6.026 6.026 0 0 0-3.866-5.618V17.6a6.025 6.025 0 0 0 3.866-5.618zM8.33 17.598V6.365a6.03 6.03 0 0 0-3.863 5.617 6.028 6.028 0 0 0 3.863 5.616zm2.156-15.113A9.497 9.497 0 0 0 .99 11.982a9.495 9.495 0 0 0 9.495 9.494c5.245 0 9.495-4.25 9.496-9.494a9.499 9.499 0 0 0-9.496-9.497Zm-.023 19.888C4.723 22.4 0 17.75 0 12.09 0 5.905 4.723 1.626 10.463 1.627h2.69C18.822 1.627 24 5.903 24 12.09c0 5.658-5.176 10.283-10.848 10.283"/>
-    </svg>
-  );
-}
-
-function DiscoverLogo({ className = "h-4.5" }: { className?: string }) {
-  return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 7.6 24 8.8" fill="#FF6000" role="img" xmlns="http://www.w3.org/2000/svg">
-      <title>Discover</title>
-      <path d="M14.58 12a2.023 2.023 0 1 1-2.025-2.023h.002c1.118 0 2.023.906 2.023 2.023z" fill="#FF6000"/>
-      <path d="M9.38 9.999c-1.124 0-2.025.884-2.025 1.99 0 1.118.878 1.984 2.007 1.984.319 0 .593-.063.93-.221v-.873c-.296.297-.559.416-.895.416-.747 0-1.277-.542-1.277-1.312 0-.73.547-1.306 1.243-1.306.354 0 .622.126.93.428v-.873a1.898 1.898 0 0 0-.913-.233zm-3.352 1.545c-.445-.165-.576-.273-.576-.479 0-.239.233-.422.553-.422.222 0 .405.091.598.308l.388-.508a1.665 1.665 0 0 0-1.117-.422c-.673 0-1.186.467-1.186 1.089 0 .524.239.792.936 1.043.291.103.438.171.513.217a.456.456 0 0 1 .222.394c0 .308-.245.536-.576.536-.354 0-.639-.177-.809-.507l-.479.461c.342.502.752.724 1.317.724.771 0 1.311-.513 1.311-1.249-.002-.603-.252-.876-1.095-1.185zM24 10.3a.29.29 0 0 1-.288.291.29.29 0 0 1-.291-.291v-.003A.29.29 0 1 1 24 10.3zm-.059.001a.235.235 0 0 0-.231-.239.234.234 0 0 0-.232.239c0 .132.104.239.232.239a.235.235 0 0 0 .231-.239zM3.472 13.887h.742v-3.803h-.742v3.803zm12.702-1.248l-1.014-2.554h-.81l1.614 3.9h.399l1.643-3.9h-.804l-1.028 2.554zm2.166 1.248h2.104v-.644h-1.362v-1.027h1.312v-.644h-1.312v-.844h1.362v-.644H18.34v3.803zm5.409-3.557l.11.138h-.097l-.094-.13v.13h-.08v-.334h.107c.081 0 .126.036.126.103.001.046-.025.08-.072.093zm-.006-.092c0-.029-.021-.043-.06-.043h-.014v.087h.014c.039 0 .06-.014.06-.044zm-1.228 2.047l1.197 1.602H22.8l-1.027-1.528h-.097v1.528h-.741v-3.803h1.1c.855 0 1.346.411 1.346 1.123 0 .583-.308.965-.866 1.078zm.103-1.038c0-.37-.251-.563-.713-.563h-.228v1.152h.217c.473-.001.724-.207.724-.589zm-19.487.742a1.91 1.91 0 0 1-.69 1.46c-.365.303-.781.439-1.357.439H.001v-3.803H1.09c1.202 0 2.041.781 2.041 1.904zm-.764-.006c0-.364-.154-.718-.411-.947-.245-.222-.536-.308-1.015-.308H.742v2.515h.199c.479 0 .782-.092 1.015-.302.256-.228.411-.593.411-.958z" className="fill-[#231F20] dark:fill-gray-200"/>
-    </svg>
-  );
-}
-
-function AmexLogo({ className = "h-4" }: { className?: string }) {
-  return (
-    <svg className={`shrink-0 rounded-[2px] ${className}`} viewBox="0 0 24 24" fill="#2E77BC" role="img" xmlns="http://www.w3.org/2000/svg">
-      <title>American Express</title>
-      <path d="M16.015 14.378c0-.32-.135-.496-.344-.622-.21-.12-.464-.135-.81-.135h-1.543v2.82h.675v-1.027h.72c.24 0 .39.024.478.125.12.13.104.38.104.55v.35h.66v-.555c-.002-.25-.017-.376-.108-.516-.06-.08-.18-.18-.33-.234l.02-.008c.18-.072.48-.297.48-.747zm-.87.407l-.028-.002c-.09.053-.195.058-.33.058h-.81v-.63h.824c.12 0 .24 0 .33.05.098.048.156.147.15.255 0 .12-.045.215-.134.27zM20.297 15.837H19v.6h1.304c.676 0 1.05-.278 1.05-.884 0-.28-.066-.448-.187-.582-.153-.133-.392-.193-.73-.207l-.376-.015c-.104 0-.18 0-.255-.03-.09-.03-.15-.105-.15-.21 0-.09.017-.166.09-.21.083-.046.177-.066.272-.06h1.23v-.602h-1.35c-.704 0-.958.437-.958.84 0 .9.776.855 1.407.87.104 0 .18.015.225.06.046.03.082.106.082.18 0 .077-.035.15-.08.18-.06.053-.15.07-.277.07zM0 0v10.096L.81 8.22h1.75l.225.464V8.22h2.043l.45 1.02.437-1.013h6.502c.295 0 .56.057.756.236v-.23h1.787v.23c.307-.17.686-.23 1.12-.23h2.606l.24.466v-.466h1.918l.254.465v-.466h1.858v3.948H20.87l-.36-.6v.585h-2.353l-.256-.63h-.583l-.27.614h-1.213c-.48 0-.84-.104-1.08-.24v.24h-2.89v-.884c0-.12-.03-.12-.105-.135h-.105v1.036H6.067v-.48l-.21.48H4.69l-.202-.48v.465H2.235l-.256-.624H1.4l-.256.624H0V24h23.786v-7.108c-.27.135-.613.18-.973.18H21.09v-.255c-.21.165-.57.255-.914.255H14.71v-.9c0-.12-.018-.12-.12-.12h-.075v1.022h-1.8v-1.066c-.298.136-.643.15-.928.136h-.214v.915h-2.18l-.54-.617-.57.6H4.742v-3.93h3.61l.518.602.554-.6h2.412c.28 0 .74.03.942.225v-.24h2.177c.202 0 .644.045.903.225v-.24h3.265v.24c.163-.164.508-.24.803-.24h1.89v.24c.194-.15.464-.24.84-.24h1.176V0H0zM21.156 14.955c.004.005.006.012.01.016.01.01.024.01.032.02l-.042-.035zM23.828 13.082h.065v.555h-.065zM23.865 15.03v-.005c-.03-.025-.046-.048-.075-.07-.15-.153-.39-.215-.764-.225l-.36-.012c-.12 0-.194-.007-.27-.03-.09-.03-.15-.105-.15-.21 0-.09.03-.16.09-.204.076-.045.15-.05.27-.05h1.223v-.588h-1.283c-.69 0-.96.437-.96.84 0 .9.78.855 1.41.87.104 0 .18.015.224.06.046.03.076.106.076.18 0 .07-.034.138-.09.18-.045.056-.136.07-.27.07h-1.288v.605h1.287c.42 0 .734-.118.9-.36h.03c.09-.134.135-.3.135-.523 0-.24-.045-.39-.135-.526zM18.597 14.208v-.583h-2.235V16.458h2.235v-.585h-1.57v-.57h1.533v-.584h-1.532v-.51M13.51 8.787h.685V11.6h-.684zM13.126 9.543l-.007.006c0-.314-.13-.5-.34-.624-.217-.125-.47-.135-.81-.135H10.43v2.82h.674v-1.034h.72c.24 0 .39.03.487.12.122.136.107.378.107.548v.354h.677v-.553c0-.25-.016-.375-.11-.516-.09-.107-.202-.19-.33-.237.172-.07.472-.3.472-.75zm-.855.396h-.015c-.09.054-.195.056-.33.056H11.1v-.623h.825c.12 0 .24.004.33.05.09.04.15.128.15.25s-.047.22-.134.266zM15.92 9.373h.632v-.6h-.644c-.464 0-.804.105-1.02.33-.286.3-.362.69-.362 1.11 0 .512.123.833.36 1.074.232.238.645.31.97.31h.78l.255-.627h1.39l.262.627h1.36v-2.11l1.272 2.11h.95l.002.002V8.786h-.684v1.963l-1.18-1.96h-1.02V11.4L18.11 8.744h-1.004l-.943 2.22h-.3c-.177 0-.362-.03-.468-.134-.125-.15-.186-.36-.186-.662 0-.285.08-.51.194-.63.133-.135.272-.165.516-.165zm1.668-.108l.464 1.118v.002h-.93l.466-1.12zM2.38 10.97l.254.628H4V9.393l.972 2.205h.584l.973-2.202.015 2.202h.69v-2.81H6.118l-.807 1.904-.876-1.905H3.343v2.663L2.205 8.787h-.997L.01 11.597h.72l.26-.626h1.39zm-.688-1.705l.46 1.118-.003.002h-.915l.457-1.12zM11.856 13.62H9.714l-.85.923-.825-.922H5.346v2.82H8l.855-.932.824.93h1.302v-.94h.838c.6 0 1.17-.164 1.17-.945l-.006-.003c0-.78-.598-.93-1.128-.93zM7.67 15.853l-.014-.002H6.02v-.557h1.47v-.574H6.02v-.51H7.7l.733.82-.764.824zm2.642.33l-1.03-1.147 1.03-1.108v2.253zm1.553-1.258h-.885v-.717h.885c.24 0 .42.098.42.344 0 .243-.15.372-.42.372zM9.967 9.373v-.586H7.73V11.6h2.237v-.58H8.4v-.564h1.527V9.88H8.4v-.507"/>
-    </svg>
-  );
-}
-
-function ContactlessIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M8.5 16.5a5 5 0 0 1 0-9" />
-      <path d="M12 19a8.5 8.5 0 0 1 0-14" />
-      <path d="M15.5 21.5a12 12 0 0 1 0-19" />
-    </svg>
-  );
-}
-
-function EmvChip() {
-  return (
-    <div className="relative w-11 h-8 sm:w-12 sm:h-9 rounded-md bg-gradient-to-br from-[#f3db8a] via-[#dfba56] to-[#9c7923] p-[1.5px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.7),0_2px_6px_rgba(0,0,0,0.5)] border border-[#7a5b14]/70 overflow-hidden shrink-0">
-      <div className="w-full h-full rounded-[3px] border border-[#6d5111]/45 flex flex-col justify-between p-[2px] bg-gradient-to-b from-transparent via-[#f8e49d]/20 to-transparent">
-        <div className="flex justify-between h-2.5 border-b border-[#6d5111]/40">
-          <div className="w-2.5 border-r border-[#6d5111]/40" />
-          <div className="w-2.5 border-l border-[#6d5111]/40" />
-        </div>
-        <div className="flex justify-between h-2.5">
-          <div className="w-2.5 border-r border-[#6d5111]/40" />
-          <div className="w-2.5 border-l border-[#6d5111]/40" />
-        </div>
-      </div>
-      <div className="absolute top-0 left-0 w-4 h-full bg-gradient-to-r from-transparent via-white/35 to-transparent transform -skew-x-12 pointer-events-none" />
-    </div>
-  );
-}
-
-function VerifiedByVisaLogo({ className = "h-6" }: { className?: string }) {
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03] ${className}`}>
-      <VisaLogo className="h-3.5 w-auto" fill="#1A1F71" />
-      <span className="text-[8.5px] font-sans font-semibold text-gray-600 dark:text-gray-300 tracking-tight leading-none">
-        Secure
-      </span>
-    </div>
-  );
-}
-
-function MastercardSecureCodeLogo({ className = "h-6" }: { className?: string }) {
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03] ${className}`}>
-      <MastercardLogo className="h-3.5 w-auto" />
-      <span className="text-[8.5px] font-sans font-semibold text-gray-600 dark:text-gray-300 tracking-tight leading-none">
-        ID Check
-      </span>
-    </div>
-  );
-}
-
-function PciDssLogo({ className = "h-6" }: { className?: string }) {
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03] ${className}`}>
-      <svg className="w-3.5 h-3.5 shrink-0 text-emerald-500" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M8 1a2.5 2.5 0 0 0-2.5 2.5V5h-1A1.5 1.5 0 0 0 3 6.5v6A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 11.5 5h-1V3.5A2.5 2.5 0 0 0 8 1zm1.5 4h-3V3.5a1.5 1.5 0 0 1 3 0V5z"/>
-      </svg>
-      <span className="text-[8.5px] font-sans font-bold text-gray-700 dark:text-gray-200 tracking-tight leading-none">
-        PCI <span className="text-emerald-600 dark:text-emerald-400">DSS</span>
-      </span>
-    </div>
-  );
-}
-
-function PoweredByPayphoneLogo({ className = "h-6" }: { className?: string }) {
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03] ${className}`}>
-      <PayPhoneIcon className="w-4 h-4" />
-      <span className="text-[9.5px] font-sans font-bold text-[#FF5900] tracking-tight leading-none">
-        PayPhone
-      </span>
-    </div>
-  );
-}
-
-
 
 export function CartDrawer() {
   const cartScrollRef = React.useRef<HTMLDivElement>(null);
@@ -2096,9 +1955,9 @@ export function CartDrawer() {
           size="lg"
           className="w-full shadow-sm"
           onConfirm={async () => {
-            await new Promise((resolve) => setTimeout(resolve, 600));
+            await new Promise((resolve) => setTimeout(resolve, 1400));
           }}
-          confirmedDurationMs={1000}
+          confirmedDurationMs={2000}
           onConfirmed={() => {
             handleProceedToPayment();
           }}
@@ -2144,9 +2003,9 @@ export function CartDrawer() {
       </p>
     </div>
 
-    {/* Quick Top Indicator for Desktop */}
-    <div className="hidden sm:flex items-center gap-3.5 bg-stone-50 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 px-4 py-2.5 rounded-2xl shadow-2xs">
-      <div className="w-9 h-9 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center text-xs font-bold shadow-xs">
+    {/* Quick Top Indicator for Mobile & Desktop */}
+    <div className="flex items-center gap-3.5 bg-stone-50 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-2xs self-start sm:self-auto">
+      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center text-xs font-bold shadow-xs">
         {items.length}
       </div>
       <div className="text-right">
@@ -2163,10 +2022,10 @@ export function CartDrawer() {
   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start w-full">
   
   {/* Left Column (7 cols): Shipping Address & Payment Gateway Forms */}
-  <div className="lg:col-span-7 space-y-6">
+  <div className="lg:col-span-7 flex flex-col space-y-6">
   
   {/* Shipping Address */}
-  <div id="cart-address-section" className="p-5 sm:p-7 rounded-[2rem] bg-white/95 dark:bg-[#18181b]/95 sm:backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
+  <div id="cart-address-section" className="order-2 lg:order-1 p-5 sm:p-7 rounded-[2rem] bg-white/95 dark:bg-[#18181b]/95 sm:backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
     <div className="flex flex-wrap items-center justify-between gap-2.5">
       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
         <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white shrink-0">
@@ -2648,8 +2507,8 @@ export function CartDrawer() {
     )}
   </div>
 
-    {/* Formas de Pago Segura con PayPhone */}
-    <div className="rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm p-4 sm:p-5 font-sans space-y-3.5">
+    {/* Formas de Pago Segura con PayPhone (order-1 en móviles para visualización prioritaria superior) */}
+    <div className="order-1 lg:order-2 rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm p-4 sm:p-5 font-sans space-y-3.5">
       {/* Clean Header */}
       <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-black/[0.06] dark:border-white/[0.08]">
         <div className="flex items-center gap-2">
@@ -2658,7 +2517,7 @@ export function CartDrawer() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
           <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100 tracking-wide">
-            Elige tu método de pago
+            Configura tu método pago
           </h4>
         </div>
 
@@ -2971,18 +2830,7 @@ export function CartDrawer() {
 
 
 
-    {/* Trust & Security Badges Row (100% Vectorized & Standardized) */}
-    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 pt-2">
-      <VerifiedByVisaLogo />
-      <MastercardSecureCodeLogo />
-      <PciDssLogo />
-      <PoweredByPayphoneLogo />
-    </div>
 
-    {/* Footer Security Assurance: Concise & reassuring */}
-    <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center leading-relaxed pt-1.5 font-sans max-w-sm mx-auto">
-      Pago seguro cifrado con TLS 1.3 y certificación PCI-DSS. No almacenamos tus datos bancarios.
-    </p>
 
   </div>
 

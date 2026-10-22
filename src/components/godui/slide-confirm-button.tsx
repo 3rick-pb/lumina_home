@@ -277,28 +277,10 @@ const SlideConfirmButton = React.forwardRef<
             thumbVariant[variant]
           )}
         >
-          {loading ? (
+          {loading || confirmed ? (
             <div className="flex items-center justify-center scale-90">
               <ThinkingOrb state="working" size={20} color="#000000" theme="light" />
             </div>
-          ) : confirmed ? (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              className="size-5"
-              aria-hidden="true"
-            >
-              <motion.path
-                d="M5 12.5 10 17.5 19 7"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-            </svg>
           ) : (
             <ArrowIcon />
           )}

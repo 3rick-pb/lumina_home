@@ -26,14 +26,14 @@ export function BrandLoadingScreen({
       {/* Ambient background glows */}
       <div className="absolute w-96 h-96 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.09] to-amber-300/[0.06] blur-3xl pointer-events-none animate-pulse duration-1000" />
 
-      {/* Center ThinkingOrb in large, prominent size with deep black ink */}
+      {/* Center ThinkingOrb in large, prominent size (+50% larger for deep visual appreciation) */}
       <div className="relative z-10 flex flex-col items-center justify-center">
         <ThinkingOrb 
           state="working" 
           size={64} 
           color="#000000" 
           theme="light" 
-          style={{ width: 88, height: 88 }} 
+          style={{ width: 132, height: 132 }} 
         />
       </div>
     </div>

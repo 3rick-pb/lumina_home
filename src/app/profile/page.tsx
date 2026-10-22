@@ -1487,7 +1487,7 @@ const handleConfirmDeleteNiche = async () => {
           width={1058}
           height={272}
           priority
-          className="h-7 sm:h-8 w-auto object-contain dark:invert"
+          className="h-[30px] w-auto object-contain dark:invert"
         />
       </Link>
     </div>
@@ -1532,7 +1532,7 @@ const handleConfirmDeleteNiche = async () => {
         width={1058}
         height={272}
         priority
-        className="h-8 sm:h-9 md:h-10 w-auto object-contain dark:invert"
+        className="h-[30px] w-auto object-contain dark:invert"
       />
     </Link>
   </div>
