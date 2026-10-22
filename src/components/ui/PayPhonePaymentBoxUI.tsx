@@ -17,7 +17,7 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
     storeId: process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID || "",
   });
 
-  const isMountedRef = useRef(false);
+  const hasInitializedRef = useRef(false);
   const boxInstanceRef = useRef<any>(null);
 
   // 1. Obtener credenciales (desde env público o desde /api/payphone/config)
@@ -87,7 +87,7 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
 
     const renderBox = (PPBox: any) => {
       const container = document.getElementById("pp-button");
-      if (!container) return;
+      if (!container || hasInitializedRef.current) return;
 
       const activeToken = (creds.token || process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || "").trim();
       const activeStoreId = (creds.storeId || process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID || "").trim();
@@ -103,6 +103,7 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
       const breakdown = buildPayPhoneBreakdown(totalUsd, true);
 
       try {
+        hasInitializedRef.current = true;
         container.innerHTML = "";
 
         // Parámetros oficiales según documentación y video tutorial PayPhone V2:
@@ -123,10 +124,10 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
         boxInstanceRef.current = ppb;
         ppb.render("pp-button");
 
-        isMountedRef.current = true;
         setLoading(false);
         setErrorMessage(null);
       } catch (err: any) {
+        hasInitializedRef.current = false;
         console.error("[PayPhone] Error al renderizar PPaymentButtonBox:", err);
         setErrorMessage(
           err?.message || "Ocurrió un error al renderizar la pasarela de PayPhone."
@@ -160,6 +161,7 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
 
     return () => {
       if (timerId) clearInterval(timerId);
+      hasInitializedRef.current = false;
     };
   }, [isConfigLoaded, creds, totalUsd]);
 
@@ -191,10 +193,10 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
         </div>
       )}
 
-      {/* Contenedor oficial donde PayPhone inyecta el formulario (siempre en el DOM) */}
+      {/* Contenedor oficial donde PayPhone inyecta el formulario (siempre visible con altura adecuada) */}
       <div
         id="pp-button"
-        className={`w-full min-h-[360px] ${loading && !errorMessage ? "opacity-0 h-0 overflow-hidden" : "opacity-100 transition-opacity duration-300"}`}
+        className="w-full min-h-[380px] transition-all duration-300"
       />
 
       {/* Sello de seguridad y métodos soportados */}

@@ -19,7 +19,7 @@ export function middleware() {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.payphonetodoesposible.com https://*.payphonetodoesposible.com",
     "img-src 'self' data: blob: https:",
     "font-src 'self' https://fonts.gstatic.com https://cdn.payphonetodoesposible.com data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://freeipapi.com https://ipwho.is https://nominatim.openstreetmap.org https://cdn.payphonetodoesposible.com https://pay.payphonetodoesposible.com https://paymentbox.payphonetodoesposible.com https://*.payphonetodoesposible.com https://pay.payphone.com.ec https://*.cardinalcommerce.com https://*.online-metrix.net https://www.google-analytics.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://freeipapi.com https://ipwho.is https://ipinfo.io https://*.ipinfo.io https://nominatim.openstreetmap.org https://cdn.payphonetodoesposible.com https://pay.payphonetodoesposible.com https://paymentbox.payphonetodoesposible.com https://*.payphonetodoesposible.com https://pay.payphone.com.ec https://*.cardinalcommerce.com https://*.online-metrix.net https://www.google-analytics.com",
     "frame-src 'self' https://cdn.payphonetodoesposible.com https://pay.payphonetodoesposible.com https://paymentbox.payphonetodoesposible.com https://*.payphonetodoesposible.com https://pay.payphone.com.ec https://songbird.cardinalcommerce.com https://*.cardinalcommerce.com https://h.online-metrix.net https://*.online-metrix.net",
     "frame-ancestors 'none'",
     "base-uri 'self'",
