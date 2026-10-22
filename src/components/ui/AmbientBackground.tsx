@@ -7,9 +7,7 @@ import {
   CATEGORY_THEMES,
   syncBrowserThemeColor,
   LUMINA_DEFAULT_BROWSER_COLOR,
-  LUMINA_DEFAULT_BROWSER_DARK,
   LUMINA_WEB_BG_LIGHT,
-  LUMINA_WEB_BG_DARK,
 } from "@/lib/ambientStore";
 
 export function AmbientBackground() {
@@ -37,11 +35,11 @@ export function AmbientBackground() {
 
     const applyColor = () => {
       if (isShopPage) {
-        syncBrowserThemeColor(LUMINA_WEB_BG_LIGHT, LUMINA_WEB_BG_DARK);
+        syncBrowserThemeColor(LUMINA_WEB_BG_LIGHT);
       } else if (isProfilePage) {
-        syncBrowserThemeColor("#e8edf5", "#1a1d2e");
+        syncBrowserThemeColor("#e8edf5");
       } else {
-        syncBrowserThemeColor(LUMINA_DEFAULT_BROWSER_COLOR, LUMINA_DEFAULT_BROWSER_DARK);
+        syncBrowserThemeColor(LUMINA_DEFAULT_BROWSER_COLOR);
       }
     };
 

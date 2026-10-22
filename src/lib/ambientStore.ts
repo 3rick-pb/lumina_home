@@ -9,46 +9,29 @@ export interface AmbientTheme {
 }
 
 export const LUMINA_DEFAULT_BROWSER_COLOR = "#8c9276";
-export const LUMINA_DEFAULT_BROWSER_DARK = "#232b24";
 export const LUMINA_WEB_BG_LIGHT = "#FAF1E8";
-export const LUMINA_WEB_BG_DARK = "#151413";
 
-export function syncBrowserThemeColor(lightColor: string, darkColor?: string) {
+/**
+ * Cambia el color de la barra del navegador en dispositivos en modo CLARO.
+ * En modo oscuro del dispositivo, el navegador siempre usa negro — no hay nada que hacer.
+ *
+ * Estrategia: eliminar TODOS los meta[name="theme-color"] existentes (incluyendo los
+ * que Next.js genera estáticamente con el verde oliva) e insertar uno nuevo limpio.
+ * Esto garantiza que no quede ningún valor residual que el browser pueda preferir.
+ */
+export function syncBrowserThemeColor(color: string) {
   if (typeof document === "undefined") return;
   try {
-    const isDark =
-      document.documentElement.classList.contains("dark") ||
-      (!document.documentElement.classList.contains("light") &&
-        typeof window !== "undefined" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    // Eliminar todos los theme-color existentes (estáticos de Next.js y dinámicos)
+    document
+      .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+      .forEach((m) => m.remove());
 
-    const effectiveDarkColor = darkColor || (isDark ? lightColor : LUMINA_WEB_BG_DARK);
-    const effectiveLightColor = lightColor;
-    const effectiveColor = isDark ? effectiveDarkColor : effectiveLightColor;
-
-    const metaTags = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
-    if (metaTags.length === 0) {
-      const meta = document.createElement("meta");
-      meta.name = "theme-color";
-      meta.content = effectiveColor;
-      document.head.appendChild(meta);
-    } else {
-      metaTags.forEach((meta) => {
-        const media = meta.getAttribute("media");
-        if (media && media.includes("prefers-color-scheme: dark")) {
-          meta.setAttribute("content", effectiveDarkColor);
-        } else if (media && media.includes("prefers-color-scheme: light")) {
-          meta.setAttribute("content", effectiveLightColor);
-        } else {
-          meta.setAttribute("content", effectiveColor);
-        }
-      });
-    }
-
-    const msMeta = document.querySelector<HTMLMetaElement>('meta[name="msapplication-navbutton-color"]');
-    if (msMeta) {
-      msMeta.setAttribute("content", effectiveColor);
-    }
+    // Insertar uno fresco sin atributo media — el navegador lo tomará directamente
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = color;
+    document.head.appendChild(meta);
   } catch {}
 }
 
