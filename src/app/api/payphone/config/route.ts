@@ -17,7 +17,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       mode,
-      storeId: config.storeId,
+      token: config.token || process.env.PAYPHONE_TOKEN || process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || '',
+      storeId: config.storeId || process.env.PAYPHONE_STORE_ID || process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID || '',
       isConfigured: config.isConfigured,
       isSimulated: config.isSimulated,
       environment: config.environment,

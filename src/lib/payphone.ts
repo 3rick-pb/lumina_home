@@ -676,7 +676,10 @@ export function isRealPayPhoneToken(token?: string | null): boolean {
 export function buildPayPhoneBreakdown(totalUsd: number, isTaxFree = true) {
   const cleanTotal = Math.max(0, Number(totalUsd) || 0);
   const amountInCents = Math.round(cleanTotal * 100);
-  const clientTransactionId = `LM_${Date.now()}_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+  const randomSuffix = typeof window !== "undefined"
+    ? Math.random().toString(36).substring(2, 10).toUpperCase()
+    : (crypto && typeof crypto.randomBytes === "function" ? crypto.randomBytes(4).toString("hex").toUpperCase() : Math.random().toString(36).substring(2, 10).toUpperCase());
+  const clientTransactionId = `LM_${Date.now()}_${randomSuffix}`;
 
   return {
     amount: amountInCents,
