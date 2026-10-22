@@ -572,7 +572,7 @@ export default function RegisterPage() {
             <button 
               type="submit"
               disabled={isLoading}
-              className="w-full mt-2 h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-medium text-sm flex items-center justify-center gap-2.5 transition-all shadow-md hover:shadow-lg shadow-gray-900/15 active:scale-[0.99] cursor-pointer disabled:opacity-60"
+              className="w-full mt-2 h-11 sm:h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium text-sm flex items-center justify-center gap-2.5 transition-all shadow-xs hover:shadow-sm active:scale-[0.99] group disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer select-none"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2.5">
@@ -602,7 +602,7 @@ export default function RegisterPage() {
             >
               {isGoogleLoading ? (
                 <div className="flex items-center justify-center gap-2.5">
-                  <ThinkingOrb state="working" size={20} />
+                  <ThinkingOrb state="working" size={20} color="#000000" theme="light" />
                   <span className="font-medium text-sm text-[#1f1f1f] dark:text-gray-200">Conectando con Google...</span>
                 </div>
               ) : (

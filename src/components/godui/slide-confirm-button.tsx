@@ -279,7 +279,7 @@ const SlideConfirmButton = React.forwardRef<
         >
           {loading ? (
             <div className="flex items-center justify-center scale-90">
-              <ThinkingOrb state="working" size={20} />
+              <ThinkingOrb state="working" size={20} color="#000000" theme="light" />
             </div>
           ) : confirmed ? (
             <svg

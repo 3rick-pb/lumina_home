@@ -167,16 +167,16 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
   }, [isConfigLoaded, creds, totalUsd]);
 
   return (
-    <div className="w-full flex flex-col items-center justify-center relative p-2 font-sans">
+    <div className="w-full flex flex-col items-center justify-center relative font-sans">
       {/* Indicador de carga mientras el CDN de PayPhone responde */}
       {loading && !errorMessage && (
-        <div className="flex flex-col items-center justify-center gap-4 py-12 text-gray-500 dark:text-gray-400">
-          <ThinkingOrb state="working" size={32} color="#FF5900" />
-          <div className="text-center space-y-1">
-            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+        <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-600">
+          <ThinkingOrb state="working" size={32} color="#000000" theme="light" />
+          <div className="text-center space-y-0.5">
+            <p className="text-xs font-semibold text-gray-800">
               Conectando con pasarela PayPhone...
             </p>
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[11px] text-gray-500">
               Cargando formulario seguro de cobro
             </p>
           </div>
@@ -185,28 +185,28 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
 
       {/* Mensaje de alerta en caso de credenciales faltantes o timeout de red */}
       {errorMessage && (
-        <div className="w-full p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-3 my-4">
-          <AlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
-          <div className="space-y-1">
+        <div className="w-full p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs flex items-start gap-2.5 my-3">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+          <div className="space-y-0.5">
             <p className="font-bold">Aviso de Configuración PayPhone</p>
             <p className="text-[11px] leading-relaxed opacity-90">{errorMessage}</p>
           </div>
         </div>
       )}
 
-      {/* Contenedor oficial donde PayPhone inyecta el formulario (siempre visible con altura adecuada) */}
+      {/* Contenedor oficial donde PayPhone inyecta el formulario (con prevención estricta de overflow) */}
       <div
         id="pp-button"
-        className="w-full min-h-[380px] transition-all duration-300"
+        className="w-full min-h-[350px] overflow-x-hidden transition-all duration-300"
       />
 
       {/* Sello de seguridad y métodos soportados */}
-      <div className="w-full pt-3 mt-2 border-t border-gray-100 dark:border-white/10 flex items-center justify-between text-[11px] text-gray-400">
-        <span className="flex items-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+      <div className="w-full pt-2.5 mt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+        <span className="flex items-center gap-1 font-medium">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
           Pago seguro 256-bit SSL
         </span>
-        <span className="font-medium text-gray-500 dark:text-gray-400">
+        <span className="font-semibold text-gray-700">
           PayPhone Ecuador
         </span>
       </div>

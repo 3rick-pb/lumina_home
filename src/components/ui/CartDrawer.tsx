@@ -2649,76 +2649,37 @@ export function CartDrawer() {
   </div>
 
     {/* Formas de Pago Segura con PayPhone */}
-    <div className="rounded-[2.25rem] bg-gradient-to-b from-white via-white to-stone-50/90 dark:from-[#1b1c20] dark:via-[#18181b] dark:to-[#141416] border border-black/[0.08] dark:border-white/[0.12] shadow-[0_12px_40px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.4)] overflow-hidden font-sans relative">
-      {/* Dynamic top ambient glow / security accent */}
-      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#FF5900] via-[#FF8A00] to-[#FF5900] opacity-90" />
-      
-      <div className="p-5 sm:p-7 space-y-4">
-        {/* Header row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-wider">
-                Elige tu forma de pago
-              </h4>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                SSL Seguro
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              Procesamiento bancario directo vía PayPhone Ecuador (Débito y Crédito)
-            </p>
-          </div>
-
-          <button 
-            type="button"
-            onClick={() => {
-              setIsEditingAddress(true);
-              const addrElem = document.getElementById("cart-address-section");
-              if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="self-start sm:self-auto text-xs font-medium text-gray-600 hover:text-gray-950 dark:text-gray-400 dark:hover:text-white px-3 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] border border-black/[0.06] dark:border-white/[0.08] transition-all cursor-pointer font-sans"
-          >
-            Editar dirección
-          </button>
+    <div className="rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm p-4 sm:p-5 font-sans space-y-3.5">
+      {/* Clean Header */}
+      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100 tracking-wide">
+            Elige tu método de pago
+          </h4>
         </div>
 
-        {/* Brand icons & accepted networks row */}
-        <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/[0.06]">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-600 dark:text-gray-300">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>Redes autorizadas:</span>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="h-6 px-2 rounded-md bg-white dark:bg-[#202024] border border-black/[0.08] dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <VisaLogo className="h-3 w-auto" />
-            </div>
-            <div className="h-6 px-2 rounded-md bg-white dark:bg-[#202024] border border-black/[0.08] dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <MastercardLogo className="h-3.5 w-auto" />
-            </div>
-            <div className="h-6 px-2 rounded-md bg-white dark:bg-[#202024] border border-black/[0.08] dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <DinersClubLogo className="h-3 w-auto" />
-            </div>
-            <div className="h-6 px-2 rounded-md bg-white dark:bg-[#202024] border border-black/[0.08] dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <DiscoverLogo className="h-3 w-auto" />
-            </div>
-            <div className="h-6 px-2 rounded-md bg-[#FF5900]/10 border border-[#FF5900]/20 flex items-center gap-1 shadow-2xs">
-              <PayPhoneIcon className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-bold text-[#FF5900]">App</span>
-            </div>
-          </div>
-        </div>
+        <button 
+          type="button"
+          onClick={() => {
+            setIsEditingAddress(true);
+            const addrElem = document.getElementById("cart-address-section");
+            if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
+          }}
+          className="text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
+        >
+          Editar dirección
+        </button>
+      </div>
 
-        {/* Embedded PayPhone Payment Box Component */}
-        <div className="rounded-2xl bg-white dark:bg-[#151518] border border-black/[0.06] dark:border-white/[0.08] p-1 sm:p-2 shadow-xs">
-          <PayPhonePaymentBoxUI
-            totalUsd={finalTotal}
-          />
-        </div>
+      {/* Terminal de Pago: Marco estilizado blanco de ancho controlado para integración perfecta */}
+      <div className="w-full max-w-[400px] mx-auto rounded-2xl bg-white p-2 sm:p-3 shadow-md shadow-black/10 border border-black/5 dark:border-white/20 text-gray-900 overflow-hidden">
+        <PayPhonePaymentBoxUI
+          totalUsd={finalTotal}
+        />
       </div>
     </div>
 

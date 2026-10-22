@@ -646,7 +646,7 @@ export default function ProfilePage() {
  return (
  <div className="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-[#18181b]">
  <div className="flex flex-col items-center gap-3">
- <ThinkingOrb state="working" size={64} />
+ <ThinkingOrb state="working" size={64} color="#000000" theme="light" />
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wide">
             Cargando perfil administrativo...
           </p>
@@ -1470,7 +1470,7 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl px-4 sm:px-6 md:px-7 py-3 sm:py-3.5 md:py-4 rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex items-center justify-between gap-3 md:gap-5 lg:gap-6 min-h-[64px] sm:min-h-[72px] md:min-h-[80px] w-full max-w-full">
+  <header className="relative z-40 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl px-4 sm:px-6 md:px-7 rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex items-center justify-between gap-3 md:gap-5 lg:gap-6 h-16 md:h-20 w-full max-w-full">
   
   {/* --- 1. VISTA MÓVIL (Celulares y pantallas pequeñas): Disperso 1:1 a la captura de pantalla --- */}
   <div className="flex md:hidden items-center justify-between w-full gap-2 min-w-0">

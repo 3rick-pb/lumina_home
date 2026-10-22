@@ -372,7 +372,7 @@ function LoginFormContent() {
             <button 
               type="submit"
               disabled={isLoading || isGoogleLoading}
-              className="w-full mt-2 h-12 bg-gray-900 text-white rounded-2xl font-medium flex items-center justify-center gap-2.5 hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/15 group disabled:opacity-95 cursor-pointer"
+              className="w-full mt-2 h-11 sm:h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium text-sm flex items-center justify-center gap-2.5 transition-all shadow-xs hover:shadow-sm active:scale-[0.99] group disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer select-none"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2.5">
@@ -402,7 +402,7 @@ function LoginFormContent() {
             >
               {isGoogleLoading ? (
                 <div className="flex items-center justify-center gap-2.5">
-                  <ThinkingOrb state="working" size={20} />
+                  <ThinkingOrb state="working" size={20} color="#000000" theme="light" />
                   <span className="font-medium text-sm text-[#1f1f1f] dark:text-gray-200">Conectando con Google...</span>
                 </div>
               ) : (
