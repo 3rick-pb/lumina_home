@@ -1109,110 +1109,114 @@ export const useUserStore = create<UserState>((set, get) => ({
       isAuthListenerAttached = true;
 
       supabase.auth.onAuthStateChange(async (event, session) => {
-        // Explicit Sign out event
-        if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
-          cleanupAvatarRealtimeListener();
-          useAvatarSettingsStore.setState({
-            showAvatarInNavbar: false,
-            backgroundShape: 'squircle',
-            animationMode: 'always',
-            customSeed: null,
-          });
-          setGuestModeStorage(false);
-          clearGuestStorage();
-          // Limpiar la bandera de boot para que el hero se pre-decodifique en el proximo acceso
-          try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lumina_booted'); } catch {}
-          await useCartStore.getState().initCartForUser(null);
-          set({
-            user: null,
-            isAuthenticated: false,
-            isGuestMode: false,
-            favorites: [],
-            cards: [],
-            orders: [],
-            address: null,
-            addresses: [],
-            isLoading: false,
-            isAuthInitialized: true,
-          });
-          return;
-        }
-
-        // Active Session Events: INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
-        if (session?.user) { try {
-          const email = session.user.email || '';
-          const { role, isRootAdmin } = await checkIsAdmin(email);
-          const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
-          const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
-
-          // Instant Avatar & Realtime Sync across all browsers/tabs
-          useAvatarSettingsStore.getState().loadSettingsFromDatabase(session.user.id);
-          setupAvatarRealtimeListener(session.user.id);
-
-          // Proactively ensure profile and email are indexed in user_profiles
-          if (session.user.id && email) {
-            supabase
-              .from('user_profiles')
-              .upsert({
-                user_id: session.user.id,
-                display_name: name,
-                email: email.toLowerCase().trim(),
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'user_id' })
-              .then(() => {});
-          }
-
-          const currentUserId = get().user?.id;
-          if (currentUserId !== session.user.id) {
-            const snapshotBeforeAuth = {
-              isAuthenticated: get().isAuthenticated,
-              favorites: [...get().favorites],
-              addresses: [...get().addresses],
-              cards: [...get().cards],
-            };
-
-            set({ 
-              user: userObj, 
-              isAuthenticated: true, 
-              isLoading: true,
-              isAuthInitialized: true,
+        try {
+          // Explicit Sign out event
+          if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
+            cleanupAvatarRealtimeListener();
+            useAvatarSettingsStore.setState({
+              showAvatarInNavbar: false,
+              backgroundShape: 'squircle',
+              animationMode: 'always',
+              customSeed: null,
             });
-
-            const newUserId = session.user.id;
-            setTimeout(async () => {
-              try {
-                await useCartStore.getState().initCartForUser(newUserId);
-                const personalData = await syncAndFetchMergedUserData(
-                  newUserId,
-                  role,
-                  email,
-                  session.access_token,
-                  snapshotBeforeAuth
-                );
-                set((state) => ({
-                  user: state.user ? { ...state.user, name: personalData.profileName || state.user.name } : null,
-                  cards: personalData.cards,
-                  orders: personalData.orders,
-                  addresses: personalData.addresses,
-                  address: personalData.address,
-                  favorites: personalData.favorites,
-                  isLoading: false,
-                }));
-              } catch {
-                // CRITICO: Siempre resetear isLoading aunque falle la carga de datos.
-                // Sin esto, AuthGuard queda mostrando BrandLoadingScreen indefinidamente.
-                set({ isLoading: false });
-              }
-            }, 0);
-          } else {
-            set((state) => ({
-              user: state.user ? { ...state.user, email, name, role, isRootAdmin } : userObj,
-              isAuthenticated: true,
+            setGuestModeStorage(false);
+            clearGuestStorage();
+            // Limpiar la bandera de boot para que el hero se pre-decodifique en el proximo acceso
+            try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lumina_booted'); } catch {}
+            await useCartStore.getState().initCartForUser(null);
+            set({
+              user: null,
+              isAuthenticated: false,
+              isGuestMode: false,
+              favorites: [],
+              cards: [],
+              orders: [],
+              address: null,
+              addresses: [],
               isLoading: false,
               isAuthInitialized: true,
-            }));
+            });
+            return;
           }
-        } catch { set({ isLoading: false, isAuthInitialized: true }); }
+
+          // Active Session Events: INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
+          if (session?.user) {
+            const email = session.user.email || '';
+            const { role, isRootAdmin } = await checkIsAdmin(email);
+            const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
+            const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
+
+            // Instant Avatar & Realtime Sync across all browsers/tabs
+            useAvatarSettingsStore.getState().loadSettingsFromDatabase(session.user.id);
+            setupAvatarRealtimeListener(session.user.id);
+
+            // Proactively ensure profile and email are indexed in user_profiles
+            if (session.user.id && email) {
+              supabase
+                .from('user_profiles')
+                .upsert({
+                  user_id: session.user.id,
+                  display_name: name,
+                  email: email.toLowerCase().trim(),
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' })
+                .then(() => {});
+            }
+
+            const currentUserId = get().user?.id;
+            if (currentUserId !== session.user.id) {
+              const snapshotBeforeAuth = {
+                isAuthenticated: get().isAuthenticated,
+                favorites: [...get().favorites],
+                addresses: [...get().addresses],
+                cards: [...get().cards],
+              };
+
+              set({ 
+                user: userObj, 
+                isAuthenticated: true, 
+                isLoading: true,
+                isAuthInitialized: true,
+              });
+
+              const newUserId = session.user.id;
+              setTimeout(async () => {
+                try {
+                  await useCartStore.getState().initCartForUser(newUserId);
+                  const personalData = await syncAndFetchMergedUserData(
+                    newUserId,
+                    role,
+                    email,
+                    session.access_token,
+                    snapshotBeforeAuth
+                  );
+                  set((state) => ({
+                    user: state.user ? { ...state.user, name: personalData.profileName || state.user.name } : null,
+                    cards: personalData.cards,
+                    orders: personalData.orders,
+                    addresses: personalData.addresses,
+                    address: personalData.address,
+                    favorites: personalData.favorites,
+                    isLoading: false,
+                  }));
+                } catch {
+                  // CRITICO: Siempre resetear isLoading aunque falle la carga de datos.
+                  // Sin esto, AuthGuard queda mostrando BrandLoadingScreen indefinidamente.
+                  set({ isLoading: false });
+                }
+              }, 0);
+            } else {
+              set((state) => ({
+                user: state.user ? { ...state.user, email, name, role, isRootAdmin } : userObj,
+                isAuthenticated: true,
+                isLoading: false,
+                isAuthInitialized: true,
+              }));
+            }
+          }
+        } catch {
+          set({ isLoading: false, isAuthInitialized: true });
+        }
       });
     }
 
