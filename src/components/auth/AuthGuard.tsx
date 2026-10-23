@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useUserStore } from "@/lib/userStore";
 import { usePathname, useRouter } from "next/navigation";
 import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
@@ -10,6 +10,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  // Failsafe: si isLoading no se resetea en 6s, forzamos salida del loader.
+  // Previene que un error silenciado en userStore deje la pantalla congelada indefinidamente.
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isStrictProtected = pathname?.startsWith("/profile") || pathname?.startsWith("/admin");
   // IMPORTANT: /auth/callback must NOT be considered an "auth page" for redirect purposes.
@@ -20,6 +24,33 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Failsafe timer: si isLoading se queda en true por más de 6s en rutas protegidas,
+  // lo tratamos como resuelto para que el usuario no quede atrapado en el loading screen.
+  useEffect(() => {
+    if (!isStrictProtected) return;
+    if (!isLoading || !mounted) {
+      setLoadingTimedOut(false);
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+      return;
+    }
+    // Iniciar watchdog de 6 segundos
+    loadingTimerRef.current = setTimeout(() => {
+      setLoadingTimedOut(true);
+      // Resetear isLoading en el store para desbloquear el guard
+      useUserStore.setState({ isLoading: false });
+    }, 6000);
+
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+    };
+  }, [isLoading, isStrictProtected, mounted]);
 
   useEffect(() => {
     if (!mounted || !isAuthInitialized || isLoading) return;
@@ -37,8 +68,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, isAuthInitialized, isLoading, isAuthenticated, isStrictProtected, isAuthLoginOrRegister, router]);
 
-  // For strict protected routes (/profile, /admin), render canonical brand loader until session is verified
-  if (isStrictProtected && (!mounted || !isAuthInitialized || isLoading || !isAuthenticated)) {
+  // For strict protected routes (/profile, /admin), render canonical brand loader until session is verified.
+  // loadingTimedOut es el failsafe: si el loader lleva más de 6s, dejamos pasar para evitar congelamiento.
+  const isEffectivelyLoading = isLoading && !loadingTimedOut;
+  if (isStrictProtected && (!mounted || !isAuthInitialized || isEffectivelyLoading || !isAuthenticated)) {
     return <BrandLoadingScreen isFixed={true} />;
   }
 

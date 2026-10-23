@@ -16,23 +16,36 @@ export const LUMINA_WEB_BG_LIGHT = "#E8D5B8";
  * Cambia el color de la barra del navegador en dispositivos en modo CLARO.
  * En modo oscuro del dispositivo, el navegador siempre usa negro — no hay nada que hacer.
  *
- * Estrategia: eliminar TODOS los meta[name="theme-color"] existentes (incluyendo los
- * que Next.js genera estáticamente con el verde oliva) e insertar uno nuevo limpio.
- * Esto garantiza que no quede ningún valor residual que el browser pueda preferir.
+ * CRÍTICO: NUNCA usar .remove() sobre etiquetas <meta name="theme-color"> porque
+ * son nodos gestionados por React (Next.js viewport). Llamar .remove() rompe la
+ * reconciliación del DOM virtual de React durante la navegación entre rutas, causando
+ * `TypeError: Cannot read properties of null (reading 'removeChild')` que congela la web.
+ * En su lugar, se actualiza el atributo `content` in-place sin alterar el árbol DOM.
  */
 export function syncBrowserThemeColor(color: string) {
   if (typeof document === "undefined") return;
   try {
-    // Eliminar todos los theme-color existentes (estáticos de Next.js y dinámicos)
-    document
-      .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
-      .forEach((m) => m.remove());
+    const metaTags = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+    if (metaTags.length > 0) {
+      metaTags.forEach((m) => {
+        const media = m.getAttribute("media");
+        if (!media || media.includes("prefers-color-scheme: light")) {
+          m.setAttribute("content", color);
+        } else if (media.includes("prefers-color-scheme: dark")) {
+          m.setAttribute("content", "#232b24");
+        }
+      });
+    } else {
+      const meta = document.createElement("meta");
+      meta.name = "theme-color";
+      meta.content = color;
+      document.head.appendChild(meta);
+    }
 
-    // Insertar uno fresco sin atributo media — el navegador lo tomará directamente
-    const meta = document.createElement("meta");
-    meta.name = "theme-color";
-    meta.content = color;
-    document.head.appendChild(meta);
+    const msMeta = document.querySelector<HTMLMetaElement>('meta[name="msapplication-navbutton-color"]');
+    if (msMeta) {
+      msMeta.setAttribute("content", color);
+    }
   } catch {}
 }
 

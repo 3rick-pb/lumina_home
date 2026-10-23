@@ -1198,7 +1198,11 @@ export const useUserStore = create<UserState>((set, get) => ({
                   favorites: personalData.favorites,
                   isLoading: false,
                 }));
-              } catch {}
+              } catch {
+                // CRITICO: Siempre resetear isLoading aunque falle la carga de datos.
+                // Sin esto, AuthGuard queda mostrando BrandLoadingScreen indefinidamente.
+                set({ isLoading: false });
+              }
             }, 0);
           } else {
             set((state) => ({
@@ -1262,7 +1266,11 @@ export const useUserStore = create<UserState>((set, get) => ({
               favorites: personalData.favorites,
               isLoading: false,
             }));
-          } catch {}
+          } catch {
+            // CRITICO: Siempre resetear isLoading aunque falle la carga de datos.
+            // Sin esto, AuthGuard queda mostrando BrandLoadingScreen indefinidamente.
+            set({ isLoading: false });
+          }
         }, 0);
       } else {
         const isGuest = getInitialGuestMode();
