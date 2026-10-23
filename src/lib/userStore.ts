@@ -1139,7 +1139,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         }
 
         // Active Session Events: INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
-        if (session?.user) {
+        if (session?.user) { try {
           const email = session.user.email || '';
           const { role, isRootAdmin } = await checkIsAdmin(email);
           const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
@@ -1212,7 +1212,7 @@ export const useUserStore = create<UserState>((set, get) => ({
               isAuthInitialized: true,
             }));
           }
-        }
+        } catch { set({ isLoading: false, isAuthInitialized: true }); }
       });
     }
 
