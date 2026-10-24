@@ -373,7 +373,7 @@ export default function Home() {
         id="hero-section" 
         ref={heroRef} 
         data-ambient-category="default"
-        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-[#161715]"
+        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-[#141414]"
       >
         <DynamicHeroBackground 
           activePhaseId={heroTime.phaseId}

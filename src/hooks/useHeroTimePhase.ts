@@ -108,6 +108,31 @@ export const getLightingPeriodByTime = getLightingPeriodByDate;
 
 const STORAGE_KEY = "lumina_hero_phase_override";
 
+// Resuelve la temporalidad síncrona en 0ms sin esperar hidratación ni useEffect
+export function getInitialLightingPeriod(): LightingPeriod {
+  if (typeof window !== "undefined") {
+    // 1. Temporalidad inyectada en <head> síncronamente antes del parseo del DOM
+    const initialPhase = (window as unknown as { __LUMINA_INITIAL_PHASE__?: LightingPeriod }).__LUMINA_INITIAL_PHASE__;
+    if (initialPhase && initialPhase in HERO_IMAGE_MAP) return initialPhase;
+
+    // 2. Preferencia manual guardada en sessionStorage
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved && saved in HERO_IMAGE_MAP) return saved as LightingPeriod;
+    } catch {}
+
+    // 3. Cookie persistente
+    try {
+      const match = document.cookie.match(/lumina_client_phase=([^;]+)/);
+      if (match && match[1] in HERO_IMAGE_MAP) return match[1] as LightingPeriod;
+    } catch {}
+
+    // 4. Hora real del cliente
+    return getLightingPeriodByDate(new Date());
+  }
+  return getLightingPeriodByDate(new Date());
+}
+
 // Caché en memoria de imágenes ya descargadas y decodificadas en la GPU
 const decodedImageCache = new Set<string>();
 
@@ -152,10 +177,10 @@ export async function preloadAndDecodeImage(src: string): Promise<void> {
  * 4. Pre-decodificación en segundo plano de las otras 4 temporalidades tras 1.8s
  */
 export function useHeroTimePhase(imageMap: Record<LightingPeriod, string> = HERO_IMAGE_MAP) {
-  // Inicializamos en null en el servidor para NUNCA descargar una imagen equivocada en el HTML inicial
+  const initialPeriod = getInitialLightingPeriod();
   const [mode, setMode] = useState<LightingMode>("auto");
-  const [activePeriod, setActivePeriod] = useState<LightingPeriod | null>(null);
-  const [displayedPeriod, setDisplayedPeriod] = useState<LightingPeriod | null>(null);
+  const [activePeriod, setActivePeriod] = useState<LightingPeriod>(initialPeriod);
+  const [displayedPeriod, setDisplayedPeriod] = useState<LightingPeriod>(initialPeriod);
   const [previousPeriod, setPreviousPeriod] = useState<LightingPeriod | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isHeroReady, setIsHeroReady] = useState(false);
@@ -173,22 +198,22 @@ export function useHeroTimePhase(imageMap: Record<LightingPeriod, string> = HERO
     setFormattedTime(`${hh}:${mm}`);
 
     // Revisar si había una preferencia manual previa guardada
-    let initialPeriod: LightingPeriod = getLightingPeriodByDate(now);
+    let resolvedPeriod: LightingPeriod = getLightingPeriodByDate(now);
     let initialMode: LightingMode = "auto";
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
       if (saved && saved in HERO_IMAGE_MAP) {
-        initialPeriod = saved as LightingPeriod;
+        resolvedPeriod = saved as LightingPeriod;
         initialMode = "manual";
       }
     } catch {}
 
     setMode(initialMode);
-    setActivePeriod(initialPeriod);
-    setDisplayedPeriod(initialPeriod);
+    setActivePeriod(resolvedPeriod);
+    setDisplayedPeriod(resolvedPeriod);
 
     let mounted = true;
-    const initialSrc = imageMap[initialPeriod];
+    const initialSrc = imageMap[resolvedPeriod];
 
     // Timeout de seguridad de 850ms por si la red del usuario es muy lenta
     const safetyTimer = setTimeout(() => {
@@ -307,13 +332,13 @@ export function useHeroTimePhase(imageMap: Record<LightingPeriod, string> = HERO
   }, [selectAutoMode, selectManualPeriod]);
 
   const cycleNextPhase = useCallback(() => {
-    const cur = activePeriod || "atardecer";
+    const cur = activePeriod || initialPeriod;
     const currentIndex = HERO_PHASE_ORDER.indexOf(cur);
     const nextIndex = (currentIndex + 1) % HERO_PHASE_ORDER.length;
     selectManualPeriod(HERO_PHASE_ORDER[nextIndex]);
-  }, [activePeriod, selectManualPeriod]);
+  }, [activePeriod, initialPeriod, selectManualPeriod]);
 
-  const resolvedPhaseId = activePeriod || "atardecer";
+  const resolvedPhaseId = activePeriod || initialPeriod;
 
   return {
     isMounted,

@@ -11,6 +11,9 @@ import { normalizeSearchText as normalizeText } from "@/lib/utils";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { useBrand } from "@/core";
+import { forceResetScroll } from "@/components/layout/ScrollToTop";
+
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
 const SHOP_SECTIONS = [
   { id: "shop-header", label: "Catálogo", level: 1 as const },
@@ -32,12 +35,8 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
     return found || (categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1));
   }, [categoryFilter, categories]);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, []);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  useIsomorphicLayoutEffect(() => {
+    forceResetScroll();
   }, [categoryFilter, searchQuery]);
 
   const filteredProducts = React.useMemo(() => {

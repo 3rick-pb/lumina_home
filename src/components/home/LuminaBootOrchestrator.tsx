@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
+import { forceResetScroll } from "@/components/layout/ScrollToTop";
+
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
 interface LuminaBootOrchestratorProps {
   activeHeroImageUrl: string;
@@ -39,14 +42,9 @@ export function LuminaBootOrchestrator({
     onReadyRef.current = onReadyToAnimateText;
   }, [onReadyToAnimateText]);
 
-  // Forzar reseteo de scroll al inicio en el arranque
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "manual";
-      }
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    }
+  // Forzar reseteo de scroll al inicio en el arranque previo a la pintura
+  useIsomorphicLayoutEffect(() => {
+    forceResetScroll();
   }, []);
 
   useEffect(() => {
@@ -68,6 +66,7 @@ export function LuminaBootOrchestrator({
     // 2. Descarga y decodificación real en GPU de la imagen del Hero de la hora actual
     const decodeHeroImage = new Promise<void>((resolve) => {
       const img = new window.Image();
+      (img as any).fetchPriority = "high";
       img.decoding = "async";
       img.src = activeHeroImageUrl;
 

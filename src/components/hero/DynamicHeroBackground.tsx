@@ -3,7 +3,7 @@
 import { memo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLenis } from "lenis/react";
-import { HERO_PHASES, HeroPhaseId } from "@/hooks/useHeroTimePhase";
+import { HERO_PHASES, HeroPhaseId, getInitialLightingPeriod } from "@/hooks/useHeroTimePhase";
 
 export interface DynamicHeroBackgroundProps {
   activePhaseId?: HeroPhaseId;
@@ -16,7 +16,7 @@ export interface DynamicHeroBackgroundProps {
  * DynamicHeroBackground:
  * - Doble buffer para transición suave entre fases
  * - Movimiento suave e inercial slow-motion con Lenis y listener táctil adaptativo
- * - Degradado original brand-900 verde bosque suave
+ * - Degradado obsidian dark profundo
  */
 export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   activePhaseId,
@@ -25,11 +25,11 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   isHeroReady = true,
 }: DynamicHeroBackgroundProps) {
   // Resuelve la temporalidad activa y la previa del doble buffer
-  const effectivePeriod = displayedPeriod !== undefined ? displayedPeriod : activePhaseId;
+  const effectivePeriod = displayedPeriod !== undefined && displayedPeriod !== null ? displayedPeriod : activePhaseId;
   const prevPeriod = previousPeriod ?? null;
 
-  // Resolución inmediata del período sin depender del boolean isHeroReady para evitar renderizar un div vacío
-  const resolvedPeriod = effectivePeriod || (typeof window !== "undefined" ? (window as unknown as { __LUMINA_INITIAL_PHASE__?: HeroPhaseId }).__LUMINA_INITIAL_PHASE__ : null) || "mediodia";
+  // Resolución inmediata y coherente del período sin desfases ni div vacío
+  const resolvedPeriod = effectivePeriod || getInitialLightingPeriod();
   const activePhase = HERO_PHASES[resolvedPeriod] || HERO_PHASES.mediodia;
   const prevPhase = prevPeriod ? HERO_PHASES[prevPeriod] : null;
 
@@ -82,7 +82,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-[#161715]">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-[#141414]">
       {/* Contenedor con movimiento suave e inercial Lenis y escala estática en GPU */}
       <div ref={heroParallaxRef} className="absolute inset-0 pointer-events-none select-none will-change-transform transform-gpu scale-[1.06] origin-center">
         {/* 1. Capa de Fondo (Doble Buffer - Imagen Anterior durante transición) */}
@@ -121,7 +121,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
       </div>
 
       {/* 3. Deep Cinematic Ambient Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#161715]/90 via-[#161715]/35 to-transparent pointer-events-none z-20" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#141414]/90 via-[#141414]/35 to-transparent pointer-events-none z-20" />
     </div>
   );
 });

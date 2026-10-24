@@ -1,39 +1,96 @@
 "use client";
 
 import { useEffect, useLayoutEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { getLenis } from "@/components/providers/SmoothScrollProvider";
 
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+export function forceResetScroll() {
+  if (typeof window === "undefined") return;
+
+  try {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    // 1. Reseteo instantáneo del DOM nativo
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+
+    // 2. Reseteo coordinado del motor Lenis (virtual coords + RAF target)
+    const lenis = getLenis() || (window as unknown as { __luminaLenis?: Record<string, unknown> }).__luminaLenis;
+    if (lenis) {
+      if (typeof (lenis as { stop?: () => void }).stop === "function") {
+        (lenis as { stop: () => void }).stop();
+      }
+      if (typeof (lenis as { scrollTo?: (t: number, opts: Record<string, unknown>) => void }).scrollTo === "function") {
+        (lenis as { scrollTo: (t: number, opts: Record<string, unknown>) => void }).scrollTo(0, { immediate: true, force: true });
+      }
+      (lenis as { scroll?: number }).scroll = 0;
+      (lenis as { targetScroll?: number }).targetScroll = 0;
+      (lenis as { animatedScroll?: number }).animatedScroll = 0;
+      if (typeof (lenis as { start?: () => void }).start === "function") {
+        (lenis as { start: () => void }).start();
+      }
+      if (typeof (lenis as { resize?: () => void }).resize === "function") {
+        (lenis as { resize: () => void }).resize();
+      }
+    }
+  } catch {}
+}
+
 export function ScrollToTop() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchString = searchParams?.toString() || "";
 
-  // 1. Reseteo síncrono previo a la pintura cuando cambia la ruta
+  // 1. Reseteo sincrónico previo al repintado de pantalla en cambios de ruta y parámetros de búsqueda
   useIsomorphicLayoutEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        if ("scrollRestoration" in window.history) {
-          window.history.scrollRestoration = "manual";
-        }
+    forceResetScroll();
+  }, [pathname, searchString]);
 
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-        if (document.documentElement) document.documentElement.scrollTop = 0;
-        if (document.body) document.body.scrollTop = 0;
+  // 2. Interceptación síncrona en el nivel de History API (pushState / replaceState / popstate)
+  // Next.js App Router invoca pushState al iniciar la navegación del cliente, mucho antes de pintar la nueva vista.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-        const lenis = getLenis() || (window as unknown as { __luminaLenis?: { stop: () => void; scrollTo: (target: number, opts?: Record<string, unknown>) => void; start: () => void } }).__luminaLenis;
-        if (lenis && typeof lenis.scrollTo === "function") {
-          try {
-            if (typeof lenis.stop === "function") lenis.stop();
-            lenis.scrollTo(0, { immediate: true });
-            if (typeof lenis.start === "function") lenis.start();
-          } catch {}
-        }
+    (window as unknown as { __luminaForceScrollTop?: () => void }).__luminaForceScrollTop = forceResetScroll;
+
+    const originalPushState = window.history.pushState.bind(window.history);
+    const originalReplaceState = window.history.replaceState.bind(window.history);
+
+    window.history.pushState = function (...args: Parameters<History["pushState"]>) {
+      const url = args[2];
+      if (url) {
+        forceResetScroll();
       }
-    } catch {}
-  }, [pathname]);
+      return originalPushState(...args);
+    };
 
-  // 2. Interceptor anticipado de clicks en enlaces internos: resetea el scroll a 0 en el instante exacto del click
+    window.history.replaceState = function (...args: Parameters<History["replaceState"]>) {
+      const url = args[2];
+      if (url) {
+        forceResetScroll();
+      }
+      return originalReplaceState(...args);
+    };
+
+    const handlePopState = () => {
+      forceResetScroll();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  // 3. Interceptor anticipado en fase de captura para clicks en cualquier enlace interno (incluyendo nichos con query params)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -48,22 +105,12 @@ export function ScrollToTop() {
           return;
         }
 
-        // Si es un enlace de navegación interna dentro de la app
-        if (link.origin === window.location.origin && link.pathname !== window.location.pathname) {
-          if ("scrollRestoration" in window.history) {
-            window.history.scrollRestoration = "manual";
-          }
-          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-          if (document.documentElement) document.documentElement.scrollTop = 0;
-          if (document.body) document.body.scrollTop = 0;
-
-          const lenis = getLenis() || (window as unknown as { __luminaLenis?: { stop: () => void; scrollTo: (target: number, opts?: Record<string, unknown>) => void; start: () => void } }).__luminaLenis;
-          if (lenis && typeof lenis.scrollTo === "function") {
-            try {
-              if (typeof lenis.stop === "function") lenis.stop();
-              lenis.scrollTo(0, { immediate: true });
-              if (typeof lenis.start === "function") lenis.start();
-            } catch {}
+        // Si es un enlace de navegación interna dentro de la app (sea diferente ruta o diferente filtro query)
+        if (link.origin === window.location.origin) {
+          const currentFull = window.location.pathname + window.location.search;
+          const targetFull = link.pathname + link.search;
+          if (currentFull !== targetFull) {
+            forceResetScroll();
           }
         }
       } catch {}

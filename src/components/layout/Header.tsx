@@ -22,6 +22,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { normalizeSearchText } from "@/lib/utils";
 import { getSavedNicheSlots, fetchNicheSlotsFromCloud, getNicheIconByName, type NicheSlotConfig, DEFAULT_NICHE_SLOTS } from "@/lib/nicheIcons";
 import { useBrand } from "@/core/hooks/useBrand";
+import { forceResetScroll } from "@/components/layout/ScrollToTop";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -333,6 +334,7 @@ export function Header() {
               onSelect={(id, item) => {
                 setActiveTab(id);
                 if (item.href) {
+                  forceResetScroll();
                   router.push(item.href);
                 }
               }}
@@ -578,6 +580,7 @@ export function Header() {
                         key={tab.id}
                         href={tab.href}
                         onClick={() => {
+                          forceResetScroll();
                           setActiveTab(tab.id);
                           setIsMobileMenuOpen(false);
                         }}
