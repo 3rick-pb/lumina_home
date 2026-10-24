@@ -39,23 +39,13 @@ export function LuminaBootOrchestrator({
     onReadyRef.current = onReadyToAnimateText;
   }, [onReadyToAnimateText]);
 
-  // Forzar reseteo de scroll al inicio en el arranque y relevar el telón raíz síncrono
+  // Forzar reseteo de scroll al inicio en el arranque
   useEffect(() => {
     if (typeof window !== "undefined") {
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = "manual";
       }
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-
-      // Relevar el telón raíz ahora que el orquestador está montado y activo
-      const curtain = document.getElementById("lumina-root-curtain");
-      if (curtain) {
-        curtain.style.opacity = "0";
-        curtain.style.pointerEvents = "none";
-        setTimeout(() => {
-          try { curtain.remove(); } catch {}
-        }, 400);
-      }
     }
   }, []);
 

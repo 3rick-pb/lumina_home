@@ -62,16 +62,6 @@ function ActivityTracker() {
     const html = document.documentElement;
     html.classList.remove("dark");
     html.style.colorScheme = "light";
-
-    // Failsafe: Relevar el telón raíz síncrono si aún estuviera presente
-    const curtain = document.getElementById("lumina-root-curtain");
-    if (curtain) {
-      curtain.style.opacity = "0";
-      curtain.style.pointerEvents = "none";
-      setTimeout(() => {
-        try { curtain.remove(); } catch {}
-      }, 500);
-    }
   }, [pathname, themeMode]);
 
   const exactGeoRef = useRef<{ lat?: number; lng?: number; exactAddress?: string; city?: string }>({});
