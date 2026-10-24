@@ -37,6 +37,9 @@ CREATE INDEX IF NOT EXISTS idx_media_assets_name ON public.admin_media_assets (n
 ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS last4 TEXT;
 CREATE INDEX IF NOT EXISTS idx_payment_cards_user_id ON public.payment_cards (user_id);
 
+-- Ensure user_profiles has role column
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'client';
+
 -- 3. Enable RLS on unhardened tables
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_notification_settings ENABLE ROW LEVEL SECURITY;
@@ -52,12 +55,18 @@ SECURITY DEFINER
 STABLE
 SET search_path = public
 AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_profiles
-    WHERE user_id = auth.uid()
-      AND role = 'admin'
-  )
-  OR auth.jwt() ->> 'email' IN ('admin@lumina.com', 'arteagae796@gmail.com');
+  SELECT 
+    coalesce(auth.jwt() ->> 'email', '') IN ('admin@lumina.com', 'arteagae796@gmail.com')
+    OR EXISTS (
+      SELECT 1 FROM public.admin_invitations
+      WHERE lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+        AND is_active = true
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.user_profiles
+      WHERE user_id = auth.uid()
+        AND role = 'admin'
+    );
 $$;
 
 -- 5. Policies for public.products
