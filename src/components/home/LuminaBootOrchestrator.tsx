@@ -39,6 +39,16 @@ export function LuminaBootOrchestrator({
     onReadyRef.current = onReadyToAnimateText;
   }, [onReadyToAnimateText]);
 
+  // Forzar reseteo de scroll al inicio en el arranque
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, []);
+
   useEffect(() => {
     // Si ya está en "done" (navegación interna de vuelta al home), invocar callback inmediatamente
     if (phase === "done") {
@@ -91,19 +101,24 @@ export function LuminaBootOrchestrator({
     ]).then(() => {
       if (!isMounted) return;
 
-      // Iniciar el desvanecimiento ultra suave de 1000ms
-      setPhase("fading");
-      // Disparar la animación caligráfica "Espacios diseñados para perdurar" justo al abrirse el telón
-      onReadyRef.current();
+      // Esperar un frame de rAF para que la GPU pinte el frame antes del fade-out
+      requestAnimationFrame(() => {
+        if (!isMounted) return;
 
-      // Desmontar el splash una vez terminada la transición suave de 1000ms
-      setTimeout(() => {
-        if (isMounted) {
-          hasBootedThisSession = true;
-          try { sessionStorage.setItem("lumina_booted", "true"); } catch {}
-          setPhase("done");
-        }
-      }, 1000);
+        // Iniciar el desvanecimiento ultra suave de 1000ms
+        setPhase("fading");
+        // Disparar la animación caligráfica "Espacios diseñados para perdurar" justo al abrirse el telón
+        onReadyRef.current();
+
+        // Desmontar el splash una vez terminada la transición suave de 1000ms
+        setTimeout(() => {
+          if (isMounted) {
+            hasBootedThisSession = true;
+            try { sessionStorage.setItem("lumina_booted", "true"); } catch {}
+            setPhase("done");
+          }
+        }, 1000);
+      });
     });
 
     return () => {

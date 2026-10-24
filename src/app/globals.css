@@ -416,3 +416,23 @@ html,
 
 
 
+
+
+/* ========================================================================= */
+/* PayPhone Payment Box Responsive Safeguards                                */
+/* ========================================================================= */
+#pp-button,
+#pp-button iframe,
+#pp-button .payphone-box-container,
+#pp-button form {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#pp-button input {
+  font-size: 13.5px !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}

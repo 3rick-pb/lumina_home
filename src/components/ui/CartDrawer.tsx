@@ -2019,13 +2019,13 @@ export function CartDrawer() {
     </div>
   </div>
 
-  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start w-full">
+  <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8 items-start w-full">
   
-  {/* Left Column (7 cols): Shipping Address & Payment Gateway Forms */}
-  <div className="lg:col-span-7 flex flex-col space-y-6">
+  {/* Left Column (7 cols): Shipping Address */}
+  <div className="order-1 lg:col-span-7 lg:col-start-1 lg:row-start-1 flex flex-col space-y-6 w-full">
   
   {/* Shipping Address */}
-  <div id="cart-address-section" className="order-2 lg:order-1 p-5 sm:p-7 rounded-[2rem] bg-white/95 dark:bg-[#18181b]/95 sm:backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
+  <div id="cart-address-section" className="p-4 sm:p-7 rounded-2xl sm:rounded-[2rem] bg-white/95 dark:bg-[#18181b]/95 sm:backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
     <div className="flex flex-wrap items-center justify-between gap-2.5">
       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
         <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white shrink-0">
@@ -2507,45 +2507,10 @@ export function CartDrawer() {
     )}
   </div>
 
-    {/* Formas de Pago Segura con PayPhone (order-1 en móviles para visualización prioritaria superior) */}
-    <div className="order-1 lg:order-2 rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm p-4 sm:p-5 font-sans space-y-3.5">
-      {/* Clean Header */}
-      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-black/[0.06] dark:border-white/[0.08]">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100 tracking-wide">
-            Configura tu método pago
-          </h4>
-        </div>
-
-        <button 
-          type="button"
-          onClick={() => {
-            setIsEditingAddress(true);
-            const addrElem = document.getElementById("cart-address-section");
-            if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
-          }}
-          className="text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
-        >
-          Editar dirección
-        </button>
-      </div>
-
-      {/* Terminal de Pago: Marco estilizado blanco de ancho controlado para integración perfecta */}
-      <div className="w-full max-w-[400px] mx-auto rounded-2xl bg-white p-2 sm:p-3 shadow-md shadow-black/10 border border-black/5 dark:border-white/20 text-gray-900 overflow-hidden">
-        <PayPhonePaymentBoxUI
-          totalUsd={finalTotal}
-        />
-      </div>
-    </div>
-
   </div>
 
   {/* Right Column (5 cols, sticky on lg): Order Items Breakdown + Financial Ledger + Action Button */}
-  <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-4">
+  <div className="order-2 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2 space-y-5 lg:sticky lg:top-4 w-full">
     {/* 1. Mini Items Review Card */}
     <div className="p-4 sm:p-5 rounded-[1.75rem] bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/15 shadow-xs space-y-3">
       <div className="flex items-center justify-between pb-2.5 border-b border-black/[0.06] dark:border-white/10">
@@ -2828,10 +2793,41 @@ export function CartDrawer() {
       </div>
     )}
 
+  </div>
 
+  {/* Formas de Pago Segura con PayPhone (order-3 en móviles: se muestra al final de la parte #2 de la bolsa) */}
+  <div className="order-3 lg:col-span-7 lg:col-start-1 lg:row-start-2 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm p-3 sm:p-5 font-sans space-y-3.5 w-full">
+    {/* Clean Header */}
+    <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-black/[0.06] dark:border-white/[0.08]">
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100 tracking-wide">
+          Configura tu método de pago
+        </h4>
+      </div>
 
+      <button 
+        type="button"
+        onClick={() => {
+          setIsEditingAddress(true);
+          const addrElem = document.getElementById("cart-address-section");
+          if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
+        }}
+        className="text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
+      >
+        Editar dirección
+      </button>
+    </div>
 
-
+    {/* Terminal de Pago: Marco estilizado blanco de ancho completo para evitar que se corten los placeholders */}
+    <div className="w-full max-w-full sm:max-w-[460px] mx-auto rounded-xl sm:rounded-2xl bg-white p-1 sm:p-3 shadow-sm border border-black/5 dark:border-white/20 text-gray-900 overflow-hidden">
+      <PayPhonePaymentBoxUI
+        totalUsd={finalTotal}
+      />
+    </div>
   </div>
 
   </div>

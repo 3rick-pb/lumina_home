@@ -42,3 +42,6 @@ next-env.d.ts
 .brand-state/
 .agents/
 /public/images/hero/original_raw/
+
+supabase/.temp/
+.temp/

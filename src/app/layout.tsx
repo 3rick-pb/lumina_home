@@ -69,11 +69,11 @@ export default function RootLayout({
         {/* PayPhone Official Payment Box v2.0 Assets */}
         <script id="payphone-box-js" type="module" src="https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.js"></script>
         <meta name="referrer" content="origin-when-cross-origin" />
-        {/* Detector síncrono de temporalidad del dispositivo del cliente (0ms, previene flash de noche) */}
+        {/* Detector síncrono de temporalidad y fijación instantánea de scroll en 0ms (previene saltos y flash) */}
         <script
           id="lumina-hero-phase-detector"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=new Date();var h=d.getHours()+d.getMinutes()/60;var p="noche";if(h>=6&&h<9.5)p="amanecer";else if(h>=9.5&&h<16.5)p="mediodia";else if(h>=16.5&&h<19.5)p="atardecer";else if(h>=19.5&&h<21)p="crepusculo";document.cookie="lumina_client_phase="+p+";path=/;max-age=31536000;SameSite=Lax";window.__LUMINA_INITIAL_PHASE__=p;document.documentElement.setAttribute('data-hero-phase',p);}catch(e){}})();`
+            __html: `(function(){try{if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);if(document.documentElement)document.documentElement.scrollTop=0;if(document.body)document.body.scrollTop=0;window.addEventListener('beforeunload',function(){if('scrollRestoration' in history)history.scrollRestoration='manual';});var d=new Date();var h=d.getHours()+d.getMinutes()/60;var p="noche";if(h>=6&&h<9.5)p="amanecer";else if(h>=9.5&&h<16.5)p="mediodia";else if(h>=16.5&&h<19.5)p="atardecer";else if(h>=19.5&&h<21)p="crepusculo";document.cookie="lumina_client_phase="+p+";path=/;max-age=31536000;SameSite=Lax";window.__LUMINA_INITIAL_PHASE__=p;document.documentElement.setAttribute('data-hero-phase',p);}catch(e){}})();`
           }}
         />
       </head>

@@ -28,7 +28,9 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   const effectivePeriod = displayedPeriod !== undefined ? displayedPeriod : activePhaseId;
   const prevPeriod = previousPeriod ?? null;
 
-  const activePhase = isHeroReady && effectivePeriod ? HERO_PHASES[effectivePeriod] : null;
+  // Resolución inmediata del período sin depender del boolean isHeroReady para evitar renderizar un div vacío
+  const resolvedPeriod = effectivePeriod || (typeof window !== "undefined" ? (window as unknown as { __LUMINA_INITIAL_PHASE__?: HeroPhaseId }).__LUMINA_INITIAL_PHASE__ : null) || "mediodia";
+  const activePhase = HERO_PHASES[resolvedPeriod] || HERO_PHASES.mediodia;
   const prevPhase = prevPeriod ? HERO_PHASES[prevPeriod] : null;
 
   const heroParallaxRef = useRef<HTMLDivElement>(null);
@@ -80,7 +82,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-brand-900">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-[#161715]">
       {/* Contenedor con movimiento suave e inercial Lenis y escala estática en GPU */}
       <div ref={heroParallaxRef} className="absolute inset-0 pointer-events-none select-none will-change-transform transform-gpu scale-[1.06] origin-center">
         {/* 1. Capa de Fondo (Doble Buffer - Imagen Anterior durante transición) */}
@@ -118,8 +120,8 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
         )}
       </div>
 
-      {/* 3. Original Lumina Brand Gradient Overlay (matches Original.png 100%) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent pointer-events-none z-20" />
+      {/* 3. Deep Cinematic Ambient Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#161715]/90 via-[#161715]/35 to-transparent pointer-events-none z-20" />
     </div>
   );
 });

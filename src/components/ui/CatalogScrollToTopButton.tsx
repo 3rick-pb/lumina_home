@@ -12,18 +12,17 @@ interface CatalogScrollToTopButtonProps {
 }
 
 /**
- * Botón flotante "Volver arriba" con Liquid Glass real (srdavo / Apple design):
- * - Refracción óptica real mediante filtro SVG Displacement Map con aberración cromática
- * - Reflejo especular superior continuo y bisel interno Apple-style
- * - Escalado y transición física suave en hover y active
+ * Botón flotante circular "Volver arriba" para el catálogo /shop:
+ * - Se acciona ESTRICTAMENTE al dar click (sin disparos accidentales en scroll/touch)
+ * - Diseño Liquid Glass Apple-style (refracción SVG displacement + bisel especular)
  */
 export function CatalogScrollToTopButton({
   threshold = 280,
   className = "",
-  label = "Volver arriba",
+  label = "Volver al inicio",
 }: CatalogScrollToTopButtonProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [dims, setDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [dims, setDims] = useState<{ width: number; height: number }>({ width: 48, height: 48 });
   const [hasSvgFilterSupport, setHasSvgFilterSupport] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -56,8 +55,8 @@ export function CatalogScrollToTopButton({
     const el = buttonRef.current;
     const update = () => {
       const rect = el.getBoundingClientRect();
-      const w = Math.ceil(rect.width);
-      const h = Math.ceil(rect.height);
+      const w = Math.ceil(rect.width) || 48;
+      const h = Math.ceil(rect.height) || 48;
       if (w > 0 && h > 0) {
         setDims((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
       }
@@ -80,13 +79,11 @@ export function CatalogScrollToTopButton({
     });
   }, [hasSvgFilterSupport, dims.width, dims.height]);
 
-  const scrollToTop = (e?: React.MouseEvent | React.PointerEvent | React.TouchEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+  const scrollToTop = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-    // 1. Disparar a través de Lenis si está activo en el DOM
+    // 1. Lenis smooth scroll si está activo
     const lenis =
       typeof window !== "undefined"
         ? (window as unknown as { __luminaLenis?: { scrollTo: (target: number, opts?: Record<string, unknown>) => void } }).__luminaLenis
@@ -95,7 +92,7 @@ export function CatalogScrollToTopButton({
       lenis.scrollTo(0, { duration: 1.2, immediate: false });
     }
 
-    // 2. Respaldo nativo sincronizado
+    // 2. Respaldo nativo suave
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     if (typeof document !== "undefined") {
       if (document.documentElement) {
@@ -111,53 +108,44 @@ export function CatalogScrollToTopButton({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.92 }}
+          initial={{ opacity: 0, y: 16, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 12, scale: 0.92 }}
+          exit={{ opacity: 0, y: 12, scale: 0.9 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           style={{ willChange: "transform", transform: "translateZ(0)" }}
-          className={`fixed bottom-28 sm:bottom-32 md:bottom-36 left-1/2 -translate-x-1/2 lg:bottom-28 xl:bottom-32 lg:left-8 xl:left-12 lg:translate-x-0 z-40 flex items-center justify-center pointer-events-auto select-none ${className}`}
+          className={`fixed bottom-24 sm:bottom-28 md:bottom-32 left-1/2 -translate-x-1/2 lg:bottom-24 xl:bottom-28 lg:left-8 xl:left-12 lg:translate-x-0 z-40 flex items-center justify-center pointer-events-auto select-none ${className}`}
         >
           <button
             ref={buttonRef}
             type="button"
             onClick={scrollToTop}
-            onPointerDown={(e) => {
-              if (e.pointerType === "touch") {
-                scrollToTop(e);
-              }
-            }}
             aria-label={label}
             title={label}
             style={{
-              clipPath: "inset(0 round 9999px)",
-              WebkitClipPath: "inset(0 round 9999px)",
+              clipPath: "circle(50% at 50% 50%)",
+              WebkitClipPath: "circle(50% at 50% 50%)",
               backdropFilter: hasSvgFilterSupport && filterUrl
                 ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
                 : "blur(16px) saturate(190%) brightness(1.10)",
               WebkitBackdropFilter: hasSvgFilterSupport && filterUrl
                 ? `blur(0.8px) url('${filterUrl}') blur(1.5px) brightness(1.08) saturate(1.45)`
-                : "blur(18px) saturate(190%) brightness(1.10)",
+                : "blur(16px) saturate(190%) brightness(1.10)",
               background:
-                "linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(240,240,248,0.24) 100%)",
+                "linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(240,240,248,0.40) 100%)",
               boxShadow: `
                 inset 1px 1.5px 1px 0px rgba(255, 255, 255, 0.90),
                 inset -1px -1px 1px 0px rgba(255, 255, 255, 0.35),
-                0 10px 30px -4px rgba(0, 0, 0, 0.12)
+                0 10px 30px -4px rgba(0, 0, 0, 0.16)
               `,
               border: "1px solid rgba(255, 255, 255, 0.75)",
             }}
-            className="group relative flex items-center gap-2 px-4 py-2.5 rounded-full text-gray-900 dark:text-white [@media(hover:hover)]:hover:scale-[1.03] active:scale-95 transition-all duration-200 cursor-pointer select-none overflow-hidden touch-manipulation"
+            className="group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full p-0 flex items-center justify-center text-gray-900 dark:text-white [@media(hover:hover)]:hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer select-none overflow-hidden touch-manipulation shadow-lg"
           >
-            {/* Reflejo especular superior característico de srdavo/liquid-glass */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/40 via-white/10 to-transparent rounded-full" />
+            {/* Reflejo especular superior característico de Liquid Glass */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[45%] opacity-60 bg-gradient-to-b from-white/50 via-white/15 to-transparent rounded-full" />
 
-            <div className="relative z-10 w-5 h-5 rounded-full bg-white/40 dark:bg-white/15 border border-white/60 dark:border-white/20 flex items-center justify-center transition-transform duration-200 group-hover:-translate-y-0.5 shadow-xs">
-              <ArrowUp className="w-3.5 h-3.5 text-gray-950 dark:text-white stroke-[2.2]" />
-            </div>
-            <span className="relative z-10 text-xs font-bold tracking-tight whitespace-nowrap text-gray-950 dark:text-white drop-shadow-xs">
-              {label}
-            </span>
+            {/* Ícono de flecha hacia arriba */}
+            <ArrowUp className="w-5 h-5 text-gray-950 dark:text-white stroke-[2.4] transition-transform duration-200 group-hover:-translate-y-0.5" />
           </button>
         </motion.div>
       )}

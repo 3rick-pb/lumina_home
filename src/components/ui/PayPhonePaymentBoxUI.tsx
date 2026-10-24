@@ -194,10 +194,10 @@ export function PayPhonePaymentBoxUI({ totalUsd }: PayPhonePaymentBoxUIProps) {
         </div>
       )}
 
-      {/* Contenedor oficial donde PayPhone inyecta el formulario (con prevención estricta de overflow) */}
+      {/* Contenedor oficial donde PayPhone inyecta el formulario (ancho completo adaptable para evitar clipping de placeholders) */}
       <div
         id="pp-button"
-        className="w-full min-h-[350px] overflow-x-hidden transition-all duration-300"
+        className="w-full min-w-0 max-w-full min-h-[350px] overflow-x-hidden transition-all duration-300"
       />
 
       {/* Sello de seguridad y métodos soportados */}

@@ -25,10 +25,12 @@ function SmoothScrollSync() {
     }
   }, [lenis]);
 
-  // When changing pages in Next.js, immediately reset scroll to top
+  // When changing pages in Next.js, immediately reset scroll to top without inertia drag
   useEffect(() => {
     if (lenis) {
+      if (typeof lenis.stop === "function") lenis.stop();
       lenis.scrollTo(0, { immediate: true });
+      if (typeof lenis.start === "function") lenis.start();
     }
   }, [pathname, lenis]);
 
