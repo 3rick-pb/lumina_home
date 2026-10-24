@@ -734,8 +734,8 @@ export function ProductCinematicView({
         {/* Tarjeta de Especificación Activa del Nodo */}
         <motion.div
           key={selectedHotspot.id}
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.35 }}
           className="grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 sm:p-8 rounded-[2rem] bg-zinc-800/40 border border-zinc-700/60 backdrop-blur-xl"
         >

@@ -2596,9 +2596,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
             {/* Country Selector Menu Card (Warm Neutral Glass — No Phosphorescent Green) */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10, filter: "blur(6px)" }}
-              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 0.96, y: 8, filter: "blur(4px)" }}
+              initial={{ opacity: 0, scale: 0.96, filter: "blur(6px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
               transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
               className="absolute left-3 right-3 sm:right-auto sm:left-20 top-1/2 -translate-y-1/2 z-50 w-auto sm:w-[350px] max-w-[calc(100vw-1.5rem)] rounded-3xl bg-[#111317]/95 backdrop-blur-2xl border border-white/15 p-4 shadow-[0_25px_70px_rgba(0,0,0,0.85)] pointer-events-auto select-none"
             >

@@ -79,9 +79,9 @@ export function AccountMergedNotifier() {
       {isOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md">
           <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 8 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", damping: 26, stiffness: 320 }}
             className="w-full max-w-lg bg-white/95 dark:bg-[#1a1a1c]/95 backdrop-blur-2xl rounded-[2.5rem] border border-amber-500/30 dark:border-amber-500/20 shadow-[0_24px_64px_rgba(0,0,0,0.25)] p-6 sm:p-8 text-left relative overflow-hidden"
           >

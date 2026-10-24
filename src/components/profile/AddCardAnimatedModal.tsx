@@ -347,7 +347,7 @@ export function AddCardAnimatedModal({
             {step === "form" && (
               <motion.div
                 key="form-view"
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.28 }}

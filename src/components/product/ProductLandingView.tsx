@@ -802,8 +802,8 @@ export function ProductLandingView({
       {/* SECCIÓN 2: "COMPRADOS JUNTOS FRECUENTEMENTE" / COMBO BUNDLE               */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.1 }}
         transition={{ duration: 0.5 }}
         className="relative p-6 sm:p-10 rounded-[2.5rem] bg-gray-50/80 dark:bg-[#151517] backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden"
@@ -960,8 +960,8 @@ export function ProductLandingView({
       {/* SECCIÓN 3: DIAGRAMA RADIAL DE ANATOMÍA / MATERIALES DE LA PIEZA           */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.1 }}
         transition={{ duration: 0.5 }}
         className="relative"
@@ -1119,8 +1119,8 @@ export function ProductLandingView({
       {/* SECCIÓN 4: "LO QUE DICEN NUESTROS CLIENTES" - GALERÍA VISUAL UGC 9:16      */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.1 }}
         transition={{ duration: 0.5 }}
         className="relative"
@@ -1209,8 +1209,8 @@ export function ProductLandingView({
       {/* SECCIÓN 5: "PRODUCTOS EN TENDENCIA"                                       */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.1 }}
         transition={{ duration: 0.5 }}
         className="relative max-w-6xl mx-auto"
@@ -1248,8 +1248,8 @@ export function ProductLandingView({
       {/* SECCIÓN 6: "¿POR QUÉ ELEGIR ESTA PIEZA?" - BENEFICIOS EN ZIG-ZAG 1-2-3     */}
       {/* ========================================================================= */}
       <motion.section 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.1 }}
         transition={{ duration: 0.5 }}
         className="relative max-w-6xl mx-auto space-y-16"

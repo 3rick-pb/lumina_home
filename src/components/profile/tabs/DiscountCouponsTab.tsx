@@ -1561,8 +1561,8 @@ export function DiscountCouponsTab() {
       ) : (
         <motion.div
           key={activeFilter + (searchQuery || "")}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.24, ease: "easeOut" }}
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8"
         >

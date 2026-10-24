@@ -167,9 +167,9 @@ export function GoogleDriveAssetPickerModal({
 
         {/* Modal Window */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 15 }}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 w-full max-w-4xl max-h-[88vh] flex flex-col rounded-[2.5rem] bg-[#f8f9fa] dark:bg-[#18181b] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden select-none"
         >

@@ -16,6 +16,7 @@ export function forceResetScroll() {
 
     // 1. Reseteo instantáneo del DOM nativo
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
     if (document.documentElement) document.documentElement.scrollTop = 0;
     if (document.body) document.body.scrollTop = 0;
 

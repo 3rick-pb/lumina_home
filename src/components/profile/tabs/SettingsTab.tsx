@@ -918,7 +918,7 @@ export function SettingsTab({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in items-start">
       {/* Account & Credentials (7 cols) */}
       <motion.div 
-        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="lg:col-span-7 bg-white/90 dark:bg-[#202022]/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden"
       >
@@ -1487,7 +1487,7 @@ export function SettingsTab({
 
       {/* Shipping Address Manager (5 cols) */}
       <motion.div 
-        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
         className="lg:col-span-5 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col space-y-4 h-fit"
       >
@@ -1532,9 +1532,9 @@ export function SettingsTab({
                   <motion.div 
                     key={addr.id}
                     layout
-                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                    initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.94, y: -12 }}
+                    exit={{ opacity: 0, scale: 0.94 }}
                     transition={{ type: "spring", stiffness: 420, damping: 32 }}
                     whileHover={{ y: -2 }}
                     className={`p-4 rounded-2xl border transition-shadow duration-200 flex flex-col justify-between ${
@@ -1689,9 +1689,9 @@ export function SettingsTab({
           {showAddressForm && (
             <motion.div
               key="address-form-panel"
-              initial={{ opacity: 0, height: 0, y: 15 }}
-              animate={{ opacity: 1, height: "auto", y: 0 }}
-              exit={{ opacity: 0, height: 0, y: 15 }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="overflow-hidden pt-4 border-t border-gray-100 dark:border-white/5"
             >
@@ -2086,9 +2086,9 @@ export function SettingsTab({
           {showTransferModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm">
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
                 className="relative w-full max-w-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl text-gray-900 dark:text-gray-100 overflow-hidden space-y-6"
               >
                 {/* Header */}

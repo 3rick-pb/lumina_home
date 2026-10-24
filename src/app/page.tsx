@@ -373,7 +373,7 @@ export default function Home() {
         id="hero-section" 
         ref={heroRef} 
         data-ambient-category="default"
-        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-[#141414]"
+        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
       >
         <DynamicHeroBackground 
           activePhaseId={heroTime.phaseId}
@@ -384,8 +384,8 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-4 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex-1 flex flex-col justify-between sm:justify-center">
           <motion.div 
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-3xl transform-gpu flex-1 flex flex-col justify-between sm:justify-center"
           >
@@ -393,8 +393,8 @@ export default function Home() {
             <div className="flex flex-col justify-center my-auto sm:my-0">
               <div className="flex items-center gap-2 mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 flex-wrap">
                 <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
                   className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white shadow-sm [isolation:isolate] transform-gpu select-none"
                 >
@@ -559,11 +559,11 @@ export default function Home() {
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
             <motion.div 
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true, amount: 0.1 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              style={{ willChange: "transform, opacity" }}
+              style={{ willChange: "opacity" }}
               className="flex items-end justify-between mb-8 sm:mb-12 transform-gpu"
             >
               <div>
@@ -664,11 +664,11 @@ export default function Home() {
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
             {/* Header: Título y descripción en 1 sola línea, con la barra de nichos en una capa/nivel inferior */}
             <motion.div 
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true, amount: 0.1 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              style={{ willChange: "transform, opacity" }}
+              style={{ willChange: "opacity" }}
               className="flex flex-col mb-8 sm:mb-10 gap-4 sm:gap-5 transform-gpu"
             >
               <div>

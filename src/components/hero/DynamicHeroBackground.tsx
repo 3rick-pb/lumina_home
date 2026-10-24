@@ -16,7 +16,7 @@ export interface DynamicHeroBackgroundProps {
  * DynamicHeroBackground:
  * - Doble buffer para transición suave entre fases
  * - Movimiento suave e inercial slow-motion con Lenis y listener táctil adaptativo
- * - Degradado obsidian dark profundo
+ * - Degradado original brand-900 verde bosque suave
  */
 export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   activePhaseId,
@@ -82,7 +82,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-[#141414]">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-brand-900">
       {/* Contenedor con movimiento suave e inercial Lenis y escala estática en GPU */}
       <div ref={heroParallaxRef} className="absolute inset-0 pointer-events-none select-none will-change-transform transform-gpu scale-[1.06] origin-center">
         {/* 1. Capa de Fondo (Doble Buffer - Imagen Anterior durante transición) */}
@@ -120,8 +120,8 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
         )}
       </div>
 
-      {/* 3. Deep Cinematic Ambient Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#141414]/90 via-[#141414]/35 to-transparent pointer-events-none z-20" />
+      {/* 3. Original Lumina Brand Gradient Overlay (matches Original.png 100%) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent pointer-events-none z-20" />
     </div>
   );
 });

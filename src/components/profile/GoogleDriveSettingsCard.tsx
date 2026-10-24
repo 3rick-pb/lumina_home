@@ -2265,9 +2265,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               onClick={() => setShowStatsModal(false)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 14 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, y: 14 }}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ type: "spring", damping: 25, stiffness: 350 }}
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
@@ -2499,9 +2499,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               onClick={() => setShowAdminPinMenu(false)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.92, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: "spring", damping: 25, stiffness: 350 }}
                 onClick={(e) => e.stopPropagation()}
                 className={cn(

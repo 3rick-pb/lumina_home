@@ -148,7 +148,7 @@ export function CatalogTab({
             {filteredCatalog.map((p, pIdx) => (
               <motion.tr 
                 key={p.id}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 transition={{ duration: 0.35, delay: Math.min(pIdx * 0.03, 0.4), ease: [0.16, 1, 0.3, 1] }}
                 className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors"
               >

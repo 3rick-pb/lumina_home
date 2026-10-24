@@ -500,8 +500,8 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
 
             {/* SECCIÓN 2: BLOQUE EDITORIAL CON PESTAÑAS + FOTOGRAFÍA MACRO 50/50 */}
             <motion.div 
-              initial={{ opacity: 0, y: 28 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform, opacity" }}
@@ -703,8 +703,8 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
 
         {/* You May Also Like */}
         <motion.div 
-          initial={{ opacity: 0, y: 28 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
           viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           style={{ willChange: "transform, opacity" }}
@@ -720,8 +720,8 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
             {relatedProducts.map((prod, idx) => (
               <motion.div
                 key={prod.id}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
                 viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
                 transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
                 style={{ willChange: "transform, opacity" }}

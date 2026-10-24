@@ -102,10 +102,10 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
         <motion.div 
           id="shop-header"
           data-ambient-category={canonicalCategoryName ? canonicalCategoryName.toLowerCase() : "default"}
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          style={{ willChange: "transform, opacity" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          style={{ willChange: "opacity" }}
           className="mb-8 sm:mb-12 transform-gpu scroll-mt-36"
         >
           <h1 className="text-2xl sm:text-4xl font-sans font-medium text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
@@ -124,10 +124,10 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
         {/* Barra de Filtros / Nichos: Mismo diseño editorial con tonos bosque y animación de la página principal */}
         <motion.div 
           id="shop-categories"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          style={{ willChange: "transform, opacity" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+          style={{ willChange: "opacity" }}
           className="relative w-full mb-8 sm:mb-10 transform-gpu scroll-mt-36"
         >
           <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap py-1.5 px-1 w-full">

@@ -48,6 +48,7 @@ import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVari
 import { normalizeImageUrl, normalizeImagesList, isGoogleDriveUrl } from "@/lib/imageUtils";
 import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
 import { ProductGalleryStyleSelector } from "@/components/profile/ProductGalleryStyleSelector";
+import { forceResetScroll } from "@/components/layout/ScrollToTop";
 import { EmbeddedCarouselConfigurator } from "@/components/profile/EmbeddedCarouselConfigurator";
 import { getLenis } from "@/components/providers/SmoothScrollProvider";
 import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
@@ -260,17 +261,9 @@ export default function ProfilePage() {
     }
   }, []);
 
-  // Scroll to top immediately when tab changes
+  // Scroll to top immediately when tab changes (resets both native window & Lenis virtual coords)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-      try {
-        const win = window as unknown as { lenis?: { scrollTo: (target: number, opts?: { immediate?: boolean }) => void } };
-        if (win.lenis && typeof win.lenis.scrollTo === "function") {
-          win.lenis.scrollTo(0, { immediate: true });
-        }
-      } catch {}
-    }
+    forceResetScroll();
   }, [activeTab]);
 
   // Enhanced Spotlight Search Bar State & Keyboard Shortcuts
@@ -2333,9 +2326,9 @@ const handleConfirmDeleteNiche = async () => {
 
             {/* Contenedor anclado dinámicamente encima del teclado virtual */}
             <motion.div
-              initial={{ y: "100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
               transition={{ type: "spring", stiffness: 400, damping: 32 }}
               style={keyboardOffset > 0 ? { bottom: `${keyboardOffset}px` } : undefined}
               className="fixed inset-x-0 bottom-0 z-[150] flex flex-col justify-end pointer-events-none"

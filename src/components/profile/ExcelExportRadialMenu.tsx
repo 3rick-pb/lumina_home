@@ -1039,9 +1039,9 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
               <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 pointer-events-none">
                 <motion.div
                   key="mobile-orders-card"
-                  initial={{ opacity: 0, scale: 0.92, y: 16 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 360, damping: 26 }}
                   onClick={(e) => e.stopPropagation()}
                   className="w-full max-w-sm rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45),0_0_35px_rgba(16,185,129,0.2)] pointer-events-auto max-h-[85vh] overflow-y-auto text-left"

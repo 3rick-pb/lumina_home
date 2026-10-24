@@ -141,9 +141,9 @@ export function GoogleWalletModal({
 
           {/* Central Modal Card */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 14 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
             transition={{ type: "spring", damping: 28, stiffness: 350 }}
             className="relative z-10 w-full max-w-[440px] bg-[#141416] text-white rounded-[2.25rem] border border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.8)] p-6 sm:p-7 overflow-hidden space-y-5"
           >

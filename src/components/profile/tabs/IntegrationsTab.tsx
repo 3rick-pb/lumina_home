@@ -1263,8 +1263,8 @@ export function IntegrationsTab() {
 
                 {smtpTestResult && (
                   <motion.div
-                    initial={{ opacity: 0, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     className={`p-3 rounded-xl border font-mono text-xs ${
                       smtpTestResult.success
                         ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"

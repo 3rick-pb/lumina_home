@@ -81,7 +81,7 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
               {cards.map((c, index) => (
                 <motion.div
                   key={c?.id || `card-${index}`}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.4), ease: [0.16, 1, 0.3, 1] }}
                   className="w-full flex justify-center"
                 >

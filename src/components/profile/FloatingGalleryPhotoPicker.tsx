@@ -118,9 +118,9 @@ export function FloatingGalleryPhotoPicker({
 
         {/* Ventana Flotante Compacta */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 12 }}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 w-full max-w-3xl max-h-[85vh] flex flex-col rounded-[2rem] bg-white dark:bg-[#101015] border border-zinc-200/90 dark:border-zinc-800/90 shadow-2xl overflow-hidden font-mono"
         >

@@ -911,7 +911,7 @@ export function OverviewTab({
                 {orders.filter(Boolean).slice(0, 4).map((ord, oIdx) => (
                   <motion.tr 
                     key={ord.id || Math.random()} 
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     transition={{ duration: 0.35, delay: oIdx * 0.06, ease: [0.16, 1, 0.3, 1] }}
                     className="hover:bg-gray-50/50 dark:hover:bg-[#2c2c2e]/50 transition-colors cursor-pointer" 
                     onClick={() => setSelectedOrder(ord)}
