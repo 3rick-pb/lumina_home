@@ -399,15 +399,24 @@ export async function POST(request: Request) {
           try {
             await supabase.from('payment_cards').delete().eq('user_id', targetUserId);
             if (cards.length > 0) {
-              const rows = cards.map(c => ({
-                id: c.id && UUID_REGEX.test(c.id) ? c.id : crypto.randomUUID(),
-                user_id: targetUserId,
-                number: c.number,
-                holder: c.holder,
-                exp: c.exp,
-                type: c.type || 'mastercard',
-                is_default: !!c.isDefault,
-              }));
+              const rows = cards.map(c => {
+                // PCI-DSS Hardening: Extraer ultimos 4 digitos y almacenar unicamente PAN enmascarado.
+                // Nunca persistir numeros de tarjeta completos en texto plano en la base de datos.
+                const rawClean = String(c.number || '').replace(/\s+/g, '');
+                const last4 = rawClean.slice(-4) || '0000';
+                const maskedNumber = "•••• •••• •••• " + last4;
+
+                return {
+                  id: c.id && UUID_REGEX.test(c.id) ? c.id : crypto.randomUUID(),
+                  user_id: targetUserId,
+                  number: maskedNumber,
+                  last4: last4,
+                  holder: c.holder,
+                  exp: c.exp,
+                  type: c.type || 'mastercard',
+                  is_default: !!c.isDefault,
+                };
+              });
               const { error: insErr } = await supabase.from('payment_cards').insert(rows);
               if (insErr) console.warn('Warning inserting payment_cards:', insErr.message);
             }

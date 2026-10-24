@@ -145,38 +145,15 @@ export async function getAuthenticatedUser(request: Request) {
   }
 
   if (token) {
-    // 1. Try official Supabase auth check
+    // 1. Verificación criptográfica estricta con Supabase Auth (Firma HMAC/RSA validada)
     try {
       const { data: { user }, error } = await supabaseServer.auth.getUser(token);
       if (!error && user && user.email) return user;
     } catch {}
-
-    // 2. Safe JWT payload extraction fallback
-    try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        const payloadJson = Buffer.from(parts[1], 'base64').toString('utf8');
-        const payload = JSON.parse(payloadJson);
-        if (payload && payload.email) {
-          return {
-            id: payload.sub || 'token-user',
-            email: String(payload.email).toLowerCase().trim(),
-            user_metadata: payload.user_metadata || {},
-          };
-        }
-      }
-    } catch {}
   }
 
-  // 3. Check custom authenticated header
-  const xEmail = request.headers.get('x-admin-email') || request.headers.get('x-user-email');
-  if (xEmail) {
-    const cleanX = xEmail.toLowerCase().trim();
-    if (cleanX.includes('@')) {
-      return { id: 'header-user', email: cleanX };
-    }
-  }
-
+  // OWASP Hardening: Nunca confiar en decodificaciones Base64 sin firma ni en headers
+  // de cliente no autenticados (como x-admin-email o x-user-email).
   return null;
 }
 
