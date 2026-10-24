@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { BrandLoadingScreen } from "@/components/ui/BrandLoadingScreen";
 import { forceResetScroll } from "@/components/layout/ScrollToTop";
+import { useBootStore } from "@/lib/bootStore";
 
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
@@ -12,35 +14,28 @@ interface LuminaBootOrchestratorProps {
   children: React.ReactNode;
 }
 
-// Bandera de módulo: el splash de arranque solo se reproduce una vez por sesión de navegación.
-// Se resetea al cerrar sesión (via userStore), garantizando que el próximo login lo vea de nuevo.
-// sessionStorage key "lumina_booted" es limpiada por userStore en logout para resetear el estado.
-let hasBootedThisSession = false;
-
-function isAlreadyBooted(): boolean {
-  if (hasBootedThisSession) return true;
-  try {
-    return typeof sessionStorage !== "undefined" && sessionStorage.getItem("lumina_booted") === "true";
-  } catch {
-    return false;
-  }
-}
-
 export function LuminaBootOrchestrator({
   activeHeroImageUrl,
   onReadyToAnimateText,
   children,
 }: LuminaBootOrchestratorProps) {
-  // Si ya booteó esta sesión (navegación interna), empieza directo en "done" para no reproducir
-  // la pantalla de carga de nuevo al regresar a / desde /shop, /profile, etc.
-  const [phase, setPhase] = useState<"loading" | "fading" | "done">(
-    isAlreadyBooted() ? "done" : "loading"
-  );
+  const { setBootPhase, hasBootedInSpa } = useBootStore();
+  const [mounted, setMounted] = useState(false);
+
+  // Si ya booteó en la memoria de la SPA (navegación interna), empieza directo en "done"
+  // para no reproducir la pantalla de carga de nuevo al regresar a / desde /shop, /profile, etc.
+  const [phase, setPhase] = useState<"loading" | "fading" | "done">(() => {
+    return hasBootedInSpa() ? "done" : "loading";
+  });
 
   const onReadyRef = useRef(onReadyToAnimateText);
   useEffect(() => {
     onReadyRef.current = onReadyToAnimateText;
   }, [onReadyToAnimateText]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Forzar reseteo de scroll al inicio en el arranque previo a la pintura
   useIsomorphicLayoutEffect(() => {
@@ -89,13 +84,19 @@ export function LuminaBootOrchestrator({
       }
     });
 
-    // 3. Límite máximo de seguridad (2200ms) para nunca bloquear conexiones lentas
+    // 3. Esperar decodificación tipográfica (evita FOUT y saltos visuales en el título caligráfico)
+    const fontPromise =
+      typeof document !== "undefined" && document.fonts && document.fonts.ready
+        ? document.fonts.ready.catch(() => {})
+        : Promise.resolve();
+
+    // 4. Límite máximo de seguridad (2200ms) para nunca bloquear conexiones lentas
     const safetyTimeout = new Promise<void>((resolve) =>
       setTimeout(resolve, 2200)
     );
 
     Promise.race([
-      Promise.all([minAestheticTime, decodeHeroImage]),
+      Promise.all([minAestheticTime, decodeHeroImage, fontPromise]),
       safetyTimeout,
     ]).then(() => {
       if (!isMounted) return;
@@ -104,17 +105,17 @@ export function LuminaBootOrchestrator({
       requestAnimationFrame(() => {
         if (!isMounted) return;
 
-        // Iniciar el desvanecimiento ultra suave de 1000ms
+        // Iniciar el desvanecimiento ultra suave de 1000ms y notificar a los componentes sincronizados (Header, etc.)
         setPhase("fading");
+        setBootPhase("fading");
         // Disparar la animación caligráfica "Espacios diseñados para perdurar" justo al abrirse el telón
         onReadyRef.current();
 
         // Desmontar el splash una vez terminada la transición suave de 1000ms
         setTimeout(() => {
           if (isMounted) {
-            hasBootedThisSession = true;
-            try { sessionStorage.setItem("lumina_booted", "true"); } catch {}
             setPhase("done");
+            setBootPhase("done");
           }
         }, 1000);
       });
@@ -123,26 +124,34 @@ export function LuminaBootOrchestrator({
     return () => {
       isMounted = false;
     };
-  }, [activeHeroImageUrl]);
+  }, [activeHeroImageUrl, phase, setBootPhase]);
+
+  const overlayElement =
+    phase !== "done" ? (
+      <div
+        style={{ willChange: "opacity" }}
+        className={`fixed inset-0 z-[99999] transition-opacity duration-1000 ease-in-out ${
+          phase === "fading"
+            ? "opacity-0 pointer-events-none"
+            : "opacity-100 pointer-events-auto"
+        }`}
+      >
+        <BrandLoadingScreen isFixed={true} />
+      </div>
+    ) : null;
 
   return (
     <div className="relative min-h-screen bg-transparent">
       {/* El Hero y la tienda se renderizan debajo desde el milisegundo 0 */}
       {children}
 
-      {/* Pantalla de carga clásica única de corrido: desvanecimiento suave de 1000ms sin corte brusco */}
-      {phase !== "done" && (
-        <div
-          style={{ willChange: "opacity" }}
-          className={`fixed inset-0 z-[9999] transition-opacity duration-1000 ease-in-out ${
-            phase === "fading"
-              ? "opacity-0 pointer-events-none"
-              : "opacity-100 pointer-events-auto"
-          }`}
-        >
-          <BrandLoadingScreen isFixed={true} />
-        </div>
-      )}
+      {/* Pantalla de carga clásica única de corrido: desvanecimiento suave de 1000ms sin corte brusco.
+          En el cliente montado se portaliza directamente a document.body para garantizar que quede por
+          encima de cualquier stacking context (incluyendo navegación fija y barras de scroll).
+          En SSR se renderiza inline como fallback inicial de frame 0. */}
+      {mounted && typeof document !== "undefined" && overlayElement
+        ? createPortal(overlayElement, document.body)
+        : overlayElement}
     </div>
   );
 }

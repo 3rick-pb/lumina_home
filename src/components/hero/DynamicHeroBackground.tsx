@@ -56,7 +56,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
           (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
         const factor = isMobileOrTouch ? 0.16 : 0.28;
         const slowTranslateY = currentScroll * factor;
-        heroParallaxRef.current.style.transform = `translate3d(0, ${slowTranslateY.toFixed(1)}px, 0)`;
+        heroParallaxRef.current.style.transform = `translate3d(0, ${slowTranslateY.toFixed(1)}px, 0) scale(1.06)`;
       }
     });
   };
@@ -69,6 +69,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   // 2. Listener nativo pasivo de respaldo para asegurar activación instantánea al arrastrar con el dedo en cualquier celular
   useEffect(() => {
     if (typeof window === "undefined") return;
+    applyParallax(window.scrollY || 0);
     const onScroll = () => {
       applyParallax(window.scrollY);
     };
@@ -84,7 +85,11 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint] bg-brand-900">
       {/* Contenedor con movimiento suave e inercial Lenis y escala estática en GPU */}
-      <div ref={heroParallaxRef} className="absolute inset-0 pointer-events-none select-none will-change-transform transform-gpu scale-[1.06] origin-center">
+      <div
+        ref={heroParallaxRef}
+        style={{ transform: "translate3d(0, 0px, 0) scale(1.06)" }}
+        className="absolute inset-0 pointer-events-none select-none will-change-transform transform-gpu origin-center"
+      >
         {/* 1. Capa de Fondo (Doble Buffer - Imagen Anterior durante transición) */}
         {prevPhase && (
           <div

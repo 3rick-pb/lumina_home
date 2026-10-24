@@ -23,6 +23,7 @@ import { normalizeSearchText } from "@/lib/utils";
 import { getSavedNicheSlots, fetchNicheSlotsFromCloud, getNicheIconByName, type NicheSlotConfig, DEFAULT_NICHE_SLOTS } from "@/lib/nicheIcons";
 import { useBrand } from "@/core/hooks/useBrand";
 import { forceResetScroll } from "@/components/layout/ScrollToTop";
+import { useBootStore } from "@/lib/bootStore";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -32,6 +33,9 @@ export function Header() {
   const brand = useBrand();
   const pathname = usePathname();
   const router = useRouter();
+  const isHome = pathname === "/";
+  const bootPhase = useBootStore((state) => state.bootPhase);
+  const isHiddenByBoot = isHome && bootPhase === "loading";
   const [nicheSlots, setNicheSlots] = useState<NicheSlotConfig[]>(DEFAULT_NICHE_SLOTS);
   const [activeTab, setActiveTab] = useState("home");
   const [searchVal, setSearchVal] = useState("");
@@ -279,8 +283,14 @@ export function Header() {
         </defs>
       </svg>
       <header 
-        className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none transform-gpu"
-        style={{ transform: "translateZ(0)" }}
+        className={cn(
+          "fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none transform-gpu",
+          isHiddenByBoot ? "opacity-0 invisible pointer-events-none" : "opacity-100 visible"
+        )}
+        style={{
+          transform: isHiddenByBoot ? "translate3d(0, -20px, 0)" : "translate3d(0, 0, 0)",
+          transition: "opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1), visibility 700ms cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
       >
         <div
           ref={headerRef}

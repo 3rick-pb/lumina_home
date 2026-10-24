@@ -5,6 +5,7 @@ import { ShieldCheck, Truck, RotateCcw, Sparkles, CheckCircle2, Lock } from "luc
 import { usePathname } from "next/navigation";
 import { useBrand } from "@/core/hooks/useBrand";
 import { useStoreConfig } from "@/core/hooks/useStoreConfig";
+import { useBootStore } from "@/lib/bootStore";
 
 export function Footer() {
   const brand = useBrand();
@@ -18,39 +19,8 @@ export function Footer() {
   const isAuthPage = pathname?.startsWith("/auth");
 
   const isHome = pathname === "/";
-  const [mounted, setMounted] = React.useState(false);
-  const [isBootDone, setIsBootDone] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-    if (!isHome) {
-      setIsBootDone(true);
-      return;
-    }
-
-    try {
-      if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("lumina_booted") === "true") {
-        setIsBootDone(true);
-        return;
-      }
-    } catch {}
-
-    const timer = setTimeout(() => {
-      setIsBootDone(true);
-    }, 1200);
-
-    const handleScroll = () => {
-      if (window.scrollY > 100) {
-        setIsBootDone(true);
-      }
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [pathname, isHome]);
+  const bootPhase = useBootStore((state) => state.bootPhase);
+  const isBootLoading = isHome && bootPhase === "loading";
 
   // Do not render store footer on standalone dashboard
   if (isDashboardPage) {
@@ -60,7 +30,7 @@ export function Footer() {
   return (
     <footer
       id="store-footer"
-      style={{ visibility: (mounted && (!isHome || isBootDone)) ? "visible" : "hidden" }}
+      style={{ visibility: isBootLoading ? "hidden" : "visible" }}
       className={`${isAuthPage ? "mt-0 border-t border-gray-200/40 dark:border-white/5" : "mt-24 border-t border-black/[0.06] dark:border-white/[0.06]"} bg-transparent pt-16 pb-12 transition-colors duration-300 scroll-mt-10 relative z-30`}
     >
       <div className="container mx-auto px-4 md:px-6">

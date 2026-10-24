@@ -6,6 +6,7 @@ import { useThemeStore } from './themeStore';
 import { useRadarStore } from './radarStore';
 import { useAvatarSettingsStore, setupAvatarRealtimeListener, cleanupAvatarRealtimeListener } from './avatarSettingsStore';
 import { useCatalogStore } from './catalogStore';
+import { useBootStore } from './bootStore';
 import { playFavoriteSound, playStepperTickSound } from './soundUtils';
 import type { RawGpsHardwareData } from './locationUtils';
 
@@ -1123,6 +1124,7 @@ export const useUserStore = create<UserState>((set, get) => ({
             clearGuestStorage();
             // Limpiar la bandera de boot para que el hero se pre-decodifique en el proximo acceso
             try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lumina_booted'); } catch {}
+            try { useBootStore.getState().resetBootState(); } catch {}
             await useCartStore.getState().initCartForUser(null);
             set({
               user: null,
@@ -1395,6 +1397,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     clearGuestStorage();
     // Limpiar la bandera de boot para que el hero se pre-decodifique correctamente en el proximo acceso
     try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lumina_booted'); } catch {}
+            try { useBootStore.getState().resetBootState(); } catch {}
 
     // 2. Perform all teardown and cleanup concurrently without blocking
     try {

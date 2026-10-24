@@ -104,7 +104,7 @@ export function BrandLoadingScreen({
   isFixed = true,
 }: BrandLoadingScreenProps) {
   const containerClass = isFixed
-    ? "fixed inset-0 z-[9999]"
+    ? "fixed inset-0 z-[99999]"
     : "relative w-full min-h-[70vh]";
 
   return (
