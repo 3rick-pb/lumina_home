@@ -71,40 +71,57 @@ $$;
 
 -- 5. Policies for public.products
 DROP POLICY IF EXISTS "Products are publicly viewable" ON public.products;
+DROP POLICY IF EXISTS "Public read products" ON public.products;
+DROP POLICY IF EXISTS "Public can view products" ON public.products;
+DROP POLICY IF EXISTS "Products insert policy" ON public.products;
+DROP POLICY IF EXISTS "Admin insert products" ON public.products;
+DROP POLICY IF EXISTS "Admins can insert products" ON public.products;
+DROP POLICY IF EXISTS "Products update policy" ON public.products;
+DROP POLICY IF EXISTS "Admin update products" ON public.products;
+DROP POLICY IF EXISTS "Admins can update products" ON public.products;
+DROP POLICY IF EXISTS "Products delete policy" ON public.products;
+DROP POLICY IF EXISTS "Admin delete products" ON public.products;
+DROP POLICY IF EXISTS "Admins can delete products" ON public.products;
+
 CREATE POLICY "Products are publicly viewable"
   ON public.products FOR SELECT
   USING (true);
 
-DROP POLICY IF EXISTS "Admins can insert products" ON public.products;
 CREATE POLICY "Admins can insert products"
   ON public.products FOR INSERT
   WITH CHECK (public.is_admin());
 
-DROP POLICY IF EXISTS "Admins can update products" ON public.products;
 CREATE POLICY "Admins can update products"
   ON public.products FOR UPDATE
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
-DROP POLICY IF EXISTS "Admins can delete products" ON public.products;
 CREATE POLICY "Admins can delete products"
   ON public.products FOR DELETE
   USING (public.is_admin());
 
 -- 6. Policies for public.admin_notification_settings
 DROP POLICY IF EXISTS "Notification settings publicly viewable" ON public.admin_notification_settings;
+DROP POLICY IF EXISTS "Public read notification settings" ON public.admin_notification_settings;
+DROP POLICY IF EXISTS "Public can read notification settings" ON public.admin_notification_settings;
+DROP POLICY IF EXISTS "Admin write notification settings" ON public.admin_notification_settings;
+DROP POLICY IF EXISTS "Admins manage notification settings" ON public.admin_notification_settings;
+DROP POLICY IF EXISTS "Admins can manage notification settings" ON public.admin_notification_settings;
+
 CREATE POLICY "Notification settings publicly viewable"
   ON public.admin_notification_settings FOR SELECT
   USING (true);
 
-DROP POLICY IF EXISTS "Admins can manage notification settings" ON public.admin_notification_settings;
 CREATE POLICY "Admins can manage notification settings"
   ON public.admin_notification_settings FOR ALL
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
 -- 7. Policies for public.admin_dispatch_recipients
+DROP POLICY IF EXISTS "Public read dispatch recipients" ON public.admin_dispatch_recipients;
+DROP POLICY IF EXISTS "Admin write dispatch recipients" ON public.admin_dispatch_recipients;
 DROP POLICY IF EXISTS "Admins can manage dispatch recipients" ON public.admin_dispatch_recipients;
+
 CREATE POLICY "Admins can manage dispatch recipients"
   ON public.admin_dispatch_recipients FOR ALL
   USING (public.is_admin())
@@ -113,6 +130,7 @@ CREATE POLICY "Admins can manage dispatch recipients"
 -- 8. Policies for public.admin_google_drive_settings
 DROP POLICY IF EXISTS "Allow public read of drive settings" ON public.admin_google_drive_settings;
 DROP POLICY IF EXISTS "Allow write to drive settings" ON public.admin_google_drive_settings;
+DROP POLICY IF EXISTS "Allow public read of google drive settings" ON public.admin_google_drive_settings;
 DROP POLICY IF EXISTS "Admins can manage google drive settings" ON public.admin_google_drive_settings;
 
 CREATE POLICY "Admins can manage google drive settings"
