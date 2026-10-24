@@ -88,6 +88,25 @@ export default function RootLayout({
         } as React.CSSProperties}
         className={`${inter.variable} ${lora.variable} ${moonwalk.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
+        {/* Telón síncrono 0ms: Bloquea cualquier parpadeo de contenido inferior o footer antes de que cargue el orquestador */}
+        <div
+          id="lumina-root-curtain"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999999,
+            backgroundColor: "#fbfaf8",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "opacity 0.4s ease-out, visibility 0.4s",
+            pointerEvents: "auto",
+          }}
+          className="dark:bg-[#121214]"
+        >
+          <div className="absolute w-96 h-96 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.09] to-amber-300/[0.06] blur-3xl pointer-events-none" />
+        </div>
+
         <SmoothScrollProvider>
           <Suspense fallback={null}>
             <ScrollToTop />

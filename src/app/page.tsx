@@ -449,7 +449,7 @@ export default function Home() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] py-3 px-2 sm:py-3.5 sm:px-3 md:py-3.5 md:px-4 lg:py-3.5 lg:px-4"
+          className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] py-3 px-2 sm:py-5 sm:px-4 md:py-4.5 md:px-5 lg:py-4 lg:px-4"
         >
           {/* Mobile badges */}
           <div 
@@ -477,21 +477,21 @@ export default function Home() {
                     return (
                       <div
                         key={idx}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-1 relative select-none ${isSingle ? "col-span-2" : ""}`}
+                        className={`flex items-center justify-center gap-1.5 sm:gap-3.5 px-1 sm:px-2 relative select-none ${isSingle ? "col-span-2" : ""}`}
                       >
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 shadow-2xs">
-                          <badge.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 shadow-2xs">
+                          <badge.icon className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[10.5px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight line-clamp-1">
+                        <div className="min-w-0 pr-0.5 sm:pr-0">
+                          <p className="text-[10.5px] sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight line-clamp-1 sm:line-clamp-none sm:truncate">
                             {badge.title}
                           </p>
-                          <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-gray-400 font-normal leading-tight mt-0.5 line-clamp-1">
+                          <p className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight mt-0.5 line-clamp-1 sm:line-clamp-none sm:truncate">
                             {badge.subtitle}
                           </p>
                         </div>
                         {idx === 0 && !isSingle && (
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 h-6 sm:h-6 w-px bg-gray-200/80 dark:bg-white/10" />
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 h-6 sm:h-9 w-px bg-gray-200/80 dark:bg-white/10" />
                         )}
                       </div>
                     );
@@ -526,21 +526,21 @@ export default function Home() {
             {trustBadges.map((badge, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-2 xl:gap-2.5 justify-center relative group px-1 xl:px-2 select-none"
+                className="flex items-center gap-2.5 xl:gap-3 justify-center relative group px-2 select-none"
               >
-                <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs">
-                  <badge.icon className="w-3.5 h-3.5 xl:w-4 xl:h-4" />
+                <div className="w-9 h-9 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs">
+                  <badge.icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 select-none">
-                  <p className="text-[11px] xl:text-xs font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight whitespace-nowrap">
+                  <p className="text-xs xl:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
                     {badge.title}
                   </p>
-                  <p className="text-[9.5px] xl:text-[10.5px] text-gray-400 font-normal leading-tight whitespace-nowrap">
+                  <p className="text-[10px] xl:text-[11px] text-gray-400 font-normal leading-tight whitespace-nowrap">
                     {badge.subtitle}
                   </p>
                 </div>
                 {idx < trustBadges.length - 1 && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-px bg-gray-200/80 dark:bg-white/10" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-px bg-gray-200/80 dark:bg-white/10" />
                 )}
               </div>
             ))}

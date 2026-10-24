@@ -17,13 +17,19 @@ export function Footer() {
     pathname?.startsWith("/wallet");
   const isAuthPage = pathname?.startsWith("/auth");
 
-  // Do not render store footer on standalone dashboard or pass pages
-  if (isDashboardPage) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Do not render store footer on standalone dashboard or before client hydration completes
+  if (isDashboardPage || !mounted) {
     return null;
   }
 
   return (
-    <footer id="envios-garantias" className={`${isAuthPage ? "mt-0 border-t border-gray-200/40 dark:border-white/5" : "mt-24 border-t border-black/[0.06] dark:border-white/[0.06]"} bg-transparent pt-16 pb-12 transition-colors duration-300 scroll-mt-10 relative z-30`}>
+    <footer id="store-footer" className={`${isAuthPage ? "mt-0 border-t border-gray-200/40 dark:border-white/5" : "mt-24 border-t border-black/[0.06] dark:border-white/[0.06]"} bg-transparent pt-16 pb-12 transition-colors duration-300 scroll-mt-10 relative z-30`}>
       <div className="container mx-auto px-4 md:px-6">
         
         {/* ========================================================================= */}

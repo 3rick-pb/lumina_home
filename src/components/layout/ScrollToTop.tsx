@@ -9,19 +9,17 @@ const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffec
 export function ScrollToTop() {
   const pathname = usePathname();
 
+  // 1. Reseteo síncrono previo a la pintura cuando cambia la ruta
   useIsomorphicLayoutEffect(() => {
-    // 1. Desactivar la restauración automática del navegador antes de pintar
     if (typeof window !== "undefined") {
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = "manual";
       }
 
-      // 2. Reset síncrono nativo a 0ms
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       if (document.documentElement) document.documentElement.scrollTop = 0;
       if (document.body) document.body.scrollTop = 0;
 
-      // 3. Forzar detención y reseteo inmediato de Lenis si está activo
       const lenis = getLenis() || (window as unknown as { __luminaLenis?: { stop: () => void; scrollTo: (target: number, opts?: Record<string, unknown>) => void; start: () => void } }).__luminaLenis;
       if (lenis && typeof lenis.scrollTo === "function") {
         if (typeof lenis.stop === "function") lenis.stop();
@@ -30,6 +28,43 @@ export function ScrollToTop() {
       }
     }
   }, [pathname]);
+
+  // 2. Interceptor anticipado de clicks en enlaces internos: resetea el scroll a 0 en el instante exacto del click
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleLinkClick = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement)?.closest("a");
+      if (!link) return;
+
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || link.target === "_blank") {
+        return;
+      }
+
+      // Si es un enlace de navegación interna dentro de la app
+      if (link.origin === window.location.origin && link.pathname !== window.location.pathname) {
+        if ("scrollRestoration" in window.history) {
+          window.history.scrollRestoration = "manual";
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        if (document.documentElement) document.documentElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
+
+        const lenis = getLenis() || (window as unknown as { __luminaLenis?: { stop: () => void; scrollTo: (target: number, opts?: Record<string, unknown>) => void; start: () => void } }).__luminaLenis;
+        if (lenis && typeof lenis.scrollTo === "function") {
+          if (typeof lenis.stop === "function") lenis.stop();
+          lenis.scrollTo(0, { immediate: true });
+          if (typeof lenis.start === "function") lenis.start();
+        }
+      }
+    };
+
+    document.addEventListener("click", handleLinkClick, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("click", handleLinkClick, { capture: true });
+    };
+  }, []);
 
   return null;
 }
